@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, ExternalLink, Edit2, Trash2, X, Loader2, Send } from 'lucide-react'
+import { PasswordField } from '@/components/ui/password-field'
 
 const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
 
@@ -21,8 +22,13 @@ export default function BlogPage({ params }: { params: { id: string; projectId: 
   const [entries, setEntries] = useState<any[]>([])
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState(emptyForm())
+
+  useEffect(() => {
+    fetch(`/api/projects/${params.projectId}/blog`)
+      .then(res => res.json())
+      .then(data => setEntries(data || []))
+  }, [params.projectId])
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }))
@@ -161,7 +167,7 @@ export default function BlogPage({ params }: { params: { id: string; projectId: 
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                  <input className={inputClass} type={showPassword ? 'text' : 'password'} value={form.password} onChange={set('password')} placeholder="••••••" />
+                  <PasswordField value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••" />
                 </div>
               </div>
               <div>

@@ -20,8 +20,9 @@ export async function uploadFileToDrive(
   const drive = google.drive({ version: 'v3', auth })
 
   const parentId = process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID!
+  const escapedFolderName = folderName.replace(/'/g, "\\'")
   const folderRes = await drive.files.list({
-    q: `name='${folderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    q: `name='${escapedFolderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
     fields: 'files(id)',
   })
 
@@ -61,9 +62,10 @@ export async function listFilesInFolder(folderName: string): Promise<Array<{ id:
   const auth = getAuth()
   const drive = google.drive({ version: 'v3', auth })
   const parentId = process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID!
+  const escapedFolderName = folderName.replace(/'/g, "\\'")
 
   const folderRes = await drive.files.list({
-    q: `name='${folderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    q: `name='${escapedFolderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
     fields: 'files(id)',
   })
 
