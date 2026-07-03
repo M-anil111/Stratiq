@@ -43,3 +43,4 @@ export async function GET() {
     targets_hit_pct: targetsHitPct,
   })
 }
+
