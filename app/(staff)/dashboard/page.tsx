@@ -1,17 +1,31 @@
+'use client'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Users, FolderOpen, Activity, TrendingUp, Plus, ArrowRight } from 'lucide-react'
 
-const kpiCards = [
-  { label: 'Total Clients', value: '—', icon: Users, color: 'bg-sky-50 text-sky-600', href: '/clients' },
-  { label: 'Active Projects', value: '—', icon: FolderOpen, color: 'bg-emerald-50 text-emerald-600', href: '/clients' },
-  { label: 'Activities This Month', value: '—', icon: Activity, color: 'bg-amber-50 text-amber-600', href: '/targets' },
-  { label: 'Targets Hit %', value: '—', icon: TrendingUp, color: 'bg-purple-50 text-purple-600', href: '/targets' },
-]
+interface Stats {
+  total_clients: number
+  active_projects: number
+  activities_this_month: number
+  targets_hit_pct: number
+}
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<Stats | null>(null)
+
+  useEffect(() => {
+    fetch('/api/dashboard/stats').then(r => r.json()).then(setStats)
+  }, [])
+
+  const kpiCards = [
+    { label: 'Total Clients', value: stats ? String(stats.total_clients) : '—', icon: Users, color: 'bg-sky-50 text-sky-600', href: '/clients' },
+    { label: 'Active Projects', value: stats ? String(stats.active_projects) : '—', icon: FolderOpen, color: 'bg-emerald-50 text-emerald-600', href: '/clients' },
+    { label: 'Activities This Month', value: stats ? String(stats.activities_this_month) : '—', icon: Activity, color: 'bg-amber-50 text-amber-600', href: '/targets' },
+    { label: 'Targets Hit %', value: stats ? `${stats.targets_hit_pct}%` : '—', icon: TrendingUp, color: 'bg-purple-50 text-purple-600', href: '/targets' },
+  ]
+
   return (
     <div className="p-4 lg:p-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
@@ -26,14 +40,13 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {kpiCards.map(card => (
           <Link key={card.label} href={card.href} className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{card.label}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
+                <p className={`text-2xl font-bold mt-1 ${stats ? 'text-gray-900' : 'text-gray-300 animate-pulse'}`}>{card.value}</p>
               </div>
               <div className={`p-2 rounded-lg ${card.color}`}>
                 <card.icon className="h-5 w-5" />
@@ -43,32 +56,22 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <Link href="/clients/new" className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:shadow-md transition-shadow group">
-          <div>
-            <p className="font-semibold text-gray-900">Add Client</p>
-            <p className="text-sm text-gray-500">Onboard a new client</p>
-          </div>
-          <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-sky-500 transition-colors" />
-        </Link>
-        <Link href="/reports" className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:shadow-md transition-shadow group">
-          <div>
-            <p className="font-semibold text-gray-900">View Reports</p>
-            <p className="text-sm text-gray-500">Marketing performance</p>
-          </div>
-          <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-sky-500 transition-colors" />
-        </Link>
-        <Link href="/targets" className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:shadow-md transition-shadow group">
-          <div>
-            <p className="font-semibold text-gray-900">Track Targets</p>
-            <p className="text-sm text-gray-500">Team KPI dashboard</p>
-          </div>
-          <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-sky-500 transition-colors" />
-        </Link>
+        {[
+          { href: '/clients/new', title: 'Add Client', sub: 'Onboard a new client' },
+          { href: '/reports', title: 'View Reports', sub: 'Marketing performance' },
+          { href: '/targets', title: 'Track Targets', sub: 'Team KPI dashboard' },
+        ].map(({ href, title, sub }) => (
+          <Link key={href} href={href} className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:shadow-md transition-shadow group">
+            <div>
+              <p className="font-semibold text-gray-900">{title}</p>
+              <p className="text-sm text-gray-500">{sub}</p>
+            </div>
+            <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-sky-500 transition-colors" />
+          </Link>
+        ))}
       </div>
 
-      {/* Recent activity placeholder */}
       <div className="bg-white rounded-xl border border-gray-100 p-6">
         <h2 className="font-semibold text-gray-900 mb-4">Recent Activity</h2>
         <div className="flex flex-col items-center justify-center py-12 text-gray-400">
