@@ -1,10 +1,10 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Edit2, UserX, Shield } from 'lucide-react'
 
 const tabs = ['Employees', 'Roles & Permissions', 'Client Accounts']
 
-const ROLES = {
+const ROLES: Record<string, { label: string; color: string }> = {
   super_admin: { label: 'Super Admin', color: 'bg-purple-100 text-purple-800' },
   admin: { label: 'Admin', color: 'bg-blue-100 text-blue-800' },
   manager: { label: 'Manager', color: 'bg-sky-100 text-sky-800' },
@@ -15,6 +15,22 @@ const ROLES = {
 
 export default function TeamPage() {
   const [activeTab, setActiveTab] = useState(0)
+  const [members, setMembers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    setLoading(true)
+    fetch('/api/team')
+      .then(res => res.json())
+      .then(data => setMembers(Array.isArray(data) ? data : []))
+      .catch(() => setMembers([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const filtered = members.filter(m =>
+    !search || m.full_name?.toLowerCase().includes(search.toLowerCase()) || m.email?.toLowerCase().includes(search.toLowerCase())
+  )
 
   return (
     <div className="p-4 lg:p-8">
@@ -40,38 +56,66 @@ export default function TeamPage() {
       {activeTab === 0 && (
         <div className="bg-white rounded-xl border border-gray-100">
           <div className="p-4 border-b border-gray-100">
-            <input type="text" placeholder="Search team members..." className="w-full sm:w-72 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search team members..."
+              className="w-full sm:w-72 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
           </div>
           <div className="divide-y divide-gray-50">
-            {[
-              { name: 'Jay Mehta', email: 'jay@mindshareconsulting.com', role: 'super_admin', lastSeen: 'Today' },
-            ].map(user => (
-              <div key={user.email} className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-semibold text-sm">
-                    {user.name.split(' ').map(n => n[0]).join('')}
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between px-4 py-3 animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gray-200" />
+                    <div>
+                      <div className="h-4 bg-gray-200 rounded w-32 mb-1" />
+                      <div className="h-3 bg-gray-100 rounded w-48" />
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm">{user.name}</p>
-                    <p className="text-xs text-gray-500">{user.email}</p>
-                  </div>
+                  <div className="h-5 bg-gray-100 rounded w-20" />
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ROLES[user.role as keyof typeof ROLES]?.color}`}>
-                    {ROLES[user.role as keyof typeof ROLES]?.label}
-                  </span>
-                  <span className="text-xs text-gray-400 hidden sm:block">{user.lastSeen}</span>
-                  <div className="flex gap-1">
-                    <button className="p-1.5 text-gray-400 hover:text-sky-600 rounded-lg hover:bg-gray-100"><Edit2 className="h-4 w-4" /></button>
-                    <button className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-gray-100"><UserX className="h-4 w-4" /></button>
-                  </div>
-                </div>
+              ))
+            ) : filtered.length === 0 ? (
+              <div className="px-4 py-8 text-center text-gray-400 text-sm">
+                {search ? 'No members match your search' : 'No team members yet'}
               </div>
-            ))}
+            ) : (
+              filtered.map(user => (
+                <div key={user.id} className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    {user.avatar_url ? (
+                      <img src={user.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-semibold text-sm">
+                        {(user.full_name || '?').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{user.full_name}</p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ROLES[user.role]?.color || 'bg-gray-100 text-gray-700'}`}>
+                      {ROLES[user.role]?.label || user.role}
+                    </span>
+                    <div className="flex gap-1">
+                      <button className="p-1.5 text-gray-400 hover:text-sky-600 rounded-lg hover:bg-gray-100"><Edit2 className="h-4 w-4" /></button>
+                      <button className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-gray-100"><UserX className="h-4 w-4" /></button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-          <div className="p-8 text-center text-gray-400">
-            <p className="text-sm">Invite team members to populate this list</p>
-          </div>
+          {!loading && filtered.length === 0 && !search && (
+            <div className="p-4 border-t border-gray-50 text-center text-gray-400">
+              <p className="text-sm">Invite team members to populate this list</p>
+            </div>
+          )}
         </div>
       )}
 

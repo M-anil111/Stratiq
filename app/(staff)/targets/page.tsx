@@ -1,22 +1,33 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AlertCircle } from 'lucide-react'
 
 const tabs = ['Team KPI Dashboard', 'Missed Activities', 'Target Settings']
-
-const teamData = [
-  { name: 'Alex Johnson', avatar: 'AJ', social: { target: 20, done: 16 }, offpage: { target: 30, done: 22 }, blog: { target: 4, done: 4 }, misses: 1 },
-  { name: 'Sarah Chen', avatar: 'SC', social: { target: 20, done: 20 }, offpage: { target: 30, done: 30 }, blog: { target: 4, done: 3 }, misses: 0 },
-  { name: 'Mike Torres', avatar: 'MT', social: { target: 20, done: 10 }, offpage: { target: 30, done: 18 }, blog: { target: 4, done: 2 }, misses: 3 },
-]
 
 function pct(done: number, target: number) { return target > 0 ? Math.round((done / target) * 100) : 0 }
 function pctColor(p: number) { return p >= 80 ? 'text-green-600' : p >= 60 ? 'text-amber-600' : 'text-red-600' }
 function barColor(p: number) { return p >= 80 ? 'bg-green-500' : p >= 60 ? 'bg-amber-500' : 'bg-red-500' }
 
+function currentMonth() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
 export default function TargetsPage() {
   const [activeTab, setActiveTab] = useState(0)
+  const [teamData, setTeamData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const now = new Date()
+  const month = currentMonth()
+
+  useEffect(() => {
+    setLoading(true)
+    fetch(`/api/targets?month=${month}`)
+      .then(res => res.json())
+      .then(data => setTeamData(Array.isArray(data) ? data : []))
+      .catch(() => setTeamData([]))
+      .finally(() => setLoading(false))
+  }, [month])
 
   return (
     <div className="p-4 lg:p-8">
@@ -39,17 +50,26 @@ export default function TargetsPage() {
         <div>
           {/* KPI Summary Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            {[
-              { label: 'Team Members', value: teamData.length },
-              { label: 'On Track (≥80%)', value: teamData.filter(m => pct(m.social.done, m.social.target) >= 80).length },
-              { label: 'Behind (<60%)', value: teamData.filter(m => pct(m.social.done, m.social.target) < 60).length },
-              { label: 'Explanations Due', value: teamData.reduce((a, m) => a + m.misses, 0) },
-            ].map(card => (
-              <div key={card.label} className="bg-white rounded-xl border border-gray-100 p-4 text-center">
-                <p className="text-2xl font-bold text-gray-900">{card.value}</p>
-                <p className="text-xs text-gray-500 mt-1">{card.label}</p>
-              </div>
-            ))}
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 text-center animate-pulse">
+                  <div className="h-8 bg-gray-200 rounded mb-2 mx-auto w-12" />
+                  <div className="h-3 bg-gray-100 rounded mx-auto w-24" />
+                </div>
+              ))
+            ) : (
+              [
+                { label: 'Team Members', value: teamData.length },
+                { label: 'On Track (≥80%)', value: teamData.filter(m => pct(m.actuals.social, m.targets.social) >= 80).length },
+                { label: 'Behind (<60%)', value: teamData.filter(m => pct(m.actuals.social, m.targets.social) < 60).length },
+                { label: 'No Targets Set', value: teamData.filter(m => m.targets.social === 0 && m.targets.offpage === 0 && m.targets.blog === 0).length },
+              ].map(card => (
+                <div key={card.label} className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+                  <p className="text-2xl font-bold text-gray-900">{card.value}</p>
+                  <p className="text-xs text-gray-500 mt-1">{card.label}</p>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Team table */}
@@ -64,58 +84,74 @@ export default function TargetsPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
-                    {['Team Member', 'Social Media', 'Off-Page', 'Blog Posts', 'Misses', 'Actions'].map(h => (
+                    {['Team Member', 'Social Media', 'Off-Page', 'Blog Posts', 'Actions'].map(h => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {teamData.map(member => {
-                    const sp = pct(member.social.done, member.social.target)
-                    const op = pct(member.offpage.done, member.offpage.target)
-                    const bp = pct(member.blog.done, member.blog.target)
-                    return (
-                      <tr key={member.name} className="hover:bg-gray-50">
+                  {loading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <tr key={i} className="animate-pulse">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">{member.avatar}</div>
-                            <span className="font-medium text-gray-900">{member.name}</span>
+                            <div className="w-8 h-8 rounded-full bg-gray-200" />
+                            <div className="h-4 bg-gray-200 rounded w-28" />
                           </div>
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full min-w-[60px]">
-                              <div className={`h-full rounded-full ${barColor(sp)}`} style={{ width: `${sp}%` }} />
-                            </div>
-                            <span className={`text-xs font-medium ${pctColor(sp)}`}>{member.social.done}/{member.social.target}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full min-w-[60px]">
-                              <div className={`h-full rounded-full ${barColor(op)}`} style={{ width: `${op}%` }} />
-                            </div>
-                            <span className={`text-xs font-medium ${pctColor(op)}`}>{member.offpage.done}/{member.offpage.target}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-sm font-medium ${pctColor(bp)}`}>{member.blog.done}/{member.blog.target}</span>
-                        </td>
-                        <td className="px-4 py-3">
-                          {member.misses > 0 ? (
-                            <span className="flex items-center gap-1 text-red-600 text-xs font-medium">
-                              <AlertCircle className="h-3.5 w-3.5" /> {member.misses} week{member.misses > 1 ? 's' : ''}
-                            </span>
-                          ) : (
-                            <span className="text-green-600 text-xs font-medium">&#10003; On track</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <button className="text-xs text-sky-600 hover:text-sky-700 font-medium">View Details</button>
-                        </td>
+                        {[0, 1, 2].map(j => (
+                          <td key={j} className="px-4 py-3"><div className="h-3 bg-gray-100 rounded w-24" /></td>
+                        ))}
+                        <td className="px-4 py-3"><div className="h-3 bg-gray-100 rounded w-16" /></td>
                       </tr>
-                    )
-                  })}
+                    ))
+                  ) : teamData.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">No team members found</td>
+                    </tr>
+                  ) : (
+                    teamData.map(member => {
+                      const sp = pct(member.actuals.social, member.targets.social)
+                      const op = pct(member.actuals.offpage, member.targets.offpage)
+                      const bp = pct(member.actuals.blog, member.targets.blog)
+                      return (
+                        <tr key={member.user_id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              {member.avatar_url ? (
+                                <img src={member.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">{member.avatar_initials}</div>
+                              )}
+                              <span className="font-medium text-gray-900">{member.full_name}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-1.5 bg-gray-100 rounded-full min-w-[60px]">
+                                <div className={`h-full rounded-full ${barColor(sp)}`} style={{ width: `${Math.min(sp, 100)}%` }} />
+                              </div>
+                              <span className={`text-xs font-medium ${pctColor(sp)}`}>{member.actuals.social}/{member.targets.social}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-1.5 bg-gray-100 rounded-full min-w-[60px]">
+                                <div className={`h-full rounded-full ${barColor(op)}`} style={{ width: `${Math.min(op, 100)}%` }} />
+                              </div>
+                              <span className={`text-xs font-medium ${pctColor(op)}`}>{member.actuals.offpage}/{member.targets.offpage}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`text-sm font-medium ${pctColor(bp)}`}>{member.actuals.blog}/{member.targets.blog}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button className="text-xs text-sky-600 hover:text-sky-700 font-medium">View Details</button>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
                 </tbody>
               </table>
             </div>

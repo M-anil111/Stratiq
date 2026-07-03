@@ -22,36 +22,85 @@ const statusColors: Record<string, string> = {
 
 function today() { return new Date().toISOString().split('T')[0] }
 
+const emptyForm = () => ({
+  platform: '', type: 'image', status: 'live', live_link: '',
+  submission_date: today(), username: '', password: '', comment: '',
+})
+
 export default function SocialMediaPage({ params }: { params: { id: string; projectId: string } }) {
   const [posts, setPosts] = useState<any[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [editEntry, setEditEntry] = useState<any | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({
-    platform: '', type: 'image', status: 'live', live_link: '',
-    submission_date: today(), username: '', password: '', comment: '',
-  })
+  const [form, setForm] = useState(emptyForm())
   const [showPassword, setShowPassword] = useState(false)
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }))
 
+  const openAdd = () => { setEditEntry(null); setForm(emptyForm()); setShowForm(true) }
+  const openEdit = (post: any) => {
+    setEditEntry(post)
+    setForm({
+      platform: post.platform || '',
+      type: post.type || 'image',
+      status: post.status || 'live',
+      live_link: post.live_link || '',
+      submission_date: post.submission_date || today(),
+      username: post.username || '',
+      password: '',
+      comment: post.comment || '',
+    })
+    setShowForm(true)
+  }
+  const closeModal = () => { setShowForm(false); setEditEntry(null) }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await fetch(`/api/projects/${params.projectId}/social-media`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, status: form.status.toLowerCase().replace(' ', '_') }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setPosts(p => [data, ...p])
-        setShowForm(false)
-        setForm({ platform: '', type: 'image', status: 'live', live_link: '', submission_date: today(), username: '', password: '', comment: '' })
+      const payload = { ...form, status: form.status.toLowerCase().replace(' ', '_') }
+      if (editEntry) {
+        const res = await fetch(`/api/projects/${params.projectId}/social-media/${editEntry.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setPosts(p => p.map(x => x.id === editEntry.id ? data : x))
+          closeModal()
+        }
+      } else {
+        const res = await fetch(`/api/projects/${params.projectId}/social-media`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setPosts(p => [data, ...p])
+          closeModal()
+        }
       }
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteId) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/projects/${params.projectId}/social-media/${deleteId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setPosts(p => p.filter(x => x.id !== deleteId))
+        setDeleteId(null)
+      }
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -74,7 +123,7 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <h2 className="font-semibold text-gray-900">Posts ({posts.length})</h2>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={openAdd}
             className="flex items-center gap-2 px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium rounded-lg transition-colors"
           >
             <Plus className="h-4 w-4" />
@@ -118,10 +167,20 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                     <td className="px-4 py-3 text-gray-500">{post.submission_date}</td>
                     <td className="px-4 py-3 text-gray-500 max-w-[150px] truncate">{post.comment}</td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        <button className="p-1 text-gray-400 hover:text-sky-600"><Edit2 className="h-4 w-4" /></button>
-                        <button className="p-1 text-gray-400 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
-                      </div>
+                      {deleteId === post.id ? (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className="text-gray-600">Delete?</span>
+                          <button onClick={() => setDeleteId(null)} className="px-2 py-0.5 border border-gray-300 rounded text-gray-600 hover:bg-gray-50">Cancel</button>
+                          <button onClick={handleDelete} disabled={deleting} className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded disabled:opacity-60">
+                            {deleting ? '...' : 'Delete'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-1">
+                          <button onClick={() => openEdit(post)} className="p-1 text-gray-400 hover:text-sky-600"><Edit2 className="h-4 w-4" /></button>
+                          <button onClick={() => setDeleteId(post.id)} className="p-1 text-gray-400 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -141,13 +200,13 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
         </div>
       </div>
 
-      {/* Add Post Modal */}
+      {/* Add/Edit Post Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40">
           <div className="bg-white w-full max-w-lg rounded-2xl p-6 shadow-xl">
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-lg font-semibold">Add Social Media Post</h3>
-              <button onClick={() => setShowForm(false)}><X className="h-5 w-5 text-gray-400" /></button>
+              <h3 className="text-lg font-semibold">{editEntry ? 'Edit Social Media Post' : 'Add Social Media Post'}</h3>
+              <button onClick={closeModal}><X className="h-5 w-5 text-gray-400" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -196,10 +255,10 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                 <textarea className={`${inputClass} resize-none h-20`} value={form.comment} onChange={set('comment')} placeholder="Optional notes..." />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button type="button" onClick={closeModal} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
                 <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-sky-500 hover:bg-sky-600 disabled:opacity-60 text-white rounded-lg text-sm font-medium">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {saving ? 'Saving...' : 'Save Post'}
+                  {saving ? 'Saving...' : editEntry ? 'Update Post' : 'Save Post'}
                 </button>
               </div>
             </form>

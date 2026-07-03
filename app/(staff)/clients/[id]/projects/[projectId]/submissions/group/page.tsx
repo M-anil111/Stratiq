@@ -39,6 +39,9 @@ const emptyForm = () => ({
 export default function GroupPage({ params }: { params: { id: string; projectId: string } }) {
   const [entries, setEntries] = useState<any[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [editEntry, setEditEntry] = useState<any | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState(emptyForm())
@@ -46,23 +49,71 @@ export default function GroupPage({ params }: { params: { id: string; projectId:
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }))
 
+  const openAdd = () => { setEditEntry(null); setForm(emptyForm()); setShowForm(true) }
+  const openEdit = (entry: any) => {
+    setEditEntry(entry)
+    setForm({
+      platform: entry.platform || '',
+      group_name: entry.group_name || '',
+      group_url: entry.group_url || '',
+      post_type: entry.post_type || 'text',
+      post_content: entry.post_content || '',
+      live_link: entry.live_link || '',
+      status: entry.status || 'live',
+      submission_date: entry.submission_date || today(),
+      username: entry.username || '',
+      password: '',
+      member_count: entry.member_count ? String(entry.member_count) : '',
+      comment: entry.comment || '',
+    })
+    setShowForm(true)
+  }
+  const closeModal = () => { setShowForm(false); setEditEntry(null) }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await fetch(`/api/projects/${params.projectId}/group-postings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, status: form.status.toLowerCase().replace(/ /g, '_') }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setEntries(p => [data, ...p])
-        setShowForm(false)
-        setForm(emptyForm())
+      const payload = { ...form, status: form.status.toLowerCase().replace(/ /g, '_') }
+      if (editEntry) {
+        const res = await fetch(`/api/projects/${params.projectId}/group-postings/${editEntry.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setEntries(p => p.map(x => x.id === editEntry.id ? data : x))
+          closeModal()
+        }
+      } else {
+        const res = await fetch(`/api/projects/${params.projectId}/group-postings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setEntries(p => [data, ...p])
+          closeModal()
+        }
       }
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteId) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/projects/${params.projectId}/group-postings/${deleteId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setEntries(p => p.filter(x => x.id !== deleteId))
+        setDeleteId(null)
+      }
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -72,7 +123,7 @@ export default function GroupPage({ params }: { params: { id: string; projectId:
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <h2 className="font-semibold text-gray-900">Group Postings ({entries.length})</h2>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={openAdd}
             className="flex items-center gap-2 px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium rounded-lg transition-colors"
           >
             <Plus className="h-4 w-4" />
@@ -117,10 +168,20 @@ export default function GroupPage({ params }: { params: { id: string; projectId:
                     </td>
                     <td className="px-4 py-3 text-gray-500">{entry.submission_date}</td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        <button className="p-1 text-gray-400 hover:text-sky-600"><Edit2 className="h-4 w-4" /></button>
-                        <button className="p-1 text-gray-400 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
-                      </div>
+                      {deleteId === entry.id ? (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className="text-gray-600">Delete?</span>
+                          <button onClick={() => setDeleteId(null)} className="px-2 py-0.5 border border-gray-300 rounded text-gray-600 hover:bg-gray-50">Cancel</button>
+                          <button onClick={handleDelete} disabled={deleting} className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded disabled:opacity-60">
+                            {deleting ? '...' : 'Delete'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-1">
+                          <button onClick={() => openEdit(entry)} className="p-1 text-gray-400 hover:text-sky-600"><Edit2 className="h-4 w-4" /></button>
+                          <button onClick={() => setDeleteId(entry.id)} className="p-1 text-gray-400 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -139,13 +200,13 @@ export default function GroupPage({ params }: { params: { id: string; projectId:
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Add/Edit Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40">
           <div className="bg-white w-full max-w-lg rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-lg font-semibold">Add Group Posting</h3>
-              <button onClick={() => setShowForm(false)}><X className="h-5 w-5 text-gray-400" /></button>
+              <h3 className="text-lg font-semibold">{editEntry ? 'Edit Group Posting' : 'Add Group Posting'}</h3>
+              <button onClick={closeModal}><X className="h-5 w-5 text-gray-400" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -210,10 +271,10 @@ export default function GroupPage({ params }: { params: { id: string; projectId:
                 <textarea className={`${inputClass} resize-none h-16`} value={form.comment} onChange={set('comment')} placeholder="Optional notes..." />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button type="button" onClick={closeModal} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
                 <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-sky-500 hover:bg-sky-600 disabled:opacity-60 text-white rounded-lg text-sm font-medium">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {saving ? 'Saving...' : 'Save'}
+                  {saving ? 'Saving...' : editEntry ? 'Update' : 'Save'}
                 </button>
               </div>
             </form>
