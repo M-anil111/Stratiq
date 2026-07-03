@@ -25,6 +25,12 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [msgInput, setMsgInput] = useState('')
   const [sending, setSending] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const [reports, setReports] = useState<any[]>([])
+  const [reportsLoading, setReportsLoading] = useState(false)
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  })
 
   useEffect(() => {
     fetch(`/api/clients/${params.id}`)
@@ -43,6 +49,16 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       fetch(`/api/clients/${params.id}/files`).then(r => r.json()).then(d => setFiles(d || []))
     }
   }, [activeTab, params.id])
+
+  useEffect(() => {
+    if (activeTab === 2) {
+      setReportsLoading(true)
+      fetch(`/api/clients/${params.id}/reports?month=${selectedMonth}`)
+        .then(r => r.json())
+        .then(d => { setReports(Array.isArray(d) ? d : []); setReportsLoading(false) })
+        .catch(() => setReportsLoading(false))
+    }
+  }, [activeTab, params.id, selectedMonth])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -212,12 +228,89 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       )}
 
       {/* Reports */}
-      {activeTab === 2 && (
-        <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-400">
-          <p className="font-medium">Client reports coming soon</p>
-          <a href="/reports/marketing" className="mt-3 inline-block text-sm text-sky-600 hover:text-sky-700">Go to Marketing Reports →</a>
-        </div>
-      )}
+      {activeTab === 2 && (() => {
+        const googleData = reports.find(r => r.channel === 'google_ads')
+        const metaData = reports.find(r => r.channel === 'meta_ads')
+        const now = new Date()
+        const monthOptions: string[] = []
+        for (let i = 0; i < 6; i++) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+          monthOptions.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+        }
+        const fmtNum = (v: any) => v != null ? Number(v).toLocaleString() : '—'
+        const fmtMoney = (v: any) => v != null ? `$${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'
+        const fmtPct = (v: any) => v != null ? `${Number(v).toFixed(2)}%` : '—'
+        const fmtRoas = (v: any) => v != null ? `${Number(v).toFixed(2)}x` : '—'
+        return (
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-base font-semibold text-gray-700">Marketing Reports</h2>
+              <select
+                value={selectedMonth}
+                onChange={e => setSelectedMonth(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              >
+                {monthOptions.map(m => {
+                  const [y, mo] = m.split('-')
+                  const label = new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                  return <option key={m} value={m}>{label}</option>
+                })}
+              </select>
+            </div>
+            {reportsLoading ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {[0, 1].map(i => <div key={i} className="h-48 bg-gray-100 rounded-xl animate-pulse" />)}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Google Ads */}
+                <div className="bg-gray-50 rounded-xl border border-gray-100 p-5">
+                  <h3 className="text-sm font-semibold text-sky-500 mb-4">Google Ads</h3>
+                  {googleData ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: 'Impressions', value: fmtNum(googleData.impressions) },
+                        { label: 'Clicks', value: fmtNum(googleData.clicks) },
+                        { label: 'Conversions', value: fmtNum(googleData.conversions) },
+                        { label: 'Spend', value: fmtMoney(googleData.spend) },
+                        { label: 'CTR', value: googleData.ctr != null ? fmtPct(googleData.ctr) : (googleData.impressions && googleData.clicks ? fmtPct((googleData.clicks / googleData.impressions) * 100) : '—') },
+                      ].map(row => (
+                        <div key={row.label} className="bg-white rounded-lg p-3 border border-gray-100">
+                          <p className="text-xs text-gray-500">{row.label}</p>
+                          <p className="text-sm font-semibold text-gray-900 mt-0.5">{row.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-32 text-gray-400 text-sm">No data synced yet</div>
+                  )}
+                </div>
+                {/* Meta Ads */}
+                <div className="bg-gray-50 rounded-xl border border-gray-100 p-5">
+                  <h3 className="text-sm font-semibold text-sky-500 mb-4">Meta Ads</h3>
+                  {metaData ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: 'Impressions', value: fmtNum(metaData.impressions) },
+                        { label: 'Clicks', value: fmtNum(metaData.clicks) },
+                        { label: 'Spend', value: fmtMoney(metaData.spend) },
+                        { label: 'ROAS', value: fmtRoas(metaData.roas) },
+                      ].map(row => (
+                        <div key={row.label} className="bg-white rounded-lg p-3 border border-gray-100">
+                          <p className="text-xs text-gray-500">{row.label}</p>
+                          <p className="text-sm font-semibold text-gray-900 mt-0.5">{row.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-32 text-gray-400 text-sm">No data synced yet</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Messages */}
       {activeTab === 3 && (
