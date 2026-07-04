@@ -50,9 +50,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     await supabase.from('clients').update({ google_drive_folder_id: folderId }).eq('id', params.id)
   }
 
-  const { name } = await req.json()
+  const body = await req.json()
+  const { name, parent_folder_id } = body
   if (!name?.trim()) return NextResponse.json({ error: 'name is required' }, { status: 400 })
 
-  const newFolderId = await createProjectFolder(supabase, folderId, name.trim())
+  const targetParent = parent_folder_id || folderId
+  const newFolderId = await createProjectFolder(supabase, targetParent, name.trim())
   return NextResponse.json({ id: newFolderId, name: name.trim() }, { status: 201 })
 }

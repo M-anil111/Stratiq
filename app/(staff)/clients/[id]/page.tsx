@@ -279,10 +279,14 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     setCreatingFolder(true)
     await fetch(`/api/clients/${params.id}/drive/folders`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newFolderName.trim() }),
+      body: JSON.stringify({ name: newFolderName.trim(), parent_folder_id: currentFolderId }),
     })
     setNewFolderName(''); setShowNewFolder(false); setCreatingFolder(false)
-    await loadDrive(null)
+    if (currentFolderId) {
+      await loadDrive(currentFolderId)
+    } else {
+      await loadDrive(null)
+    }
   }
 
   const sendMessage = async () => {
