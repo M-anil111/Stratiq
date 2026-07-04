@@ -303,13 +303,26 @@ export default function IntegrationsPage() {
               {qbStatus === 'loading' ? (
                 <div className="h-9 w-24 skeleton rounded-xl" />
               ) : qbStatus === 'connected' ? (
-                <button
-                  onClick={handleQbDisconnect}
-                  disabled={qbDisconnecting}
-                  className="px-3 py-1.5 text-sm border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/10 transition-all disabled:opacity-50"
-                >
-                  {qbDisconnecting ? 'Disconnecting...' : 'Disconnect'}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async () => {
+                      const res = await fetch('/api/integrations/quickbooks/items/sync', { method: 'POST' })
+                      const d = await res.json()
+                      if (res.ok) setBanner({ type: 'success', message: `QB Products & Services synced — ${d.synced} items imported` })
+                      else setBanner({ type: 'error', message: d.error || 'Sync failed' })
+                    }}
+                    className="px-3 py-1.5 text-sm border border-white/[0.08] text-slate-300 rounded-xl hover:bg-white/[0.06] transition-all"
+                  >
+                    Sync Products
+                  </button>
+                  <button
+                    onClick={handleQbDisconnect}
+                    disabled={qbDisconnecting}
+                    className="px-3 py-1.5 text-sm border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/10 transition-all disabled:opacity-50"
+                  >
+                    {qbDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+                  </button>
+                </div>
               ) : (
                 <a href="/api/auth/quickbooks/connect" className="btn-brand">
                   Connect QuickBooks

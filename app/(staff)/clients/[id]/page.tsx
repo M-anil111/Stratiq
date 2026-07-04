@@ -1044,7 +1044,26 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
               <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">{qbCustomersError}</div>
             ) : (
               <div className="space-y-3">
-                {savedQbCustomer && <div className="text-xs text-slate-400">Current: <span className="text-slate-300 font-medium">{savedQbCustomer.ad_account_name || savedQbCustomer.ad_account_id}</span></div>}
+                {savedQbCustomer && <div className="text-xs text-slate-400">Mapped to: <span className="text-slate-300 font-medium">{savedQbCustomer.ad_account_name || savedQbCustomer.ad_account_id}</span></div>}
+                {/* Auto-create QB customer from this client */}
+                {!savedQbCustomer && (
+                  <button onClick={async () => {
+                    setSavingQb(true)
+                    const res = await fetch('/api/integrations/quickbooks/customers/create', {
+                      method: 'POST', headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ clientId: params.id }),
+                    })
+                    const d = await res.json()
+                    if (res.ok) setSavedQbCustomer({ ad_account_id: d.qb_customer_id, ad_account_name: d.display_name })
+                    setSavingQb(false)
+                  }} disabled={savingQb}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm btn-brand font-medium rounded-lg disabled:opacity-50">
+                    {savingQb ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    {savingQb ? 'Creating in QuickBooks…' : '+ Auto-create QB Customer from this client'}
+                  </button>
+                )}
+                {/* Or pick an existing QB customer */}
+                <p className="text-xs text-slate-500">{savedQbCustomer ? 'Or re-map to a different QB customer:' : 'Or link an existing QB customer:'}</p>
                 <div className="flex gap-2">
                   <select value={selectedQbCustomer} onChange={e => setSelectedQbCustomer(e.target.value)} className={sel}>
                     <option value="">Select QB customer…</option>
