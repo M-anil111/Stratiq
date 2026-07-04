@@ -42,7 +42,7 @@ export default function ReportBuilderPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetch('/api/clients').then(r => r.json()).then(d => setAllClients(Array.isArray(d) ? d : (d?.data ?? [])))
+    fetch('/api/clients').then(r => r.json()).then(d => setAllClients(d?.clients || (Array.isArray(d) ? d : [])))
   }, [])
 
   const filteredClients = allClients.filter(c =>

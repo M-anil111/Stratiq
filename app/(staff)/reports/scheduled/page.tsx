@@ -22,17 +22,11 @@ interface ScheduledReport {
   status: 'active' | 'paused'
 }
 
-// Stub data
-const STUB_REPORTS: ScheduledReport[] = [
-  { id: '1', client: 'Acme Corp', type: 'Google Ads', frequency: 'Monthly', recipients: ['john@acme.com', 'jane@acme.com'], day: '1', nextRun: 'Aug 1, 2026', status: 'active' },
-  { id: '2', client: 'Blue Ocean', type: 'Marketing Summary', frequency: 'Weekly', recipients: ['cmo@blueocean.io'], day: 'Monday', nextRun: 'Jul 7, 2026', status: 'active' },
-  { id: '3', client: 'Nova Labs', type: 'Meta Ads', frequency: 'Monthly', recipients: ['reports@novalabs.co'], day: '5', nextRun: 'Aug 5, 2026', status: 'paused' },
-]
-
 export default function ScheduledReportsPage() {
-  const [reports, setReports] = useState<ScheduledReport[]>(STUB_REPORTS)
+  const [reports, setReports] = useState<ScheduledReport[]>([])
   const [modalOpen, setModalOpen] = useState(false)
   const [clients, setClients] = useState<Client[]>([])
+  const [saving, setSaving] = useState(false)
 
   // Modal form state
   const [fClientId, setFClientId] = useState('')
@@ -44,7 +38,11 @@ export default function ScheduledReportsPage() {
 
   useEffect(() => {
     fetch('/api/clients').then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setClients(data)
+      const list = data?.clients || (Array.isArray(data) ? data : [])
+      setClients(list)
+    }).catch(() => {})
+    fetch('/api/reports/scheduled').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setReports(data)
     }).catch(() => {})
   }, [])
 
@@ -73,24 +71,36 @@ export default function ScheduledReportsPage() {
     if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addEmail() }
   }
 
-  function handleSchedule() {
+  async function handleSchedule() {
     const clientName = clients.find(c => c.id === fClientId)?.company_name ?? fClientId
-    const newReport: ScheduledReport = {
-      id: Date.now().toString(),
-      client: clientName || 'Unknown Client',
-      type: fType,
-      frequency: fFrequency,
-      recipients: fRecipients,
-      day: fDay,
-      nextRun: 'Scheduled',
-      status: 'active',
+    setSaving(true)
+    const res = await fetch('/api/reports/scheduled', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: fClientId,
+        client: clientName || 'Unknown Client',
+        type: fType,
+        frequency: fFrequency,
+        recipients: fRecipients,
+        day: fDay,
+      }),
+    })
+    setSaving(false)
+    if (res.ok) {
+      const newReport = await res.json()
+      setReports(r => [{ ...newReport, nextRun: 'Scheduled', status: 'active' }, ...r])
     }
-    setReports(r => [newReport, ...r])
     setModalOpen(false)
   }
 
-  function deleteReport(id: string) {
+  async function deleteReport(id: string) {
     setReports(r => r.filter(rep => rep.id !== id))
+    await fetch('/api/reports/scheduled', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
   }
 
   const dayOptions = fFrequency === 'Weekly' ? DAYS_OF_WEEK : DAYS_OF_MONTH
@@ -259,7 +269,7 @@ export default function ScheduledReportsPage() {
                 className="flex-1 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] transition-all text-sm font-medium">
                 Cancel
               </button>
-              <button onClick={handleSchedule} disabled={!fClientId || fRecipients.length === 0}
+              <button onClick={handleSchedule} disabled={saving || !fClientId || fRecipients.length === 0}
                 className="flex-1 btn-brand py-2.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
                 Schedule Report
               </button>
