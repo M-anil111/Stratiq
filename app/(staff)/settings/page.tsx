@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Building2, Plug, Bell, Sliders, Shield } from 'lucide-react'
+import { Building2, Plug, Bell, Sliders, Shield, Globe } from 'lucide-react'
 
 const settingsSections = [
   { href: '/settings/company', icon: Building2, label: 'Company Profile', description: 'Organization name, logo, and branding' },
@@ -7,6 +7,7 @@ const settingsSections = [
   { href: '/settings/notifications', icon: Bell, label: 'Notifications', description: 'Email and push notification preferences' },
   { href: '/settings/custom-fields', icon: Sliders, label: 'Custom Fields', description: 'Add custom fields to clients and projects' },
   { href: '/settings/security', icon: Shield, label: 'Security & Sessions', description: 'Sessions, 2FA, and access controls' },
+  { href: '/settings/directory-sites', icon: Globe, label: 'Directory Sites', description: 'Manage websites used in off-page submission dropdowns' },
 ]
 
 export default function SettingsPage() {

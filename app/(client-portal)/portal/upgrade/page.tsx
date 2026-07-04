@@ -1,119 +1,126 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { Check, Zap, Star, ArrowRight } from 'lucide-react'
+import { useState } from 'react'
+import { TrendingUp, Target, Search, Phone } from 'lucide-react'
 
-interface Recommendation {
-  id: string
-  title: string
-  description: string
-  monthly_price: number
-  priority: string
-  category: string
-}
+const SERVICES = [
+  {
+    id: 'google_ads',
+    icon: TrendingUp,
+    title: 'Google Ads',
+    description: 'Reach high-intent customers at the exact moment they search. Data-driven campaigns that maximise your return on ad spend.',
+    price: '$800',
+    color: 'from-sky-500/10 to-blue-500/5',
+    iconColor: 'text-sky-400',
+    iconBg: 'bg-sky-500/10',
+  },
+  {
+    id: 'meta_ads',
+    icon: Target,
+    title: 'Meta Ads',
+    description: 'Laser-targeted Facebook & Instagram campaigns that build brand awareness and drive conversions across your ideal audience.',
+    price: '$700',
+    color: 'from-violet-500/10 to-purple-500/5',
+    iconColor: 'text-violet-400',
+    iconBg: 'bg-violet-500/10',
+  },
+  {
+    id: 'seo_package',
+    icon: Search,
+    title: 'SEO Package',
+    description: 'Dominate organic search rankings with on-page optimisation, link building, and content strategy that compounds over time.',
+    price: '$1,200',
+    color: 'from-emerald-500/10 to-teal-500/5',
+    iconColor: 'text-emerald-400',
+    iconBg: 'bg-emerald-500/10',
+  },
+]
 
-const priorityColors: Record<string, string> = {
-  high: 'bg-amber-50 border-amber-200',
-  medium: 'bg-sky-50 border-sky-200',
-  low: 'bg-gray-50 border-gray-100',
-}
-
-const priorityBadges: Record<string, string> = {
-  high: 'bg-amber-100 text-amber-800',
-  medium: 'bg-sky-100 text-sky-800',
-  low: 'bg-gray-100 text-gray-600',
+function Toast({ message, onClose }: { message: string; onClose: () => void }) {
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl glass-card border border-emerald-500/30 shadow-lg animate-float-up">
+      <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+      <p className="text-sm text-white font-medium">{message}</p>
+      <button onClick={onClose} className="ml-2 text-slate-400 hover:text-white transition-colors text-lg leading-none">&times;</button>
+    </div>
+  )
 }
 
 export default function PortalUpgradePage() {
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([])
-  const [loading, setLoading] = useState(true)
-  const [interested, setInterested] = useState<string[]>([])
-  const [submitted, setSubmitted] = useState(false)
+  const [toast, setToast] = useState('')
+  const [loading, setLoading] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetch('/api/portal/upsell').then(r => r.json()).then(d => { setRecommendations(d || []); setLoading(false) })
-  }, [])
-
-  const toggle = (id: string) => setInterested(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id])
-
-  const handleSubmit = async () => {
+  const handleCta = async (serviceId: string) => {
+    setLoading(serviceId)
     await fetch('/api/portal/upsell', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ interested_in: interested }),
-    })
-    setSubmitted(true)
+      body: JSON.stringify({ service: serviceId }),
+    }).catch(() => {})
+    setLoading(null)
+    setToast('Our team will reach out within 24 hours!')
+    setTimeout(() => setToast(''), 5000)
   }
 
-  if (loading) return (
-    <div className="p-4 lg:p-8 space-y-4">
-      {[1,2,3].map(i => <div key={i} className="h-36 bg-gray-100 rounded-xl animate-pulse" />)}
-    </div>
-  )
-
-  if (submitted) return (
-    <div className="p-4 lg:p-8 flex flex-col items-center justify-center min-h-[400px] text-center">
-      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-        <Check className="h-8 w-8 text-green-600" />
-      </div>
-      <h2 className="text-xl font-bold text-gray-900 mb-2">Request Sent!</h2>
-      <p className="text-gray-500 max-w-sm">Your account manager will be in touch within 1 business day to discuss adding these services.</p>
-    </div>
-  )
-
   return (
-    <div className="p-4 lg:p-8">
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-2">
-          <Zap className="h-5 w-5 text-amber-500" />
-          <h1 className="text-2xl font-bold text-gray-900">Grow Your Results</h1>
-        </div>
-        <p className="text-gray-500">Add services to amplify your marketing performance. Select the ones you're interested in and we'll reach out.</p>
+    <div className="p-4 lg:p-8 max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="mb-10 text-center">
+        <h1 className="text-3xl font-bold mb-3">
+          <span className="bg-gradient-to-r from-sky-400 via-violet-400 to-emerald-400 bg-clip-text text-transparent">
+            Grow Your Business
+          </span>
+        </h1>
+        <p className="text-slate-400 max-w-lg mx-auto">
+          Supercharge your marketing with our proven services. Select what you need and our team will tailor a strategy just for you.
+        </p>
       </div>
 
-      {recommendations.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-gray-400">
-          <Star className="h-12 w-12 mx-auto mb-4 opacity-30" />
-          <p className="font-medium">You're already on a comprehensive plan!</p>
-          <p className="text-sm mt-1">Contact your account manager to discuss custom options</p>
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            {recommendations.map(rec => {
-              const isSelected = interested.includes(rec.id)
-              return (
-                <button key={rec.id} onClick={() => toggle(rec.id)}
-                  className={`text-left rounded-xl border p-5 transition-all ${isSelected ? 'border-sky-500 bg-sky-50 ring-2 ring-sky-500' : priorityColors[rec.priority]}`}>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${priorityBadges[rec.priority]}`}>
-                          {rec.priority === 'high' ? '🔥 Recommended' : rec.priority === 'medium' ? 'Popular' : rec.category}
-                        </span>
-                      </div>
-                      <h3 className="font-semibold text-gray-900">{rec.title}</h3>
-                    </div>
-                    <div className={`w-5 h-5 rounded-full border-2 shrink-0 mt-0.5 flex items-center justify-center ${isSelected ? 'bg-sky-500 border-sky-500' : 'border-gray-300'}`}>
-                      {isSelected && <Check className="h-3 w-3 text-white" />}
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-3">{rec.description}</p>
-                  <p className="text-sm font-semibold text-gray-900">From ${rec.monthly_price.toLocaleString()}<span className="font-normal text-gray-500">/month</span></p>
-                </button>
-              )
-            })}
-          </div>
-
-          {interested.length > 0 && (
-            <div className="sticky bottom-4 bg-white rounded-xl border border-gray-100 shadow-lg p-4 flex items-center justify-between gap-4">
-              <p className="text-sm text-gray-700 font-medium">{interested.length} service{interested.length > 1 ? 's' : ''} selected</p>
-              <button onClick={handleSubmit} className="flex items-center gap-2 px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium rounded-lg">
-                Request a Quote <ArrowRight className="h-4 w-4" />
+      {/* Service cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
+        {SERVICES.map(svc => {
+          const Icon = svc.icon
+          return (
+            <div
+              key={svc.id}
+              className={`glass-card p-6 flex flex-col bg-gradient-to-br ${svc.color} animate-float-up relative overflow-hidden`}
+            >
+              <div className={`w-11 h-11 rounded-xl ${svc.iconBg} flex items-center justify-center mb-4`}>
+                <Icon className={`h-5 w-5 ${svc.iconColor}`} />
+              </div>
+              <h2 className="text-lg font-semibold text-white mb-2">{svc.title}</h2>
+              <p className="text-sm text-slate-400 flex-1 mb-4">{svc.description}</p>
+              <p className="text-xs text-slate-500 mb-4">Starting from <span className="text-white font-semibold">{svc.price}</span>/month</p>
+              <button
+                onClick={() => handleCta(svc.id)}
+                disabled={loading === svc.id}
+                className="btn-brand w-full py-2 text-sm disabled:opacity-60"
+              >
+                {loading === svc.id ? 'Sending...' : 'Get Started'}
               </button>
             </div>
-          )}
-        </>
-      )}
+          )
+        })}
+      </div>
+
+      {/* CTA section */}
+      <div className="glass-card p-8 text-center bg-gradient-to-br from-sky-500/10 via-transparent to-violet-500/10">
+        <div className="w-12 h-12 rounded-full bg-white/[0.06] flex items-center justify-center mx-auto mb-4">
+          <Phone className="h-5 w-5 text-sky-400" />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2">Book a Free Strategy Call</h2>
+        <p className="text-slate-400 text-sm mb-6 max-w-md mx-auto">
+          Not sure where to start? Talk to one of our specialists — we'll map out the highest-impact opportunities for your business at no cost.
+        </p>
+        <button
+          onClick={() => handleCta('strategy_call')}
+          disabled={loading === 'strategy_call'}
+          className="btn-brand px-8 py-3 text-sm font-semibold disabled:opacity-60"
+        >
+          {loading === 'strategy_call' ? 'Sending...' : 'Book a Free Strategy Call'}
+        </button>
+      </div>
+
+      {toast && <Toast message={toast} onClose={() => setToast('')} />}
     </div>
   )
 }
