@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClientFolder } from '@/lib/google-drive'
+import { sendEmail } from '@/lib/email/index'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
       num_employees: body.num_employees ? parseInt(body.num_employees) : null,
       project_status: body.project_status || 'active',
       services: body.services || [],
+      service_packages: body.service_packages || [],
       advertising_types: body.advertising_types || [],
       goals: body.goals || [],
       stakeholder_expectations: body.stakeholder_expectations || [],
@@ -75,6 +77,9 @@ export async function POST(request: NextRequest) {
       website_last_updated: body.website_last_updated || null,
       ndisk_link: body.ndisk_link,
       google_drive_folder_url: body.google_drive_folder_url,
+      proposal_url: body.proposal_url || null,
+      google_place_id: body.google_place_id || null,
+      proposal_status: 'pending_approval',
     })
     .select()
     .single()
@@ -87,6 +92,74 @@ export async function POST(request: NextRequest) {
     await supabase.from('clients').update({ google_drive_folder_id: folderId }).eq('id', data.id)
     data.google_drive_folder_id = folderId
   } catch { /* Drive not connected or env var missing — skip */ }
+
+  // Send approval email (non-fatal)
+  try {
+    const pkgs: any[] = body.service_packages || []
+    const totalMonthly = pkgs.reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0)
+    const totalSetup = pkgs.reduce((s: number, p: any) => s + (parseFloat(p.setup_fee) || 0), 0)
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://stratiq-ivory.vercel.app'
+
+    const servicesHtml = pkgs.map((p: any) => `
+      <tr>
+        <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#e2e8f0;font-size:14px">${p.service}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#94a3b8;font-size:13px">${p.billing_term} · ${p.contract_term}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#38bdf8;font-size:14px;font-weight:600;text-align:right">$${parseFloat(p.price).toLocaleString()}/mo</td>
+      </tr>
+      ${parseFloat(p.setup_fee) > 0 ? `<tr><td colspan="2" style="padding:4px 12px;color:#64748b;font-size:12px">  └ Setup fee</td><td style="padding:4px 12px;color:#94a3b8;font-size:12px;text-align:right">$${parseFloat(p.setup_fee).toLocaleString()}</td></tr>` : ''}
+    `).join('')
+
+    await sendEmail({
+      to: 'jay@jaymehta.co',
+      subject: `New Client Added: ${body.company_name} — $${totalMonthly.toLocaleString()}/mo — Approval Required`,
+      html: `
+        <div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;background:#0a1628;color:#e2e8f0;border-radius:12px;overflow:hidden">
+          <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:24px 32px">
+            <h1 style="margin:0;font-size:22px;color:#fff">New Client — Approval Required</h1>
+            <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px">Review and approve to create the QuickBooks customer & invoice</p>
+          </div>
+          <div style="padding:32px">
+            <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+              <tr><td style="padding:6px 0;color:#64748b;font-size:13px;width:140px">Company</td><td style="color:#f1f5f9;font-weight:600">${body.company_name}</td></tr>
+              <tr><td style="padding:6px 0;color:#64748b;font-size:13px">Website</td><td style="color:#f1f5f9">${body.website}</td></tr>
+              <tr><td style="padding:6px 0;color:#64748b;font-size:13px">Industry</td><td style="color:#f1f5f9">${body.industry || '—'}</td></tr>
+              <tr><td style="padding:6px 0;color:#64748b;font-size:13px">Contact</td><td style="color:#f1f5f9">${body.email} · ${body.phone}</td></tr>
+              <tr><td style="padding:6px 0;color:#64748b;font-size:13px">Location</td><td style="color:#f1f5f9">${[body.city, body.state, body.country].filter(Boolean).join(', ') || '—'}</td></tr>
+              <tr><td style="padding:6px 0;color:#64748b;font-size:13px">Status</td><td style="color:#f1f5f9">${body.project_status}</td></tr>
+              ${body.proposal_url ? `<tr><td style="padding:6px 0;color:#64748b;font-size:13px">Proposal</td><td><a href="${body.proposal_url}" style="color:#38bdf8">View Proposal</a></td></tr>` : ''}
+            </table>
+
+            <h3 style="color:#38bdf8;font-size:13px;letter-spacing:0.05em;text-transform:uppercase;margin:0 0 12px">Services & Pricing</h3>
+            <table style="width:100%;border-collapse:collapse;background:#0f1e35;border-radius:8px;overflow:hidden;margin-bottom:24px">
+              <thead>
+                <tr style="background:#162030">
+                  <th style="padding:10px 12px;text-align:left;color:#64748b;font-size:12px;font-weight:500">Service</th>
+                  <th style="padding:10px 12px;text-align:left;color:#64748b;font-size:12px;font-weight:500">Terms</th>
+                  <th style="padding:10px 12px;text-align:right;color:#64748b;font-size:12px;font-weight:500">Price</th>
+                </tr>
+              </thead>
+              <tbody>${servicesHtml}</tbody>
+              <tfoot>
+                <tr style="background:#162030">
+                  <td colspan="2" style="padding:12px;color:#f1f5f9;font-weight:700;font-size:14px">Monthly Total</td>
+                  <td style="padding:12px;color:#38bdf8;font-weight:700;font-size:18px;text-align:right">$${totalMonthly.toLocaleString()}/mo</td>
+                </tr>
+                ${totalSetup > 0 ? `<tr><td colspan="2" style="padding:4px 12px 12px;color:#64748b;font-size:12px">One-time Setup</td><td style="padding:4px 12px 12px;color:#94a3b8;font-size:13px;text-align:right">$${totalSetup.toLocaleString()}</td></tr>` : ''}
+              </tfoot>
+            </table>
+
+            <div style="display:flex;gap:12px;margin-bottom:32px">
+              <a href="${appUrl}/clients/${data.id}" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">View Client in Stratiq →</a>
+            </div>
+
+            ${body.goals?.length ? `<p style="color:#64748b;font-size:13px"><strong style="color:#94a3b8">Goals:</strong> ${body.goals.join(', ')}</p>` : ''}
+            ${body.stakeholder_expectations?.length ? `<p style="color:#64748b;font-size:13px"><strong style="color:#94a3b8">Expectations:</strong> ${body.stakeholder_expectations.join(', ')}</p>` : ''}
+            ${body.target_audience ? `<p style="color:#64748b;font-size:13px"><strong style="color:#94a3b8">Target Audience:</strong> ${body.target_audience}</p>` : ''}
+          </div>
+        </div>
+      `,
+    })
+  } catch { /* Email may fail if Resend not configured — don't block */ }
 
   return NextResponse.json(data, { status: 201 })
 }
