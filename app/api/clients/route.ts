@@ -83,6 +83,15 @@ export async function POST(request: NextRequest) {
       proposal_url: body.proposal_url || null,
       google_place_id: body.google_place_id || null,
       proposal_status: 'pending_approval',
+      contact_first_name: body.contact_first_name || null,
+      contact_last_name: body.contact_last_name || null,
+      domain_name: body.domain_name || null,
+      domain_registrar: body.domain_registrar || null,
+      domain_expiry: body.domain_expiry || null,
+      hosting_provider: body.hosting_provider || null,
+      hosting_expiry: body.hosting_expiry || null,
+      nameservers: body.nameservers || null,
+      hosting_notes: body.hosting_notes || null,
     })
     .select()
     .single()
