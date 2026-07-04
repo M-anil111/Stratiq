@@ -24,7 +24,10 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     .eq('organization_id', userData.organization_id)
     .order('created_at', { ascending: false })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json([])
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json(data)
 }
 
