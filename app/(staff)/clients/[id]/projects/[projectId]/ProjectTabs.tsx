@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import CredentialsTab from './CredentialsTab'
+import TrackingToolsTab from './TrackingToolsTab'
+import SocialAccountsTab from './SocialAccountsTab'
 
-const TABS = ['Project Info', 'Submission Details', 'Reporting', 'Files', 'Credentials']
+const TABS = ['Project Info', 'Submission Details', 'Reporting', 'Files', 'Credentials', 'Tracking Tools', 'Social Accounts']
 
 export default function ProjectTabs({ projectId }: { projectId: string }) {
   const [activeTab, setActiveTab] = useState(0)
@@ -28,6 +30,10 @@ export default function ProjectTabs({ projectId }: { projectId: string }) {
 
       {activeTab === 4 ? (
         <CredentialsTab projectId={projectId} />
+      ) : activeTab === 5 ? (
+        <TrackingToolsTab projectId={projectId} />
+      ) : activeTab === 6 ? (
+        <SocialAccountsTab projectId={projectId} />
       ) : (
         <div className="p-6 text-center text-slate-400">
           <p className="font-medium">Connect your Supabase database to view project details.</p>
