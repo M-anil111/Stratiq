@@ -56,6 +56,33 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     if (activeTab === 4) {
       fetch(`/api/clients/${params.id}/files`).then(r => r.json()).then(d => setFiles(d || []))
     }
+    if (activeTab === 5) {
+      // Load existing integration
+      fetch(`/api/clients/${params.id}/integrations`)
+        .then(r => r.json())
+        .then(d => {
+          if (Array.isArray(d)) {
+            const meta = d.find((i: any) => i.platform === 'meta_ads')
+            if (meta) setSavedMetaAccount(meta)
+          }
+        })
+      // Load available ad accounts
+      setMetaAccountsLoading(true)
+      setMetaAccountsError(null)
+      fetch('/api/integrations/meta-ads/accounts')
+        .then(r => r.json())
+        .then(d => {
+          if (d.error === 'not_connected') {
+            setMetaAccountsError('not_connected')
+          } else if (d.error) {
+            setMetaAccountsError(d.error)
+          } else {
+            setMetaAccounts(d)
+          }
+          setMetaAccountsLoading(false)
+        })
+        .catch(() => { setMetaAccountsError('Failed to load accounts'); setMetaAccountsLoading(false) })
+    }
   }, [activeTab, params.id])
 
   useEffect(() => {
