@@ -14,7 +14,7 @@ export async function GET() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()
 
-  const [clientsRes, projectsRes, socialRes, offpageRes, blogRes, onpageRes, groupRes, targetsRes] = await Promise.all([
+  const [clientsRes, projectsRes, socialRes, offpageRes, blogRes, onpageRes, groupRes, targetsRes, invoicesRes] = await Promise.all([
     supabase.from('clients').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
     supabase.from('projects').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'active'),
     supabase.from('social_media_postings').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).gte('submission_date', monthStart).lte('submission_date', monthEnd),
@@ -23,6 +23,7 @@ export async function GET() {
     supabase.from('onpage_details').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', monthStart).lte('created_at', monthEnd),
     supabase.from('group_postings').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).gte('submission_date', monthStart).lte('submission_date', monthEnd),
     supabase.from('activity_targets').select('social_target,offpage_target,blog_target').eq('organization_id', orgId).eq('month', `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`),
+    supabase.from('invoices').select('total, amount_paid, status').eq('organization_id', orgId).gte('issue_date', monthStart.slice(0, 10)).lte('issue_date', monthEnd.slice(0, 10)),
   ])
 
   const totalActivities = (socialRes.count || 0) + (offpageRes.count || 0) + (blogRes.count || 0) + (onpageRes.count || 0) + (groupRes.count || 0)
@@ -36,11 +37,19 @@ export async function GET() {
     }
   }
 
+  const invoiceData = invoicesRes.data || []
+  const invoice_revenue_this_month = invoiceData.reduce((s, i) => s + (parseFloat(String(i.total)) || 0), 0)
+  const invoice_outstanding = invoiceData
+    .filter(i => i.status !== 'paid' && i.status !== 'voided')
+    .reduce((s, i) => s + Math.max(0, (parseFloat(String(i.total)) || 0) - (parseFloat(String(i.amount_paid)) || 0)), 0)
+
   return NextResponse.json({
     total_clients: clientsRes.count || 0,
     active_projects: projectsRes.count || 0,
     activities_this_month: totalActivities,
     targets_hit_pct: targetsHitPct,
+    invoice_revenue_this_month,
+    invoice_outstanding,
   })
 }
 

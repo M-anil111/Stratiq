@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Users, FolderOpen, Activity, TrendingUp, Plus, ArrowRight,
-  Sparkles, GripVertical, Search, X,
+  Sparkles, GripVertical, Search, X, DollarSign, AlertCircle,
 } from 'lucide-react'
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
@@ -20,6 +20,8 @@ interface Stats {
   active_projects: number
   activities_this_month: number
   targets_hit_pct: number
+  invoice_revenue_this_month?: number
+  invoice_outstanding?: number
 }
 
 interface ActivityItem {
@@ -133,6 +135,16 @@ export default function DashboardPage() {
       label: 'Targets Hit', value: stats ? `${stats.targets_hit_pct}%` : null,
       icon: TrendingUp, href: '/targets',
       gradient: 'from-violet-500/20 to-violet-600/10', iconColor: 'text-violet-400', iconBg: 'bg-violet-500/15 border-violet-500/20',
+    },
+    {
+      label: 'Revenue This Month', value: stats?.invoice_revenue_this_month != null ? `$${stats.invoice_revenue_this_month.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : null,
+      icon: DollarSign, href: '/invoices',
+      gradient: 'from-emerald-500/20 to-teal-600/10', iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/15 border-emerald-500/20',
+    },
+    {
+      label: 'Outstanding', value: stats?.invoice_outstanding != null ? `$${stats.invoice_outstanding.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : null,
+      icon: AlertCircle, href: '/invoices',
+      gradient: 'from-amber-500/20 to-orange-600/10', iconColor: 'text-amber-400', iconBg: 'bg-amber-500/15 border-amber-500/20',
     },
   ]
 
