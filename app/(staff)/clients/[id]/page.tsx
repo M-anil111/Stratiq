@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Edit2, Globe, Mail, Phone, MapPin, ExternalLink, Send, FileText, Plus, Folder } from 'lucide-react'
+import { ArrowLeft, Edit2, Globe, Mail, Phone, MapPin, ExternalLink, Send, FileText, Plus, Folder, RefreshCw, CheckCircle } from 'lucide-react'
 
 const statusColors: Record<string, string> = {
   active: 'bg-emerald-500/20 text-emerald-400',
@@ -12,7 +12,7 @@ const statusColors: Record<string, string> = {
   prospect: 'bg-blue-500/20 text-blue-400',
 }
 
-const TABS = ['Overview', 'Projects', 'Reports', 'Messages', 'Files']
+const TABS = ['Overview', 'Projects', 'Reports', 'Messages', 'Files', 'Integrations']
 
 export default function ClientDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -27,6 +27,14 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const bottomRef = useRef<HTMLDivElement>(null)
   const [reports, setReports] = useState<any[]>([])
   const [reportsLoading, setReportsLoading] = useState(false)
+  const [metaAccounts, setMetaAccounts] = useState<any[]>([])
+  const [metaAccountsLoading, setMetaAccountsLoading] = useState(false)
+  const [metaAccountsError, setMetaAccountsError] = useState<string | null>(null)
+  const [selectedMetaAccount, setSelectedMetaAccount] = useState('')
+  const [savedMetaAccount, setSavedMetaAccount] = useState<any>(null)
+  const [savingMeta, setSavingMeta] = useState(false)
+  const [syncingMeta, setSyncingMeta] = useState(false)
+  const [metaSyncDone, setMetaSyncDone] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date()
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
