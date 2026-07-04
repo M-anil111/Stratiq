@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Shield, LogOut, Loader2 } from 'lucide-react'
 
 const mockSessions = [
@@ -12,6 +12,17 @@ export default function SecuritySettingsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  const [auditLog, setAuditLog] = useState<any[]>([])
+  const [auditLoading, setAuditLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/audit-log')
+      .then(res => res.json())
+      .then(data => setAuditLog(Array.isArray(data) ? data : []))
+      .catch(() => setAuditLog([]))
+      .finally(() => setAuditLoading(false))
+  }, [])
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }))
@@ -76,6 +87,58 @@ export default function SecuritySettingsPage() {
             {saving ? 'Updating...' : 'Update Password'}
           </button>
         </form>
+      </div>
+      {/* Audit Log */}
+      <div className="glass-card p-5">
+        <h2 className="font-semibold text-white mb-4">Audit Log</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/[0.08]">
+                <th className="text-left py-2 px-3 text-slate-400 font-medium">Timestamp</th>
+                <th className="text-left py-2 px-3 text-slate-400 font-medium">Action</th>
+                <th className="text-left py-2 px-3 text-slate-400 font-medium">User</th>
+                <th className="text-left py-2 px-3 text-slate-400 font-medium">IP Address</th>
+                <th className="text-left py-2 px-3 text-slate-400 font-medium">Details</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.06]">
+              {auditLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i}>
+                    <td className="py-2.5 px-3"><div className="h-3 skeleton rounded w-32" /></td>
+                    <td className="py-2.5 px-3"><div className="h-3 skeleton rounded w-24" /></td>
+                    <td className="py-2.5 px-3"><div className="h-3 skeleton rounded w-36" /></td>
+                    <td className="py-2.5 px-3"><div className="h-3 skeleton rounded w-24" /></td>
+                    <td className="py-2.5 px-3"><div className="h-3 skeleton rounded w-40" /></td>
+                  </tr>
+                ))
+              ) : auditLog.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-slate-400 text-sm">No audit log entries</td>
+                </tr>
+              ) : (
+                auditLog.map(entry => (
+                  <tr key={entry.id} className="hover:bg-white/[0.03]">
+                    <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">
+                      {new Date(entry.created_at).toLocaleString()}
+                    </td>
+                    <td className="py-2.5 px-3 text-slate-300 font-medium whitespace-nowrap">{entry.action}</td>
+                    <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">
+                      {entry.users?.email || entry.user_id || '—'}
+                    </td>
+                    <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap font-mono text-xs">
+                      {entry.ip_address || '—'}
+                    </td>
+                    <td className="py-2.5 px-3 text-slate-500 max-w-xs truncate">
+                      {entry.details ? (typeof entry.details === 'string' ? entry.details : JSON.stringify(entry.details)) : '—'}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )
