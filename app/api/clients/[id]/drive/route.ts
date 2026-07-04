@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClientFolder, listFiles } from '@/lib/google-drive'
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -30,8 +30,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     }
   }
 
+  // Allow browsing a specific subfolder
+  const queryFolderId = req.nextUrl.searchParams.get('folder_id')
+  const targetFolder = queryFolderId || folderId
+
   try {
-    const files = await listFiles(supabase, folderId)
+    const files = await listFiles(supabase, targetFolder)
     return NextResponse.json({ folder_id: folderId, files })
   } catch (err: any) {
     return NextResponse.json({ folder_id: folderId, files: [], error: err.message })
