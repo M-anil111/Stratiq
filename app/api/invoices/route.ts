@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const clientId = req.nextUrl.searchParams.get('clientId')
   let query = supabase
     .from('invoices')
-    .select('*, client:clients(company_name, display_name)')
+    .select('*, client:clients(company_name)')
     .eq('organization_id', userData.organization_id)
     .order('issue_date', { ascending: false })
 

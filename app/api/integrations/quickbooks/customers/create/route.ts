@@ -32,15 +32,11 @@ export async function POST(req: NextRequest) {
       ? 'https://sandbox-quickbooks.api.intuit.com'
       : 'https://quickbooks.api.intuit.com'
 
-    // Display name logic matches Stratiq: use display_name, else company_name, else contact name
-    const displayName = client.display_name || client.company_name ||
-      [client.contact_first_name, client.contact_last_name].filter(Boolean).join(' ')
+    const displayName = client.company_name || 'Unknown'
 
     const qbCustomer: Record<string, any> = {
       DisplayName: displayName,
       CompanyName: client.company_name || undefined,
-      GivenName: client.contact_first_name || undefined,
-      FamilyName: client.contact_last_name || undefined,
       PrimaryEmailAddr: client.email ? { Address: client.email } : undefined,
       PrimaryPhone: client.phone ? { FreeFormNumber: client.phone } : undefined,
       BillAddr: client.street_address ? {

@@ -60,6 +60,8 @@ export default function InvoicesPage() {
   const [savingInvoice, setSavingInvoice] = useState(false)
   const [pushingQb, setPushingQb] = useState<string | null>(null)
   const [pushMsg, setPushMsg] = useState<Record<string, string>>({})
+  const [sendingEmail, setSendingEmail] = useState<string | null>(null)
+  const [sendMsg, setSendMsg] = useState<Record<string, string>>({})
   const [newInvoice, setNewInvoice] = useState({
     client_id: '',
     issue_date: new Date().toISOString().slice(0, 10),
@@ -173,6 +175,16 @@ export default function InvoicesPage() {
     setPushMsg(prev => ({ ...prev, [inv.id]: res.ok ? 'Pushed to QB!' : (d.error || 'Failed') }))
     if (res.ok) loadInvoices()
     setTimeout(() => setPushMsg(prev => { const n = { ...prev }; delete n[inv.id]; return n }), 4000)
+  }
+
+  const sendInvoiceEmail = async (inv: Invoice) => {
+    setSendingEmail(inv.id)
+    const res = await fetch(`/api/invoices/${inv.id}/send`, { method: 'POST' })
+    const d = await res.json()
+    setSendingEmail(null)
+    setSendMsg(prev => ({ ...prev, [inv.id]: res.ok ? 'Sent!' : (d.error || 'Failed') }))
+    if (res.ok) loadInvoices()
+    setTimeout(() => setSendMsg(prev => { const n = { ...prev }; delete n[inv.id]; return n }), 4000)
   }
 
   const updateStatus = async (inv: Invoice, status: string) => {
@@ -432,20 +444,29 @@ export default function InvoicesPage() {
                       }
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => sendInvoiceEmail(inv)}
+                          disabled={sendingEmail === inv.id}
+                          title="Email invoice to client"
+                          className="text-xs px-2 py-1.5 border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-lg transition-all disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
+                        >
+                          {sendingEmail === inv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                          {sendMsg[inv.id] || 'Email'}
+                        </button>
                         <button
                           onClick={() => pushToQb(inv)}
                           disabled={pushingQb === inv.id}
                           title="Push to QuickBooks"
-                          className="text-xs px-2.5 py-1.5 border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-lg transition-all disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
+                          className="text-xs px-2 py-1.5 border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-lg transition-all disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
                         >
                           {pushingQb === inv.id
                             ? <Loader2 className="h-3 w-3 animate-spin" />
                             : pushMsg[inv.id]
                               ? (pushMsg[inv.id].includes('fail') || pushMsg[inv.id].includes('error') || pushMsg[inv.id].includes('No ') ? <AlertCircle className="h-3 w-3 text-red-400" /> : <CheckCircle2 className="h-3 w-3 text-emerald-400" />)
-                              : <Send className="h-3 w-3" />
+                              : <span className="font-bold text-[10px]">QB</span>
                           }
-                          {pushMsg[inv.id] || 'Push QB'}
+                          {pushMsg[inv.id] || 'Push'}
                         </button>
                         <Link href={`/clients/${inv.client_id}?tab=invoices`} title="View in client" className="text-slate-500 hover:text-slate-300 transition-colors">
                           <ExternalLink className="h-3.5 w-3.5" />

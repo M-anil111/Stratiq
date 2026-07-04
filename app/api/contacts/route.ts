@@ -13,38 +13,29 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from('clients')
-    .select('id, company_name, contact_first_name, contact_last_name, project_status, service_packages, display_name')
+    .select('id, company_name, project_status, service_packages')
     .eq('organization_id', userData.organization_id)
-    .order('contact_first_name')
+    .order('company_name')
 
   if (q) {
-    query = query.or(
-      `contact_first_name.ilike.%${q}%,contact_last_name.ilike.%${q}%,company_name.ilike.%${q}%`
-    )
+    query = query.ilike('company_name', `%${q}%`)
   }
 
   const { data, error } = await query
   if (error) return NextResponse.json([], { status: 200 })
 
-  // Group by contact person (first + last name)
-  const contactMap = new Map<string, { contact_first_name: string; contact_last_name: string; businesses: any[] }>()
-  for (const row of data || []) {
-    const key = `${row.contact_first_name || ''}|${row.contact_last_name || ''}`
-    if (!contactMap.has(key)) {
-      contactMap.set(key, {
-        contact_first_name: row.contact_first_name || '',
-        contact_last_name: row.contact_last_name || '',
-        businesses: [],
-      })
-    }
-    contactMap.get(key)!.businesses.push({
+  // Return each client as a "contact" entry for backwards compatibility
+  const contacts = (data || []).map(row => ({
+    contact_first_name: '',
+    contact_last_name: '',
+    businesses: [{
       id: row.id,
       company_name: row.company_name,
-      display_name: row.display_name,
+      display_name: row.company_name,
       project_status: row.project_status,
       mrr: (row.service_packages || []).reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0),
-    })
-  }
+    }],
+  }))
 
-  return NextResponse.json(Array.from(contactMap.values()))
+  return NextResponse.json(contacts)
 }
