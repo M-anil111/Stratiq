@@ -38,7 +38,7 @@ export default function ComparisonReportsPage() {
 
   useEffect(() => {
     fetch('/api/clients').then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setClients(data)
+      setClients(data?.clients || (Array.isArray(data) ? data : []))
     })
   }, [])
 
