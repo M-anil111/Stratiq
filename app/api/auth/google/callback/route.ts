@@ -1,25 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
-  const code = request.nextUrl.searchParams.get('code')
-  const stateParam = request.nextUrl.searchParams.get('state')
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL!
+  const { searchParams } = new URL(request.url)
+  const code = searchParams.get('code')
+  if (!code) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings/integrations?error=no_code`)
 
-  if (!code || !stateParam) {
-    return NextResponse.redirect(`${appUrl}/settings/integrations?error=missing_params`)
-  }
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/login`)
 
-  let orgId: string
-  let redirectTo: string = '/settings/integrations'
-
-  try {
-    const decoded = JSON.parse(Buffer.from(stateParam, 'base64').toString('utf-8'))
-    orgId = decoded.org_id
-    redirectTo = decoded.redirect_to || redirectTo
-  } catch {
-    return NextResponse.redirect(`${appUrl}/settings/integrations?error=invalid_state`)
-  }
+  const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
+  const org_id = userData?.organization_id
 
   // Exchange code for tokens
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
@@ -29,30 +21,25 @@ export async function GET(request: NextRequest) {
       code,
       client_id: process.env.GOOGLE_CLIENT_ID!,
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      redirect_uri: `${appUrl}/api/auth/google/callback`,
+      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`,
       grant_type: 'authorization_code',
     }),
   })
+  const tokens = await tokenRes.json()
+  if (tokens.error) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings/integrations?error=token_exchange`)
 
-  const tokenData = await tokenRes.json()
-  if (tokenData.error) {
-    return NextResponse.redirect(`${appUrl}/settings/integrations?error=token_exchange_failed`)
+  const expiry = Date.now() + (tokens.expires_in * 1000)
+
+  // Store tokens in organization_settings
+  const entries = [
+    { organization_id: org_id, key: 'google_access_token', value: tokens.access_token },
+    { organization_id: org_id, key: 'google_refresh_token', value: tokens.refresh_token },
+    { organization_id: org_id, key: 'google_token_expiry', value: String(expiry) },
+    { organization_id: org_id, key: 'google_connected', value: 'true' },
+  ]
+  for (const entry of entries) {
+    await supabase.from('organization_settings').upsert(entry, { onConflict: 'organization_id,key' })
   }
 
-  const { access_token, refresh_token, expires_in } = tokenData
-  const expiry = new Date(Date.now() + (expires_in || 3600) * 1000).toISOString()
-
-  const admin = createAdminClient()
-  const settings = [
-    { organization_id: orgId, key: 'google_access_token', value: access_token, updated_at: new Date().toISOString() },
-    { organization_id: orgId, key: 'google_refresh_token', value: refresh_token || '', updated_at: new Date().toISOString() },
-    { organization_id: orgId, key: 'google_token_expiry', value: expiry, updated_at: new Date().toISOString() },
-    { organization_id: orgId, key: 'google_connected', value: 'true', updated_at: new Date().toISOString() },
-  ]
-
-  await admin
-    .from('organization_settings')
-    .upsert(settings, { onConflict: 'organization_id,key' })
-
-  return NextResponse.redirect(`${appUrl}${redirectTo}?connected=google`)
+  return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings/integrations?connected=google`)
 }

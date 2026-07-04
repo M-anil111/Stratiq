@@ -382,6 +382,116 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         </div>
       )}
 
+      {/* Integrations */}
+      {activeTab === 5 && (
+        <div className="max-w-2xl space-y-6">
+          {/* Meta Ads */}
+          <div className="glass-card p-5">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xl">🔷</span>
+              <div>
+                <h2 className="font-semibold text-white">Meta Ads</h2>
+                <p className="text-xs text-slate-400">Connect a Meta ad account to sync campaign data for this client</p>
+              </div>
+              {savedMetaAccount && (
+                <span className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
+                  <CheckCircle className="h-3 w-3" /> Mapped
+                </span>
+              )}
+            </div>
+
+            {metaAccountsError === 'not_connected' ? (
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-4 text-sm text-amber-300">
+                Meta Ads is not connected yet.{' '}
+                <a href="/settings/integrations" className="underline hover:text-amber-200">Connect it in Settings → Integrations</a>
+              </div>
+            ) : metaAccountsLoading ? (
+              <div className="h-10 skeleton rounded-lg" />
+            ) : metaAccountsError ? (
+              <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">{metaAccountsError}</div>
+            ) : (
+              <div className="space-y-3">
+                {savedMetaAccount && (
+                  <div className="text-xs text-slate-400">
+                    Current: <span className="text-slate-300 font-medium">{savedMetaAccount.ad_account_name || savedMetaAccount.ad_account_id}</span>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <select
+                    value={selectedMetaAccount}
+                    onChange={e => setSelectedMetaAccount(e.target.value)}
+                    className="w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+                  >
+                    <option value="">Select ad account…</option>
+                    {metaAccounts.map(a => (
+                      <option key={a.id} value={a.id}>{a.name} ({a.id})</option>
+                    ))}
+                  </select>
+                  <button
+                    disabled={!selectedMetaAccount || savingMeta}
+                    onClick={async () => {
+                      setSavingMeta(true)
+                      const account = metaAccounts.find(a => a.id === selectedMetaAccount)
+                      const res = await fetch(`/api/clients/${params.id}/integrations`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          platform: 'meta_ads',
+                          ad_account_id: selectedMetaAccount,
+                          ad_account_name: account?.name,
+                        }),
+                      })
+                      if (res.ok) {
+                        const saved = await res.json()
+                        setSavedMetaAccount(saved)
+                        setSelectedMetaAccount('')
+                      }
+                      setSavingMeta(false)
+                    }}
+                    className="btn-brand px-4 py-2 text-sm font-medium rounded-lg disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {savingMeta ? 'Saving…' : 'Save'}
+                  </button>
+                </div>
+
+                {savedMetaAccount && (
+                  <button
+                    disabled={syncingMeta}
+                    onClick={async () => {
+                      setSyncingMeta(true)
+                      setMetaSyncDone(false)
+                      const now = new Date()
+                      const y = now.getFullYear()
+                      const m = now.getMonth() + 1
+                      const period_start = `${y}-${String(m).padStart(2, '0')}-01`
+                      const lastDay = new Date(y, m, 0).getDate()
+                      const period_end = `${y}-${String(m).padStart(2, '0')}-${lastDay}`
+                      await fetch('/api/integrations/meta-ads/sync', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          client_id: params.id,
+                          ad_account_id: savedMetaAccount.ad_account_id,
+                          period_start,
+                          period_end,
+                        }),
+                      })
+                      setSyncingMeta(false)
+                      setMetaSyncDone(true)
+                      setTimeout(() => setMetaSyncDone(false), 3000)
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-lg transition-all disabled:opacity-50"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${syncingMeta ? 'animate-spin' : ''}`} />
+                    {syncingMeta ? 'Syncing…' : metaSyncDone ? 'Synced!' : 'Sync Now'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Files */}
       {activeTab === 4 && (
         <div>
