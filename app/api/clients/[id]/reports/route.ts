@@ -67,7 +67,53 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     .eq('month', month)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json((data || []).map(flattenReport))
+
+  // Auto-calculate SEO counts from submission tables for this month
+  const periodStart = `${year}-${String(month).padStart(2, '0')}-01`
+  const nextMonth = month === 12 ? 1 : month + 1
+  const nextYear = month === 12 ? year + 1 : year
+  const periodEnd = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`
+
+  // Get client's project ids for this org
+  const { data: projects } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('client_id', params.id)
+    .eq('organization_id', userData.organization_id)
+
+  const projectIds = (projects || []).map((p: any) => p.id)
+
+  let seoOffpageCount = 0, seoBlogCount = 0, seoOnpageCount = 0
+  if (projectIds.length > 0) {
+    const [offpageRes, blogRes, onpageRes] = await Promise.all([
+      supabase.from('offpage_submissions')
+        .select('id', { count: 'exact', head: true })
+        .in('project_id', projectIds)
+        .gte('created_at', periodStart)
+        .lt('created_at', periodEnd),
+      supabase.from('blog_submissions')
+        .select('id', { count: 'exact', head: true })
+        .in('project_id', projectIds)
+        .gte('created_at', periodStart)
+        .lt('created_at', periodEnd),
+      supabase.from('onpage_details')
+        .select('id', { count: 'exact', head: true })
+        .in('project_id', projectIds)
+        .gte('created_at', periodStart)
+        .lt('created_at', periodEnd),
+    ])
+    seoOffpageCount = offpageRes.count ?? 0
+    seoBlogCount = blogRes.count ?? 0
+    seoOnpageCount = onpageRes.count ?? 0
+  }
+
+  const seoData = { seo_offpage_count: seoOffpageCount, seo_blog_count: seoBlogCount, seo_onpage_count: seoOnpageCount }
+
+  const flattened = (data || []).map(flattenReport)
+  if (flattened.length === 0) {
+    return NextResponse.json([{ ...seoData }])
+  }
+  return NextResponse.json(flattened.map(r => ({ ...r, ...seoData })))
 }
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
