@@ -57,32 +57,48 @@ export async function POST(req: NextRequest) {
     const invData = await invRes.json()
     const qbInvoices: any[] = invData.QueryResponse?.Invoice || []
 
-    // Upsert invoices into local invoices table
+    // Sync invoices into local invoices table (check existing by qb_invoice_id first)
     let synced = 0
     for (const inv of qbInvoices) {
-      const { error: upsertErr } = await supabase.from('invoices').upsert({
+      const lineItems = (inv.Line || [])
+        .filter((l: any) => l.DetailType === 'SalesItemLineDetail')
+        .map((l: any) => ({
+          description: l.Description || l.SalesItemLineDetail?.ItemRef?.name || '',
+          quantity: l.SalesItemLineDetail?.Qty || 1,
+          unit_price: l.SalesItemLineDetail?.UnitPrice || 0,
+          amount: l.Amount || 0,
+          qb_item_id: l.SalesItemLineDetail?.ItemRef?.value || null,
+        }))
+      const invoiceData = {
         organization_id: userData.organization_id,
         client_id: clientId,
         qb_invoice_id: inv.Id,
         invoice_number: inv.DocNumber || `QB-${inv.Id}`,
-        status: parseFloat(inv.Balance || '0') > 0 ? 'sent' : 'paid',
+        status: (parseFloat(inv.Balance || '0') > 0 ? 'sent' : 'paid') as 'sent' | 'paid',
         total: parseFloat(inv.TotalAmt || '0'),
         subtotal: parseFloat(inv.TotalAmt || '0'),
         amount_paid: parseFloat(inv.TotalAmt || '0') - parseFloat(inv.Balance || '0'),
         issue_date: inv.TxnDate || new Date().toISOString().slice(0, 10),
         due_date: inv.DueDate || null,
-        line_items: (inv.Line || [])
-          .filter((l: any) => l.DetailType === 'SalesItemLineDetail')
-          .map((l: any) => ({
-            description: l.Description || l.SalesItemLineDetail?.ItemRef?.name || '',
-            quantity: l.SalesItemLineDetail?.Qty || 1,
-            unit_price: l.SalesItemLineDetail?.UnitPrice || 0,
-            amount: l.Amount || 0,
-            qb_item_id: l.SalesItemLineDetail?.ItemRef?.value || null,
-          })),
+        line_items: lineItems,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'organization_id,qb_invoice_id' })
-      if (!upsertErr) synced++
+      }
+      // Check if invoice already exists by qb_invoice_id
+      const { data: existing } = await supabase
+        .from('invoices')
+        .select('id')
+        .eq('organization_id', userData.organization_id)
+        .eq('qb_invoice_id', inv.Id)
+        .single()
+      let err
+      if (existing?.id) {
+        const { error } = await supabase.from('invoices').update(invoiceData).eq('id', existing.id)
+        err = error
+      } else {
+        const { error } = await supabase.from('invoices').insert(invoiceData)
+        err = error
+      }
+      if (!err) synced++
     }
 
     return NextResponse.json({
