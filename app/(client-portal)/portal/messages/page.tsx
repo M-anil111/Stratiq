@@ -34,13 +34,13 @@ export default function PortalMessagesPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-80px)]">
-      <div className="p-4 lg:px-8 lg:pt-8 border-b border-gray-100 bg-white">
-        <h1 className="text-xl font-bold text-gray-900">Messages</h1>
+      <div className="p-4 lg:px-8 lg:pt-8 border-b border-white/[0.08]" style={{ background: 'rgba(6,10,18,0.6)' }}>
+        <h1 className="text-xl font-bold text-white">Messages</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 lg:px-8 space-y-4">
         {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-400">
+          <div className="flex items-center justify-center h-full text-slate-400">
             <p className="text-sm">No messages yet. Send your first message below.</p>
           </div>
         ) : (
@@ -48,13 +48,13 @@ export default function PortalMessagesPage() {
             const isMe = msg.sender_type === 'client'
             return (
               <div key={msg.id} className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : ''}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${isMe ? 'bg-sky-100 text-sky-700' : 'bg-gray-100 text-gray-600'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${isMe ? 'bg-sky-500/30 text-sky-400' : 'bg-white/[0.08] text-slate-400'}`}>
                   {(msg.sender_name || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                 </div>
-                <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-sky-500 text-white rounded-br-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm'}`}>
-                  {!isMe && <p className="text-xs font-medium mb-1 text-gray-500">{msg.sender_name}</p>}
+                <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-sky-500/90 text-white rounded-br-sm backdrop-blur-sm' : 'glass text-slate-200 rounded-bl-sm'}`}>
+                  {!isMe && <p className="text-xs font-medium mb-1 text-slate-400">{msg.sender_name}</p>}
                   <p>{msg.content}</p>
-                  <p className={`text-xs mt-1 ${isMe ? 'text-sky-200' : 'text-gray-400'}`}>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                  <p className={`text-xs mt-1 ${isMe ? 'text-sky-200' : 'text-slate-500'}`}>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
               </div>
             )
@@ -63,14 +63,14 @@ export default function PortalMessagesPage() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="p-4 lg:px-8 bg-white border-t border-gray-100">
+      <div className="p-4 lg:px-8 border-t border-white/[0.08]" style={{ background: 'rgba(6,10,18,0.6)' }}>
         <div className="flex items-center gap-3">
           <input value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            className="input-glass flex-1 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
             placeholder="Type a message..." />
           <button onClick={sendMessage} disabled={!input.trim() || sending}
-            className="p-2.5 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white rounded-xl transition-colors">
+            className="btn-brand p-2.5 disabled:opacity-50 rounded-xl transition-all">
             <Send className="h-5 w-5" />
           </button>
         </div>
