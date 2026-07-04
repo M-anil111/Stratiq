@@ -4,6 +4,7 @@ import {
   Plus, Search, Users, Globe, Mail, Phone, MapPin, ExternalLink,
   ChevronRight, Edit2, FileText, Loader2, X, Star, TrendingUp,
   DollarSign, Briefcase, Calendar, Award, CreditCard, Wrench,
+  ChevronDown, ClipboardList, MessageSquare, CheckSquare, PhoneCall,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -104,7 +105,17 @@ export default function ClientsPage() {
   const [clientLoading, setClientLoading] = useState(false)
   const [activeProjectIdx, setActiveProjectIdx] = useState(0)
   const [activeServiceTab, setActiveServiceTab] = useState<'active' | 'expired'>('active')
+  const [showNewMenu, setShowNewMenu] = useState(false)
+  const newMenuRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<NodeJS.Timeout>()
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (newMenuRef.current && !newMenuRef.current.contains(e.target as Node)) setShowNewMenu(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const fetchClients = useCallback((q: string, status: string) => {
     setLoading(true)
@@ -279,21 +290,53 @@ export default function ClientsPage() {
           <div>
             {/* ── TOP INFO BAR ── */}
             <div className="bg-sky-600/20 border-b border-sky-500/20 px-0">
-              <div className="flex items-stretch divide-x divide-white/[0.08] overflow-x-auto">
-                {[
-                  { label: 'Client Since', value: <><span className="text-white font-bold">{formatYear(client.created_at)}</span><span className="text-sky-300 text-xs ml-1">{yearsAgo(client.created_at)}</span></> },
-                  { label: 'Company Name', value: <span className="text-white font-bold text-sm">{client.company_name}</span> },
-                  { label: 'Client ID', value: <span className="text-white font-bold">{clientShortId}</span> },
-                  { label: 'Client Pin', value: <span className="text-white font-bold">{client.client_pin || '—'}</span> },
-                  { label: 'Account Manager', value: <span className="text-white font-semibold">{client.sales_manager?.full_name || '—'}</span> },
-                  { label: 'Contact', value: <a href={`tel:${client.phone}`} className="text-sky-300 hover:text-sky-200 font-medium">{client.phone || '—'}</a> },
-                  { label: 'Email', value: <a href={`mailto:${client.email}`} className="text-sky-300 hover:text-sky-200 font-medium truncate block max-w-[140px]">{client.email || '—'}</a> },
-                ].map((col, i) => (
-                  <div key={i} className="flex flex-col justify-center px-4 py-3 min-w-fit shrink-0">
-                    <p className="text-[10px] text-sky-300/70 uppercase tracking-wider mb-1">{col.label}</p>
-                    <div className="text-sm">{col.value}</div>
+              <div className="flex items-stretch">
+                <div className="flex items-stretch divide-x divide-white/[0.08] overflow-x-auto flex-1">
+                  {[
+                    { label: 'Client Since', value: <><span className="text-white font-bold">{formatYear(client.created_at)}</span><span className="text-sky-300 text-xs ml-1">{yearsAgo(client.created_at)}</span></> },
+                    { label: 'Company Name', value: <span className="text-white font-bold text-sm">{client.company_name}</span> },
+                    { label: 'Client ID', value: <span className="text-white font-bold">{clientShortId}</span> },
+                    { label: 'Account Manager', value: <span className="text-white font-semibold">{client.sales_manager?.full_name || '—'}</span> },
+                    { label: 'Contact', value: <a href={`tel:${client.phone}`} className="text-sky-300 hover:text-sky-200 font-medium">{client.phone || '—'}</a> },
+                    { label: 'Email', value: <a href={`mailto:${client.email}`} className="text-sky-300 hover:text-sky-200 font-medium truncate block max-w-[140px]">{client.email || '—'}</a> },
+                  ].map((col, i) => (
+                    <div key={i} className="flex flex-col justify-center px-4 py-3 min-w-fit shrink-0">
+                      <p className="text-[10px] text-sky-300/70 uppercase tracking-wider mb-1">{col.label}</p>
+                      <div className="text-sm">{col.value}</div>
+                    </div>
+                  ))}
+                </div>
+                {/* ── New + split button ── */}
+                <div ref={newMenuRef} className="relative flex items-center px-3 border-l border-white/[0.08] shrink-0">
+                  <div className="flex rounded-lg overflow-hidden border border-sky-500/40">
+                    <Link href={`/clients/${client.id}`}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs font-semibold transition-colors">
+                      <Plus className="h-3.5 w-3.5" /> New
+                    </Link>
+                    <button onClick={() => setShowNewMenu(v => !v)}
+                      className="px-1.5 py-1.5 bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border-l border-sky-500/30 transition-colors">
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                ))}
+                  {showNewMenu && (
+                    <div className="absolute right-0 top-full mt-1 z-50 w-48 rounded-xl border border-white/[0.12] bg-[#0d1829] shadow-2xl overflow-hidden">
+                      {[
+                        { icon: ClipboardList, label: 'Log Activity', href: `/targets?client=${client.id}` },
+                        { icon: CheckSquare, label: 'Add Task', href: `/clients/${client.id}?tab=tasks` },
+                        { icon: FileText, label: 'Create Invoice', href: `/clients/${client.id}?tab=invoices` },
+                        { icon: MessageSquare, label: 'Add Note', href: `/clients/${client.id}?tab=notes` },
+                        { icon: PhoneCall, label: 'Schedule Call', href: `/clients/${client.id}?tab=activity` },
+                      ].map(item => (
+                        <Link key={item.label} href={item.href}
+                          onClick={() => setShowNewMenu(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.06] text-slate-200 hover:text-white transition-colors text-sm">
+                          <item.icon className="h-4 w-4 text-sky-400 shrink-0" />
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
