@@ -1,7 +1,36 @@
+'use client'
+
 import Link from 'next/link'
 import { FolderOpen, Files, MessageSquare, ArrowRight, TrendingUp } from 'lucide-react'
+import { useEffect, useState } from 'react'
+
+interface PortalStats {
+  active_projects: number
+  files_count: number
+  unread_messages: number
+}
+
+function StatSkeleton() {
+  return (
+    <div className="glass-card p-4 text-center animate-pulse">
+      <div className="h-8 w-8 bg-white/10 rounded mx-auto mb-2" />
+      <div className="h-3 w-16 bg-white/10 rounded mx-auto" />
+    </div>
+  )
+}
 
 export default function PortalHomePage() {
+  const [stats, setStats] = useState<PortalStats | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/portal/stats')
+      .then(r => r.json())
+      .then(data => setStats(data))
+      .catch(() => setStats({ active_projects: 0, files_count: 0, unread_messages: 0 }))
+      .finally(() => setLoading(false))
+  }, [])
+
   return (
     <div>
       {/* Greeting */}
@@ -12,18 +41,28 @@ export default function PortalHomePage() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="glass-card p-4 text-center">
-          <p className="text-2xl font-bold text-white">—</p>
-          <p className="text-xs text-slate-400 mt-1">Active Projects</p>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <p className="text-2xl font-bold text-white">—</p>
-          <p className="text-xs text-slate-400 mt-1">Files</p>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <p className="text-2xl font-bold text-white">—</p>
-          <p className="text-xs text-slate-400 mt-1">Messages</p>
-        </div>
+        {loading ? (
+          <>
+            <StatSkeleton />
+            <StatSkeleton />
+            <StatSkeleton />
+          </>
+        ) : (
+          <>
+            <div className="glass-card p-4 text-center">
+              <p className="text-2xl font-bold text-white">{stats?.active_projects ?? 0}</p>
+              <p className="text-xs text-slate-400 mt-1">Active Projects</p>
+            </div>
+            <div className="glass-card p-4 text-center">
+              <p className="text-2xl font-bold text-white">{stats?.files_count ?? 0}</p>
+              <p className="text-xs text-slate-400 mt-1">Files</p>
+            </div>
+            <div className="glass-card p-4 text-center">
+              <p className="text-2xl font-bold text-white">{stats?.unread_messages ?? 0}</p>
+              <p className="text-xs text-slate-400 mt-1">Messages</p>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Upsell card */}
