@@ -196,11 +196,21 @@ function MultiChip({ options, value, onChange }: { options: string[]; value: str
   )
 }
 
-function PlacesInput({ value, onChange }: { value: string; onChange: (name: string, placeId?: string) => void }) {
+interface PlaceDetails {
+  name: string; phone: string; website: string
+  street_address: string; city: string; state: string; country: string
+}
+
+function PlacesInput({ value, onChange, onDetails }: {
+  value: string
+  onChange: (name: string, placeId?: string) => void
+  onDetails?: (d: PlaceDetails) => void
+}) {
   const [query, setQuery] = useState(value)
   const [results, setResults] = useState<{ name: string; address: string; place_id: string }[]>([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [fetching, setFetching] = useState(false)
   const [searched, setSearched] = useState(false)
   const timeoutRef = useRef<NodeJS.Timeout>()
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -238,6 +248,26 @@ function PlacesInput({ value, onChange }: { value: string; onChange: (name: stri
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  const selectPlace = async (r: { name: string; place_id: string }) => {
+    setQuery(r.name)
+    onChange(r.name, r.place_id)
+    setOpen(false)
+    if (onDetails) {
+      setFetching(true)
+      try {
+        const res = await fetch(`/api/places/details?place_id=${encodeURIComponent(r.place_id)}`)
+        const d = await res.json()
+        if (!d.error) onDetails(d)
+      } catch { /* non-fatal */ } finally { setFetching(false) }
+    }
+  }
+
+  const useManualName = () => {
+    onChange(query)
+    setOpen(false)
+    setResults([])
+  }
+
   const showDropdown = open && (results.length > 0 || (searched && !loading && query.length >= 2))
 
   return (
@@ -248,8 +278,13 @@ function PlacesInput({ value, onChange }: { value: string; onChange: (name: stri
           placeholder="Search Google Business or type name…" required
           onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)} />
-        {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 animate-spin" />}
+        {(loading || fetching) && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 animate-spin" />}
       </div>
+      {fetching && (
+        <p className="text-xs text-sky-400 mt-1.5 flex items-center gap-1.5">
+          <Loader2 className="h-3 w-3 animate-spin" /> Fetching business details…
+        </p>
+      )}
       {showDropdown && (
         <div className="absolute z-50 mt-1 w-full rounded-xl border border-white/[0.12] bg-[#0f1929] shadow-2xl overflow-hidden">
           {results.length > 0 ? (
@@ -257,18 +292,26 @@ function PlacesInput({ value, onChange }: { value: string; onChange: (name: stri
               {results.map(r => (
                 <button key={r.place_id} type="button"
                   className="w-full text-left px-4 py-3 hover:bg-white/[0.06] transition-colors border-b border-white/[0.05] last:border-0"
-                  onClick={() => { setQuery(r.name); onChange(r.name, r.place_id); setOpen(false) }}>
+                  onClick={() => selectPlace(r)}>
                   <p className="text-sm font-medium text-white">{r.name}</p>
                   <p className="text-xs text-slate-500 mt-0.5">{r.address}</p>
                 </button>
               ))}
-              <div className="px-4 py-2 bg-white/[0.02]">
-                <p className="text-xs text-slate-600">Not listed? Just type the name above and continue.</p>
+              <div className="px-4 py-2 bg-white/[0.02] flex items-center justify-between">
+                <p className="text-xs text-slate-600">Not listed?</p>
+                <button type="button" onClick={useManualName}
+                  className="text-xs text-sky-400 hover:text-sky-300 font-medium">
+                  Add &ldquo;{query}&rdquo; manually →
+                </button>
               </div>
             </>
           ) : (
-            <div className="px-4 py-3">
-              <p className="text-sm text-slate-400">No matches found — just type the business name above and continue.</p>
+            <div className="px-4 py-3 flex items-center justify-between">
+              <p className="text-sm text-slate-400">No Google matches found.</p>
+              <button type="button" onClick={useManualName}
+                className="text-sm text-sky-400 hover:text-sky-300 font-medium shrink-0 ml-3">
+                Add manually →
+              </button>
             </div>
           )}
         </div>
@@ -522,7 +565,16 @@ export default function NewClientPage() {
             <div className="sm:col-span-2">
               <Field label="Company Name" required>
                 <PlacesInput value={form.company_name}
-                  onChange={(name, placeId) => setForm(f => ({ ...f, company_name: name, google_place_id: placeId || '' }))} />
+                  onChange={(name, placeId) => setForm(f => ({ ...f, company_name: name, google_place_id: placeId || '' }))}
+                  onDetails={d => setForm(f => ({
+                    ...f,
+                    phone: d.phone || f.phone,
+                    website: d.website || f.website,
+                    street_address: d.street_address || f.street_address,
+                    city: d.city || f.city,
+                    state: d.state || f.state,
+                    country: d.country || f.country,
+                  }))} />
               </Field>
             </div>
             <Field label="Website / Domain" required hint="Domain only: example.com">

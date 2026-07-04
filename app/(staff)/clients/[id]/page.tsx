@@ -262,37 +262,74 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     </div>
   )
 
+  // Compute quick stats from service_packages
+  const pkgs: any[] = client.service_packages || []
+  const monthlyRevenue = pkgs.reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0)
+  const setupTotal = pkgs.reduce((s: number, p: any) => s + (parseFloat(p.setup_fee) || 0), 0)
+
   return (
     <div className="p-4 lg:p-8">
-      {/* Header */}
-      <div className="flex items-start gap-4 mb-6">
-        <button onClick={() => router.push('/clients')} className="mt-1 p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.06]">
-          <ArrowLeft className="h-5 w-5" />
+      {/* Back + Edit */}
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={() => router.push('/clients')} className="flex items-center gap-1.5 text-slate-400 hover:text-white text-sm">
+          <ArrowLeft className="h-4 w-4" /> All Clients
         </button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-white truncate">{client.company_name}</h1>
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[client.project_status] || 'bg-slate-500/20 text-slate-400'}`}>
-              {client.project_status}
-            </span>
-          </div>
-          {client.website && (
-            <a href={client.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-sky-400 hover:text-sky-300 mt-1">
-              <Globe className="h-3.5 w-3.5" />
-              {client.website.replace(/^https?:\/\//, '')}
-            </a>
-          )}
-        </div>
         <a href={`/clients/${params.id}/edit`} className="flex items-center gap-2 px-3 py-2 border border-white/[0.08] text-slate-300 text-sm font-medium rounded-lg hover:bg-white/[0.06]">
           <Edit2 className="h-4 w-4" /> Edit
         </a>
+      </div>
+
+      {/* Client Header Card — Explore-style */}
+      <div className="glass-card mb-6 overflow-hidden">
+        {/* Top bar: name + key info */}
+        <div className="px-5 pt-5 pb-4 border-b border-white/[0.08]">
+          <div className="flex items-start gap-4 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 flex-wrap mb-1">
+                <h1 className="text-2xl font-bold text-white">{client.company_name}</h1>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[client.project_status] || 'bg-slate-500/20 text-slate-400'}`}>
+                  {client.project_status?.replace(/_/g, ' ')}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm text-slate-400">
+                {client.website && (
+                  <a href={`https://${client.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sky-400 hover:text-sky-300">
+                    <Globe className="h-3.5 w-3.5" />{client.website}
+                  </a>
+                )}
+                {client.email && <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" />{client.email}</span>}
+                {client.phone && <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{client.phone}</span>}
+                {(client.city || client.state) && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" />{[client.city, client.state].filter(Boolean).join(', ')}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-white/[0.06]">
+          {[
+            { label: 'Active Services', value: pkgs.length || client.services?.length || 0, color: 'text-sky-400' },
+            { label: 'Monthly Revenue', value: monthlyRevenue > 0 ? `$${monthlyRevenue.toLocaleString()}` : '—', color: 'text-emerald-400' },
+            { label: 'Setup Fees', value: setupTotal > 0 ? `$${setupTotal.toLocaleString()}` : '—', color: 'text-amber-400' },
+            { label: 'Industry', value: client.industry || '—', color: 'text-slate-300' },
+          ].map(s => (
+            <div key={s.label} className="px-5 py-4">
+              <p className="text-xs text-slate-500 mb-1">{s.label}</p>
+              <p className={`text-lg font-bold ${s.color} truncate`}>{String(s.value)}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Tabs */}
       <div className="flex border-b border-white/[0.08] mb-6 overflow-x-auto">
         {TABS.map((tab, i) => (
           <button key={tab} onClick={() => setActiveTab(i)}
-            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === i ? 'bg-white/[0.08] text-white border-b-2 border-sky-400' : 'border-transparent text-slate-400 hover:text-white'}`}>
+            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === i ? 'text-white border-sky-400' : 'border-transparent text-slate-400 hover:text-white'}`}>
             {tab}
           </button>
         ))}
@@ -300,94 +337,209 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
       {/* Overview */}
       {activeTab === 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="glass-card p-5 space-y-4">
-            <h2 className="font-semibold text-white">Contact & Location</h2>
-            {[
-              { icon: Mail, label: 'Email', value: client.email },
-              { icon: Phone, label: 'Phone', value: client.phone },
-              { icon: MapPin, label: 'Address', value: [client.street_address, client.city, client.state, client.country].filter(Boolean).join(', ') },
-            ].map(row => row.value ? (
-              <div key={row.label} className="flex items-start gap-3">
-                <row.icon className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs text-slate-400">{row.label}</p>
+        <div className="space-y-6">
+          {/* Service Packages */}
+          {pkgs.length > 0 && (
+            <div className="glass-card p-5">
+              <h2 className="font-semibold text-white mb-4">Active Service Packages</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/[0.08]">
+                      <th className="text-left py-2 px-3 text-xs text-slate-500 font-medium">Service</th>
+                      <th className="text-left py-2 px-3 text-xs text-slate-500 font-medium">Billing</th>
+                      <th className="text-left py-2 px-3 text-xs text-slate-500 font-medium">Contract</th>
+                      <th className="text-right py-2 px-3 text-xs text-slate-500 font-medium">Monthly</th>
+                      <th className="text-right py-2 px-3 text-xs text-slate-500 font-medium">Setup</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pkgs.map((p: any, i: number) => (
+                      <tr key={i} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02]">
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-sky-400 shrink-0" />
+                            <span className="text-slate-200 font-medium">{p.service}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-slate-400">{p.billing_term || '—'}</td>
+                        <td className="py-3 px-3 text-slate-400">{p.contract_term || '—'}</td>
+                        <td className="py-3 px-3 text-right text-sky-400 font-semibold">
+                          {p.price ? `$${parseFloat(p.price).toLocaleString()}` : '—'}
+                        </td>
+                        <td className="py-3 px-3 text-right text-slate-400">
+                          {p.setup_fee && parseFloat(p.setup_fee) > 0 ? `$${parseFloat(p.setup_fee).toLocaleString()}` : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-white/[0.08] bg-white/[0.02]">
+                      <td colSpan={3} className="py-3 px-3 text-slate-400 text-xs font-medium">Total</td>
+                      <td className="py-3 px-3 text-right text-emerald-400 font-bold">${monthlyRevenue.toLocaleString()}/mo</td>
+                      <td className="py-3 px-3 text-right text-slate-300 font-semibold">
+                        {setupTotal > 0 ? `$${setupTotal.toLocaleString()}` : '—'}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Contact & Location */}
+            <div className="glass-card p-5 space-y-4">
+              <h2 className="font-semibold text-white text-sm uppercase tracking-wider text-sky-400">Contact</h2>
+              {client.email && (
+                <div className="flex items-start gap-3">
+                  <Mail className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-slate-500">Email</p>
+                    <a href={`mailto:${client.email}`} className="text-sm text-sky-400 hover:text-sky-300">{client.email}</a>
+                  </div>
+                </div>
+              )}
+              {client.phone && (
+                <div className="flex items-start gap-3">
+                  <Phone className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-slate-500">Phone</p>
+                    <a href={`tel:${client.phone}`} className="text-sm text-slate-300 hover:text-white">{client.phone}</a>
+                  </div>
+                </div>
+              )}
+              {[client.street_address, client.city, client.state, client.country].some(Boolean) && (
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-slate-500">Address</p>
+                    <p className="text-sm text-slate-300">{[client.street_address, client.city, client.state, client.country].filter(Boolean).join(', ')}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Business Info */}
+            <div className="glass-card p-5 space-y-4">
+              <h2 className="font-semibold text-sm uppercase tracking-wider text-sky-400">Business</h2>
+              {[
+                { label: 'Industry', value: client.industry },
+                { label: 'Employees', value: client.num_employees ? `${client.num_employees}` : null },
+                { label: 'Target Audience', value: client.target_audience },
+              ].map(row => row.value ? (
+                <div key={row.label}>
+                  <p className="text-xs text-slate-500">{row.label}</p>
                   <p className="text-sm text-slate-300">{row.value}</p>
                 </div>
+              ) : null)}
+              {client.goals?.length > 0 && (
+                <div>
+                  <p className="text-xs text-slate-500 mb-1.5">Goals</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {client.goals.map((g: string) => (
+                      <span key={g} className="px-2 py-0.5 rounded-full text-xs bg-sky-500/10 text-sky-300 border border-sky-500/20">{g}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Team & Links */}
+            <div className="glass-card p-5 space-y-4">
+              <h2 className="font-semibold text-sm uppercase tracking-wider text-sky-400">Team & Links</h2>
+              {client.sales_manager && (
+                <div>
+                  <p className="text-xs text-slate-500">Sales Manager</p>
+                  <p className="text-sm font-medium text-slate-300">{client.sales_manager.full_name}</p>
+                  {client.sales_manager.email && <p className="text-xs text-slate-500">{client.sales_manager.email}</p>}
+                </div>
+              )}
+              {client.dm_manager && (
+                <div>
+                  <p className="text-xs text-slate-500">DM Manager</p>
+                  <p className="text-sm font-medium text-slate-300">{client.dm_manager.full_name}</p>
+                </div>
+              )}
+              <div className="pt-2 space-y-2">
+                {client.google_drive_folder_url && (
+                  <a href={client.google_drive_folder_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300">
+                    <ExternalLink className="h-3.5 w-3.5" /> Google Drive
+                  </a>
+                )}
+                {client.ndisk_link && (
+                  <a href={client.ndisk_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300">
+                    <ExternalLink className="h-3.5 w-3.5" /> nDisk
+                  </a>
+                )}
+                {client.proposal_url && (
+                  <a href={client.proposal_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300">
+                    <FileText className="h-3.5 w-3.5" /> Proposal
+                  </a>
+                )}
               </div>
-            ) : null)}
+            </div>
           </div>
 
-          <div className="glass-card p-5 space-y-4">
-            <h2 className="font-semibold text-white">Business Info</h2>
-            {[
-              { label: 'Industry', value: client.industry },
-              { label: 'Company Size', value: client.num_employees ? `${client.num_employees} employees` : null },
-              { label: 'Services', value: client.services?.join(', ') },
-              { label: 'Advertising Types', value: client.advertising_types?.join(', ') },
-              { label: 'Target Audience', value: client.target_audience },
-            ].map(row => row.value ? (
-              <div key={row.label}>
-                <p className="text-xs text-slate-400">{row.label}</p>
-                <p className="text-sm text-slate-300">{row.value}</p>
-              </div>
-            ) : null)}
-          </div>
-
-          <div className="glass-card p-5 space-y-3">
-            <h2 className="font-semibold text-white">Team</h2>
-            {client.sales_manager && (
-              <div>
-                <p className="text-xs text-slate-400">Sales Manager</p>
-                <p className="text-sm font-medium text-slate-300">{client.sales_manager.full_name}</p>
-              </div>
-            )}
-            {client.dm_manager && (
-              <div>
-                <p className="text-xs text-slate-400">DM Manager</p>
-                <p className="text-sm font-medium text-slate-300">{client.dm_manager.full_name}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="glass-card p-5 space-y-3">
-            <h2 className="font-semibold text-white">Links</h2>
-            {client.google_drive_folder_url && (
-              <a href={client.google_drive_folder_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300">
-                <ExternalLink className="h-3.5 w-3.5" /> Google Drive Folder
-              </a>
-            )}
-            {client.ndisk_link && (
-              <a href={client.ndisk_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300">
-                <ExternalLink className="h-3.5 w-3.5" /> nDisk
-              </a>
-            )}
-          </div>
+          {/* About */}
+          {client.about_company && (
+            <div className="glass-card p-5">
+              <h2 className="font-semibold text-sm uppercase tracking-wider text-sky-400 mb-3">About</h2>
+              <p className="text-sm text-slate-300 leading-relaxed">{client.about_company}</p>
+            </div>
+          )}
         </div>
       )}
 
       {/* Projects */}
       {activeTab === 1 && (
         <div>
-          <div className="flex justify-end mb-4">
-            <a href={`/clients/${params.id}/projects/new`} className="btn-brand flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Projects</h2>
+              <p className="text-sm text-slate-400">{projects.length} project{projects.length !== 1 ? 's' : ''} for {client.company_name}</p>
+            </div>
+            <a href={`/clients/${params.id}/projects/new`} className="btn-brand flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg">
               <Plus className="h-4 w-4" /> Add Project
             </a>
           </div>
+
           {projects.length === 0 ? (
-            <div className="glass-card p-12 text-center text-slate-400">
-              <Globe className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">No projects yet</p>
+            <div className="glass-card p-16 text-center">
+              <div className="w-16 h-16 rounded-full bg-white/[0.05] flex items-center justify-center mx-auto mb-4">
+                <Globe className="h-8 w-8 text-slate-500" />
+              </div>
+              <p className="text-slate-300 font-medium mb-1">No projects yet</p>
+              <p className="text-slate-500 text-sm mb-6">Projects track websites, campaigns, and deliverables for this client.</p>
+              <a href={`/clients/${params.id}/projects/new`} className="btn-brand inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg">
+                <Plus className="h-4 w-4" /> Create First Project
+              </a>
             </div>
           ) : (
             <div className="space-y-3">
-              {projects.map(p => (
-                <a key={p.id} href={`/clients/${params.id}/projects/${p.id}`} className="flex items-center justify-between glass-card p-4 hover:bg-white/[0.03] transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Globe className="h-4 w-4 text-slate-400" />
-                    <span className="font-medium text-white">{p.domain}</span>
+              {projects.map((p, idx) => (
+                <a key={p.id} href={`/clients/${params.id}/projects/${p.id}`}
+                  className="glass-card p-5 hover:bg-white/[0.04] transition-colors block group">
+                  <div className="flex items-start gap-4">
+                    {/* Number badge */}
+                    <div className="w-8 h-8 rounded-full bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 font-bold text-sm shrink-0">
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-wrap mb-2">
+                        <p className="font-semibold text-white group-hover:text-sky-300 transition-colors">{p.domain}</p>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[p.status] || 'bg-slate-500/20 text-slate-400'}`}>
+                          {p.status?.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+                        {p.services?.length > 0 && <span>{p.services.join(' · ')}</span>}
+                        {p.start_date && <span>Started {new Date(p.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                        {p.industry && <span>{p.industry}</span>}
+                      </div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-slate-600 group-hover:text-slate-400 transition-colors shrink-0 mt-1" />
                   </div>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[p.status] || ''}`}>{p.status}</span>
                 </a>
               ))}
             </div>
