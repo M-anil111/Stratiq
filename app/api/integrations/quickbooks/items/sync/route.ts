@@ -50,7 +50,10 @@ export async function POST(_req: NextRequest) {
       const { error: upsertError } = await supabase
         .from('qb_items')
         .upsert(rows, { onConflict: 'organization_id,qb_id' })
-      if (upsertError) return NextResponse.json({ error: upsertError.message }, { status: 500 })
+      if (upsertError) {
+        if (upsertError.code === '42P01') return NextResponse.json({ error: 'qb_items table not set up yet' }, { status: 503 })
+        return NextResponse.json({ error: upsertError.message }, { status: 500 })
+      }
     }
 
     // Mark inactive any items no longer in QB
@@ -60,7 +63,7 @@ export async function POST(_req: NextRequest) {
         .from('qb_items')
         .update({ active: false })
         .eq('organization_id', userData.organization_id)
-        .not('qb_id', 'in', `(${activeIds.map((id: string) => `"${id}"`).join(',')})`)
+        .not('qb_id', 'in', `(${activeIds.join(',')})`)
     }
 
     return NextResponse.json({ synced: rows.length, items: rows })
