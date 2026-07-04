@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Edit2, Globe, Mail, Phone, MapPin, ExternalLink, Send, FileText, Plus, Folder, RefreshCw, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Edit2, Globe, Mail, Phone, MapPin, ExternalLink, Send, FileText, Plus, Folder, RefreshCw, CheckCircle, Upload, FolderPlus, ChevronRight, Image, Film, Archive } from 'lucide-react'
 
 const statusColors: Record<string, string> = {
   active: 'bg-emerald-500/20 text-emerald-400',
@@ -35,10 +35,32 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [savingMeta, setSavingMeta] = useState(false)
   const [syncingMeta, setSyncingMeta] = useState(false)
   const [metaSyncDone, setMetaSyncDone] = useState(false)
+  const [googleAdsAccounts, setGoogleAdsAccounts] = useState<any[]>([])
+  const [googleAdsLoading, setGoogleAdsLoading] = useState(false)
+  const [googleAdsError, setGoogleAdsError] = useState<string | null>(null)
+  const [selectedGoogleAccount, setSelectedGoogleAccount] = useState('')
+  const [savedGoogleAccount, setSavedGoogleAccount] = useState<any>(null)
+  const [savingGoogle, setSavingGoogle] = useState(false)
+  const [syncingGoogle, setSyncingGoogle] = useState(false)
+  const [googleSyncDone, setGoogleSyncDone] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date()
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
+
+  // Drive state
+  const [driveFiles, setDriveFiles] = useState<any[]>([])
+  const [driveFolders, setDriveFolders] = useState<any[]>([])
+  const [driveRootId, setDriveRootId] = useState<string | null>(null)
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
+  const [breadcrumb, setBreadcrumb] = useState<{ id: string; name: string }[]>([])
+  const [driveLoading, setDriveLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [creatingFolder, setCreatingFolder] = useState(false)
+  const [showNewFolder, setShowNewFolder] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetch(`/api/clients/${params.id}`)
@@ -54,19 +76,21 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       fetch(`/api/messages?clientId=${params.id}`).then(r => r.json()).then(d => setMessages(d || []))
     }
     if (activeTab === 4) {
-      fetch(`/api/clients/${params.id}/files`).then(r => r.json()).then(d => setFiles(d || []))
+      loadDrive(null)
     }
     if (activeTab === 5) {
-      // Load existing integration
+      // Load existing integrations
       fetch(`/api/clients/${params.id}/integrations`)
         .then(r => r.json())
         .then(d => {
           if (Array.isArray(d)) {
             const meta = d.find((i: any) => i.platform === 'meta_ads')
             if (meta) setSavedMetaAccount(meta)
+            const google = d.find((i: any) => i.platform === 'google_ads')
+            if (google) setSavedGoogleAccount(google)
           }
         })
-      // Load available ad accounts
+      // Load Meta accounts
       setMetaAccountsLoading(true)
       setMetaAccountsError(null)
       fetch('/api/integrations/meta-ads/accounts')
@@ -82,6 +106,22 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
           setMetaAccountsLoading(false)
         })
         .catch(() => { setMetaAccountsError('Failed to load accounts'); setMetaAccountsLoading(false) })
+      // Load Google Ads accounts
+      setGoogleAdsLoading(true)
+      setGoogleAdsError(null)
+      fetch('/api/integrations/google-ads/accounts')
+        .then(r => r.json())
+        .then(d => {
+          if (d.error === 'not_connected') {
+            setGoogleAdsError('not_connected')
+          } else if (d.error) {
+            setGoogleAdsError(d.error)
+          } else {
+            setGoogleAdsAccounts(d)
+          }
+          setGoogleAdsLoading(false)
+        })
+        .catch(() => { setGoogleAdsError('Failed to load accounts'); setGoogleAdsLoading(false) })
     }
   }, [activeTab, params.id])
 
@@ -98,6 +138,75 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Drive helpers
+  const loadDrive = useCallback(async (folderId: string | null) => {
+    setDriveLoading(true)
+    try {
+      const res = await fetch(`/api/clients/${params.id}/drive`)
+      const data = await res.json()
+      const rootId = data.folder_id
+      setDriveRootId(rootId)
+      if (!folderId) {
+        setCurrentFolderId(rootId)
+        setBreadcrumb([{ id: rootId, name: 'Root' }])
+        setDriveFiles(data.files?.filter((f: any) => f.mimeType !== 'application/vnd.google-apps.folder') || [])
+        setDriveFolders(data.files?.filter((f: any) => f.mimeType === 'application/vnd.google-apps.folder') || [])
+      }
+    } catch { /* ignore */ } finally {
+      setDriveLoading(false)
+    }
+  }, [params.id])
+
+  const navigateFolder = async (folderId: string, folderName: string) => {
+    setDriveLoading(true)
+    try {
+      const res = await fetch(`/api/clients/${params.id}/drive?folder_id=${folderId}`)
+      const data = await res.json()
+      setCurrentFolderId(folderId)
+      setBreadcrumb(prev => {
+        const idx = prev.findIndex(b => b.id === folderId)
+        if (idx !== -1) return prev.slice(0, idx + 1)
+        return [...prev, { id: folderId, name: folderName }]
+      })
+      setDriveFiles(data.files?.filter((f: any) => f.mimeType !== 'application/vnd.google-apps.folder') || [])
+      setDriveFolders(data.files?.filter((f: any) => f.mimeType === 'application/vnd.google-apps.folder') || [])
+    } catch { /* ignore */ } finally {
+      setDriveLoading(false)
+    }
+  }
+
+  const handleFileUpload = async (fileList: FileList | null) => {
+    if (!fileList?.length || uploading) return
+    setUploading(true)
+    for (const file of Array.from(fileList)) {
+      const fd = new FormData()
+      fd.append('file', file)
+      if (currentFolderId) fd.append('target_folder_id', currentFolderId)
+      await fetch(`/api/clients/${params.id}/drive/upload`, { method: 'POST', body: fd })
+    }
+    setUploading(false)
+    // Refresh
+    if (currentFolderId && currentFolderId !== driveRootId) {
+      await navigateFolder(currentFolderId, breadcrumb[breadcrumb.length - 1]?.name || '')
+    } else {
+      await loadDrive(null)
+    }
+  }
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim() || creatingFolder) return
+    setCreatingFolder(true)
+    await fetch(`/api/clients/${params.id}/drive/folders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newFolderName.trim() }),
+    })
+    setNewFolderName('')
+    setShowNewFolder(false)
+    setCreatingFolder(false)
+    await loadDrive(null)
+  }
 
   const sendMessage = async () => {
     if (!msgInput.trim() || sending) return
