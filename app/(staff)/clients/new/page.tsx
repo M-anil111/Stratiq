@@ -204,20 +204,23 @@ function PlacesInput({ value, onChange }: { value: string; onChange: (name: stri
   const timeoutRef = useRef<NodeJS.Timeout>()
   const wrapRef = useRef<HTMLDivElement>(null)
 
-  const search = useCallback(async (q: string) => {
+  const search = useCallback(async (q: string, signal?: AbortSignal) => {
     if (q.length < 2) { setResults([]); return }
     setLoading(true)
     try {
-      const res = await fetch(`/api/places/search?q=${encodeURIComponent(q)}`)
+      const res = await fetch(`/api/places/search?q=${encodeURIComponent(q)}`, { signal })
       const data = await res.json()
       setResults(data.results || [])
+    } catch (err: any) {
+      if (err.name !== 'AbortError') setResults([])
     } finally { setLoading(false) }
   }, [])
 
   useEffect(() => {
+    const controller = new AbortController()
     clearTimeout(timeoutRef.current)
-    timeoutRef.current = setTimeout(() => search(query), 350)
-    return () => clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => search(query, controller.signal), 350)
+    return () => { clearTimeout(timeoutRef.current); controller.abort() }
   }, [query, search])
 
   useEffect(() => {
@@ -397,6 +400,7 @@ const defaultPkg = (service: string): ServicePackage => ({
 
 export default function NewClientPage() {
   const router = useRouter()
+  const formRef = useRef<HTMLFormElement>(null)
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<FormData>(defaultForm)
   const [packages, setPackages] = useState<ServicePackage[]>([])
@@ -488,6 +492,8 @@ export default function NewClientPage() {
       </div>
 
       <StepBar current={step} />
+
+      <form ref={formRef} onSubmit={e => e.preventDefault()}>
 
       {step === 0 && (
         <div className="glass-card p-6 space-y-6">
@@ -675,7 +681,9 @@ export default function NewClientPage() {
           <ChevronLeft className="h-4 w-4" />{step === 0 ? 'Cancel' : 'Back'}
         </button>
         {step < 3 ? (
-          <button type="button" onClick={() => setStep(s => s + 1)} disabled={!canNext()}
+          <button type="button"
+            onClick={() => { if (formRef.current?.reportValidity() !== false) setStep(s => s + 1) }}
+            disabled={!canNext()}
             className="flex items-center gap-2 px-6 py-2.5 btn-brand rounded-xl text-sm font-medium disabled:opacity-40 transition-all">
             Next <ChevronRight className="h-4 w-4" />
           </button>
@@ -687,6 +695,8 @@ export default function NewClientPage() {
           </button>
         )}
       </div>
+
+      </form>
     </div>
   )
 }

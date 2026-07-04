@@ -98,19 +98,19 @@ export async function POST(request: NextRequest) {
     const pkgs: any[] = body.service_packages || []
     const totalMonthly = pkgs.reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0)
     const totalSetup = pkgs.reduce((s: number, p: any) => s + (parseFloat(p.setup_fee) || 0), 0)
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://stratiq-ivory.vercel.app'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
 
     const servicesHtml = pkgs.map((p: any) => `
       <tr>
         <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#e2e8f0;font-size:14px">${p.service}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#94a3b8;font-size:13px">${p.billing_term} · ${p.contract_term}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#38bdf8;font-size:14px;font-weight:600;text-align:right">$${parseFloat(p.price).toLocaleString()}/mo</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#38bdf8;font-size:14px;font-weight:600;text-align:right">$${(parseFloat(p.price) || 0).toLocaleString()}/mo</td>
       </tr>
-      ${parseFloat(p.setup_fee) > 0 ? `<tr><td colspan="2" style="padding:4px 12px;color:#64748b;font-size:12px">  └ Setup fee</td><td style="padding:4px 12px;color:#94a3b8;font-size:12px;text-align:right">$${parseFloat(p.setup_fee).toLocaleString()}</td></tr>` : ''}
+      ${(parseFloat(p.setup_fee) || 0) > 0 ? `<tr><td colspan="2" style="padding:4px 12px;color:#64748b;font-size:12px">  └ Setup fee</td><td style="padding:4px 12px;color:#94a3b8;font-size:12px;text-align:right">$${(parseFloat(p.setup_fee) || 0).toLocaleString()}</td></tr>` : ''}
     `).join('')
 
     await sendEmail({
-      to: 'jay@jaymehta.co',
+      to: process.env.APPROVAL_EMAIL || 'jay@jaymehta.co',
       subject: `New Client Added: ${body.company_name} — $${totalMonthly.toLocaleString()}/mo — Approval Required`,
       html: `
         <div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;background:#0a1628;color:#e2e8f0;border-radius:12px;overflow:hidden">
