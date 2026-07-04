@@ -35,6 +35,12 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [savingMeta, setSavingMeta] = useState(false)
   const [syncingMeta, setSyncingMeta] = useState(false)
   const [metaSyncDone, setMetaSyncDone] = useState(false)
+  const [qbCustomers, setQbCustomers] = useState<any[]>([])
+  const [qbCustomersLoading, setQbCustomersLoading] = useState(false)
+  const [qbCustomersError, setQbCustomersError] = useState<string | null>(null)
+  const [selectedQbCustomer, setSelectedQbCustomer] = useState('')
+  const [savedQbCustomer, setSavedQbCustomer] = useState<any>(null)
+  const [savingQb, setSavingQb] = useState(false)
   const [googleAdsAccounts, setGoogleAdsAccounts] = useState<any[]>([])
   const [googleAdsLoading, setGoogleAdsLoading] = useState(false)
   const [googleAdsError, setGoogleAdsError] = useState<string | null>(null)
@@ -88,6 +94,8 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             if (meta) setSavedMetaAccount(meta)
             const google = d.find((i: any) => i.platform === 'google_ads')
             if (google) setSavedGoogleAccount(google)
+            const qb = d.find((i: any) => i.platform === 'quickbooks')
+            if (qb) setSavedQbCustomer(qb)
           }
         })
       // Load Meta accounts
@@ -106,6 +114,22 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
           setMetaAccountsLoading(false)
         })
         .catch(() => { setMetaAccountsError('Failed to load accounts'); setMetaAccountsLoading(false) })
+      // Load QuickBooks customers
+      setQbCustomersLoading(true)
+      setQbCustomersError(null)
+      fetch('/api/integrations/quickbooks/customers')
+        .then(r => r.json())
+        .then(d => {
+          if (d.error === 'not_connected') {
+            setQbCustomersError('not_connected')
+          } else if (d.error) {
+            setQbCustomersError(d.error)
+          } else {
+            setQbCustomers(d)
+          }
+          setQbCustomersLoading(false)
+        })
+        .catch(() => { setQbCustomersError('Failed to load customers'); setQbCustomersLoading(false) })
       // Load Google Ads accounts
       setGoogleAdsLoading(true)
       setGoogleAdsError(null)
@@ -595,6 +619,77 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                     {syncingGoogle ? 'Syncing…' : googleSyncDone ? 'Synced!' : 'Sync Now'}
                   </button>
                 )}
+              </div>
+            )}
+          </div>
+
+          {/* QuickBooks */}
+          <div className="glass-card p-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-8 w-8 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-sm">QB</div>
+              <div>
+                <h2 className="font-semibold text-white">QuickBooks Customer</h2>
+                <p className="text-xs text-slate-400">Link a QuickBooks customer to sync billing data</p>
+              </div>
+              {savedQbCustomer && (
+                <span className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
+                  <CheckCircle className="h-3 w-3" /> Mapped
+                </span>
+              )}
+            </div>
+            {qbCustomersError === 'not_connected' ? (
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-4 text-sm text-amber-300">
+                QuickBooks is not connected yet.{' '}
+                <a href="/settings/integrations" className="underline hover:text-amber-200">Connect it in Settings → Integrations</a>
+              </div>
+            ) : qbCustomersLoading ? (
+              <div className="h-10 skeleton rounded-lg" />
+            ) : qbCustomersError ? (
+              <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">{qbCustomersError}</div>
+            ) : (
+              <div className="space-y-3">
+                {savedQbCustomer && (
+                  <div className="text-xs text-slate-400">
+                    Current: <span className="text-slate-300 font-medium">{savedQbCustomer.ad_account_name || savedQbCustomer.ad_account_id}</span>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <select
+                    value={selectedQbCustomer}
+                    onChange={e => setSelectedQbCustomer(e.target.value)}
+                    className="w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+                  >
+                    <option value="">Select QB customer…</option>
+                    {qbCustomers.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}{c.email ? ` (${c.email})` : ''}</option>
+                    ))}
+                  </select>
+                  <button
+                    disabled={!selectedQbCustomer || savingQb}
+                    onClick={async () => {
+                      setSavingQb(true)
+                      const customer = qbCustomers.find(c => c.id === selectedQbCustomer)
+                      const res = await fetch(`/api/clients/${params.id}/integrations`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          platform: 'quickbooks',
+                          account_id: customer?.name,
+                          external_id: selectedQbCustomer,
+                        }),
+                      })
+                      if (res.ok) {
+                        const saved = await res.json()
+                        setSavedQbCustomer(saved)
+                        setSelectedQbCustomer('')
+                      }
+                      setSavingQb(false)
+                    }}
+                    className="btn-brand px-4 py-2 text-sm font-medium rounded-lg disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {savingQb ? 'Saving…' : 'Save'}
+                  </button>
+                </div>
               </div>
             )}
           </div>

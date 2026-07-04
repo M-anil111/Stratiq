@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { CheckCircle, XCircle, RefreshCw, Loader2 } from 'lucide-react'
+import { CheckCircle, XCircle, RefreshCw, Loader2, Briefcase } from 'lucide-react'
 
 type IntegrationStatus = 'connected' | 'disconnected' | 'error' | 'loading'
 
@@ -51,8 +51,10 @@ const staticIntegrations = [
 export default function IntegrationsPage() {
   const [googleStatus, setGoogleStatus] = useState<IntegrationStatus>('loading')
   const [metaStatus, setMetaStatus] = useState<IntegrationStatus>('loading')
+  const [qbStatus, setQbStatus] = useState<IntegrationStatus>('loading')
   const [disconnecting, setDisconnecting] = useState(false)
   const [metaDisconnecting, setMetaDisconnecting] = useState(false)
+  const [qbDisconnecting, setQbDisconnecting] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [banner, setBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
@@ -69,6 +71,12 @@ export default function IntegrationsPage() {
       setTimeout(() => setBanner(null), 4000)
       window.history.replaceState({}, '', '/settings/integrations')
     }
+    if (params.get('connected') === 'quickbooks') {
+      setQbStatus('connected')
+      setBanner({ type: 'success', message: 'QuickBooks Online connected successfully!' })
+      setTimeout(() => setBanner(null), 4000)
+      window.history.replaceState({}, '', '/settings/integrations')
+    }
     if (params.get('error') === 'meta_auth_failed') {
       setMetaStatus('disconnected')
       setBanner({ type: 'error', message: 'Meta Ads connection failed. Please try again.' })
@@ -79,8 +87,9 @@ export default function IntegrationsPage() {
       .then(r => r.json())
       .then(data => {
         setGoogleStatus(data.google_connected === 'true' ? 'connected' : 'disconnected')
+        setQbStatus(data.qb_connected === 'true' ? 'connected' : 'disconnected')
       })
-      .catch(() => setGoogleStatus('disconnected'))
+      .catch(() => { setGoogleStatus('disconnected'); setQbStatus('disconnected') })
     // Check Meta status
     fetch('/api/integrations/meta-ads/accounts')
       .then(r => r.json())
@@ -113,6 +122,16 @@ export default function IntegrationsPage() {
     setMetaStatus('disconnected')
     setMetaDisconnecting(false)
     setBanner({ type: 'success', message: 'Meta Ads disconnected.' })
+    setTimeout(() => setBanner(null), 3000)
+  }
+
+  const handleQbDisconnect = async () => {
+    if (!confirm('Disconnect QuickBooks? This will stop all QB syncing.')) return
+    setQbDisconnecting(true)
+    await fetch('/api/auth/quickbooks/disconnect', { method: 'POST' })
+    setQbStatus('disconnected')
+    setQbDisconnecting(false)
+    setBanner({ type: 'success', message: 'QuickBooks disconnected.' })
     setTimeout(() => setBanner(null), 3000)
   }
 
@@ -246,8 +265,62 @@ export default function IntegrationsPage() {
           </div>
         </div>
 
+        {/* QuickBooks Online */}
+        <div className="glass-card p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="h-9 w-9 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
+                <Briefcase className="h-5 w-5 text-green-400" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="font-semibold text-white">QuickBooks Online</h2>
+                  {(() => {
+                    const config = statusConfig[qbStatus]
+                    const Icon = config.icon
+                    return (
+                      <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.color}`}>
+                        <Icon className={`h-3 w-3 ${qbStatus === 'loading' ? 'animate-spin' : ''}`} />
+                        {config.label}
+                      </div>
+                    )
+                  })()}
+                </div>
+                <p className="text-sm text-slate-400 mt-1">Sync invoices and client billing with QuickBooks Online</p>
+                {qbStatus === 'disconnected' && (
+                  <ol className="mt-3 space-y-1">
+                    {['Connect your QuickBooks Online account', 'Authorize accounting scope', 'Map QB customers per client in their detail page'].map((step, i) => (
+                      <li key={i} className="text-xs text-slate-400 flex gap-1.5">
+                        <span className="font-medium text-slate-300">{i + 1}.</span>
+                        {step}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            </div>
+            <div className="shrink-0">
+              {qbStatus === 'loading' ? (
+                <div className="h-9 w-24 skeleton rounded-xl" />
+              ) : qbStatus === 'connected' ? (
+                <button
+                  onClick={handleQbDisconnect}
+                  disabled={qbDisconnecting}
+                  className="px-3 py-1.5 text-sm border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/10 transition-all disabled:opacity-50"
+                >
+                  {qbDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+                </button>
+              ) : (
+                <a href="/api/auth/quickbooks/connect" className="btn-brand">
+                  Connect QuickBooks
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Static integrations that use Google OAuth */}
-        {staticIntegrations.map(integration => {
+        {staticIntegrations.filter(i => i.id !== 'quickbooks').map(integration => {
           const status = integration.connectsViaGoogle ? googleStatus : 'disconnected'
           const config = statusConfig[status === 'loading' ? 'disconnected' : status]
           const Icon = config.icon

@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Plus, X, Loader2 } from 'lucide-react'
+import { ChevronLeft, Plus, X, Loader2, CheckCircle } from 'lucide-react'
 
 const SERVICES = [
   'SEO (Local)', 'SEO (National)', 'SEO (E-commerce)', 'Content Marketing',
@@ -118,6 +118,7 @@ const selectGlass = "bg-[rgba(255,255,255,0.06)] border-white/[0.12] text-white 
 export default function NewClientPage() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
+  const [success, setSuccess] = useState<{ id: string; name: string } | null>(null)
   const [form, setForm] = useState({
     company_name: '', website: '', about_company: '', industry: '',
     email: '', phone: '', street_address: '', city: '', state: '', country: 'US',
@@ -144,13 +145,40 @@ export default function NewClientPage() {
       })
       if (res.ok) {
         const data = await res.json()
-        router.push(`/clients/${data.id}`)
+        setSuccess({ id: data.id, name: form.company_name })
+        setTimeout(() => router.push(`/clients/${data.id}`), 2000)
       } else {
         alert('Error saving client. Please try again.')
       }
     } finally {
       setSaving(false)
     }
+  }
+
+  if (success) {
+    return (
+      <div className="p-4 lg:p-8 max-w-4xl mx-auto flex items-center justify-center min-h-[60vh]">
+        <div className="glass-card p-12 text-center animate-float-up max-w-md w-full">
+          <div className="flex justify-center mb-6">
+            <div className="h-20 w-20 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <CheckCircle className="h-10 w-10 text-emerald-400" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Client Added Successfully!</h2>
+          <p className="text-slate-300 font-medium mb-1">{success.name}</p>
+          <p className="text-slate-400 text-sm flex items-center justify-center gap-2 mt-4">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Taking you to the client dashboard...
+          </p>
+          <button
+            onClick={() => router.push(`/clients/${success.id}`)}
+            className="btn-brand mt-6 px-6 py-2.5 font-medium rounded-lg"
+          >
+            Go Now
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
