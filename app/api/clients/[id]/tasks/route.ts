@@ -73,6 +73,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     .eq('client_id', params.id)
     .select().single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json({ error: 'Tasks not available' }, { status: 503 })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json(data)
 }

@@ -24,18 +24,21 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query
   if (error) return NextResponse.json([], { status: 200 })
 
-  // Return each client as a "contact" entry for backwards compatibility
-  const contacts = (data || []).map(row => ({
-    contact_first_name: '',
-    contact_last_name: '',
-    businesses: [{
-      id: row.id,
-      company_name: row.company_name,
-      display_name: row.company_name,
-      project_status: row.project_status,
-      mrr: (row.service_packages || []).reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0),
-    }],
-  }))
+  // Return each client as a "contact" entry using company_name parts as first/last
+  const contacts = (data || []).map(row => {
+    const parts = (row.company_name || '').trim().split(/\s+/)
+    return {
+      contact_first_name: parts[0] || row.company_name || '',
+      contact_last_name: parts.slice(1).join(' ') || '',
+      businesses: [{
+        id: row.id,
+        company_name: row.company_name,
+        display_name: row.company_name,
+        project_status: row.project_status,
+        mrr: (row.service_packages || []).reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0),
+      }],
+    }
+  })
 
   return NextResponse.json(contacts)
 }

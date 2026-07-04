@@ -542,7 +542,7 @@ export default function NewClientPage() {
   const needsGoals = packages.some(p => MARKETING_SERVICES.has(p.service))
 
   const canNext = () => {
-    if (step === 0) return !!(form.contact_first_name && form.company_name && form.website && form.email && form.phone)
+    if (step === 0) return !!(form.company_name && form.website && form.email && form.phone)
     if (step === 1) return packages.length > 0 && packages.every(p => !!p.price)
     if (step === 2) {
       if (!needsGoals) return true
@@ -687,18 +687,24 @@ export default function NewClientPage() {
                 {/* Results dropdown */}
                 {contactResults.length > 0 && (
                   <div className="rounded-xl border border-white/[0.12] bg-[#0a1628] overflow-hidden">
-                    {contactResults.map(contact => (
-                      <button key={`${contact.contact_first_name}|${contact.contact_last_name}`} type="button"
+                    {contactResults.map((contact, idx) => (
+                      <button key={`${contact.businesses[0]?.id || idx}`} type="button"
                         onClick={() => {
-                          setForm(f => ({ ...f, contact_first_name: contact.contact_first_name, contact_last_name: contact.contact_last_name }))
+                          const biz = contact.businesses[0]
+                          setForm(f => ({
+                            ...f,
+                            contact_first_name: contact.contact_first_name,
+                            contact_last_name: contact.contact_last_name,
+                            ...(biz ? { company_name: biz.company_name } : {}),
+                          }))
                           setContactMode('linked')
                           setContactSearch('')
                           setContactResults([])
                           setContactSearched(false)
                         }}
                         className="w-full text-left px-4 py-3 hover:bg-white/[0.06] border-b border-white/[0.05] last:border-0 transition-colors">
-                        <p className="text-sm font-semibold text-white">{contact.contact_first_name} {contact.contact_last_name}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{contact.businesses.length} business{contact.businesses.length !== 1 ? 'es' : ''}: {contact.businesses.map((b: any) => b.company_name).join(', ')}</p>
+                        <p className="text-sm font-semibold text-white">{contact.businesses[0]?.company_name || `${contact.contact_first_name} ${contact.contact_last_name}`}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{contact.contact_first_name} {contact.contact_last_name}</p>
                       </button>
                     ))}
                   </div>

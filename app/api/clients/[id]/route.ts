@@ -72,6 +72,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       maint_since: body.maint_since,
       maint_degree: body.maint_degree,
       credit_status: body.credit_status,
+      google_place_id: body.google_place_id ?? undefined,
+      proposal_status: body.proposal_status ?? undefined,
     })
     .eq('id', params.id)
     .eq('organization_id', userData.organization_id)

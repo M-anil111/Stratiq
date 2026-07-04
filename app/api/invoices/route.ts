@@ -19,7 +19,10 @@ export async function GET(req: NextRequest) {
   if (clientId) query = query.eq('client_id', clientId)
 
   const { data, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json([])
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json(data)
 }
 
@@ -60,6 +63,9 @@ export async function POST(req: NextRequest) {
     created_by: user.id,
   }).select().single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json({ error: 'Invoices table not set up yet. Please contact support.' }, { status: 503 })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json(data, { status: 201 })
 }

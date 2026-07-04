@@ -127,6 +127,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     fetch(`/api/clients/${params.id}`)
       .then(r => r.json())
       .then(d => { setClient(d); setLoading(false) })
+      .catch(() => setLoading(false))
   }, [params.id])
 
   // Load projects on Overview tab
@@ -1261,6 +1262,9 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                     setInvoices(v => [inv, ...v])
                     setShowInvoiceForm(false)
                     setNewInvoice({ due_date: '', notes: '', tax_amount: '', line_items: [{ description: '', qty: '1', unit_price: '', amount: '' }] })
+                  } else {
+                    const err = await res.json().catch(() => ({}))
+                    alert(err.error || 'Failed to create invoice. Please try again.')
                   }
                   setSavingInvoice(false)
                 }} className="btn-brand px-4 py-2 text-sm font-medium rounded-xl disabled:opacity-50">

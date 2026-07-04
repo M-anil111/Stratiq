@@ -29,6 +29,10 @@ export async function PUT(request: NextRequest) {
   const body = await request.json()
   const { full_name, phone } = body
 
+  if (!full_name || typeof full_name !== 'string' || !full_name.trim()) {
+    return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+  }
+
   const { error } = await supabase
     .from('users')
     .update({ full_name, phone })

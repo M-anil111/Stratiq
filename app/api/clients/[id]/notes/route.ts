@@ -41,6 +41,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     created_by_name: userData.full_name,
   }).select().single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json({ error: 'Notes not available' }, { status: 503 })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json(data, { status: 201 })
 }

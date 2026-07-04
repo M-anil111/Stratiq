@@ -38,7 +38,7 @@ export async function GET() {
 
   return NextResponse.json({
     active_projects: projectsResult.count ?? 0,
-    files_count: filesResult.count ?? 0,
+    files_count: filesResult.error?.code === '42P01' ? 0 : (filesResult.count ?? 0),
     unread_messages: messagesResult.count ?? 0,
   })
 }

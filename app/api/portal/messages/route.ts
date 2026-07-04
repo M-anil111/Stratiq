@@ -36,6 +36,8 @@ export async function POST(request: NextRequest) {
 
   if (!portalAccess) return NextResponse.json({ error: 'No access' }, { status: 403 })
 
+  const { data: userData } = await supabase.from('users').select('full_name').eq('id', user.id).single()
+
   const body = await request.json()
   const { data, error } = await supabase
     .from('messages')
@@ -44,8 +46,8 @@ export async function POST(request: NextRequest) {
       organization_id: (portalAccess.clients as any)?.organization_id,
       sender_id: user.id,
       sender_type: 'client',
-      sender_name: user.email,
-      content: body.content,
+      sender_name: userData?.full_name || user.email,
+      content: body.content || body.message,
     })
     .select()
     .single()
