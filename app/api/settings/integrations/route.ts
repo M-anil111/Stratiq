@@ -1,0 +1,52 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+export async function GET() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
+  if (!userData?.organization_id) return NextResponse.json({})
+
+  const { data } = await supabase
+    .from('organization_settings')
+    .select('key, value')
+    .eq('organization_id', userData.organization_id)
+    .like('key', 'integration_%')
+
+  const settings: Record<string, string> = {}
+  for (const row of data || []) {
+    settings[row.key] = row.value
+  }
+
+  return NextResponse.json(settings)
+}
+
+export async function PUT(request: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: userData } = await supabase.from('users').select('organization_id, role').eq('id', user.id).single()
+  if (!['super_admin', 'admin'].includes(userData?.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const body = await request.json() as Record<string, string>
+  const upserts = Object.entries(body)
+    .filter(([key]) => key.startsWith('integration_'))
+    .map(([key, value]) => ({
+      organization_id: userData.organization_id,
+      key,
+      value,
+      updated_at: new Date().toISOString(),
+    }))
+
+  if (upserts.length === 0) return NextResponse.json({ ok: true })
+
+  const { error } = await supabase
+    .from('organization_settings')
+    .upsert(upserts, { onConflict: 'organization_id,key' })
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}

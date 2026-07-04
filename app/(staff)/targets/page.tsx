@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Loader2 } from 'lucide-react'
 
 const tabs = ['Team KPI Dashboard', 'Missed Activities', 'Target Settings']
 
@@ -13,12 +13,40 @@ function currentMonth() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
+const defaultTargetKeys = ['social', 'offpage', 'blog', 'onpage', 'group'] as const
+type DefaultTargets = Record<typeof defaultTargetKeys[number], number>
+
 export default function TargetsPage() {
   const [activeTab, setActiveTab] = useState(0)
   const [teamData, setTeamData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [defaultTargets, setDefaultTargets] = useState<DefaultTargets>({ social: 0, offpage: 0, blog: 0, onpage: 0, group: 0 })
+  const [saving, setSaving] = useState(false)
+  const [savedLabel, setSavedLabel] = useState(false)
   const now = new Date()
   const month = currentMonth()
+
+  async function saveDefaultTargets() {
+    setSaving(true)
+    try {
+      await fetch('/api/targets', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          defaults: true,
+          month,
+          social_target: defaultTargets.social,
+          offpage_target: defaultTargets.offpage,
+          blog_target: defaultTargets.blog,
+          onpage_target: defaultTargets.onpage,
+          group_target: defaultTargets.group,
+        }),
+      })
+      setSavedLabel(true)
+      setTimeout(() => setSavedLabel(false), 2000)
+    } catch {}
+    setSaving(false)
+  }
 
   useEffect(() => {
     setLoading(true)
@@ -172,14 +200,29 @@ export default function TargetsPage() {
           <h2 className="font-semibold text-white mb-4">Monthly Target Settings</h2>
           <p className="text-sm text-slate-400 mb-6">Set targets per project. Navigate to Clients → Project → Submission Details to set targets for a specific project.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {['Social Media Posts', 'Off-Page Links', 'Blog Posts', 'OnPage URLs', 'Group Postings'].map(section => (
-              <div key={section} className="border border-white/[0.08] rounded-xl p-4">
-                <label className="block text-sm font-medium text-slate-300 mb-2">{section} (default/month)</label>
-                <input type="number" placeholder="0" className="input-glass" />
+            {([
+              { key: 'social', label: 'Social Media Posts' },
+              { key: 'offpage', label: 'Off-Page Links' },
+              { key: 'blog', label: 'Blog Posts' },
+              { key: 'onpage', label: 'OnPage URLs' },
+              { key: 'group', label: 'Group Postings' },
+            ] as const).map(({ key, label }) => (
+              <div key={key} className="border border-white/[0.08] rounded-xl p-4">
+                <label className="block text-sm font-medium text-slate-300 mb-2">{label} (default/month)</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  min={0}
+                  value={defaultTargets[key] || ''}
+                  onChange={e => setDefaultTargets(prev => ({ ...prev, [key]: Number(e.target.value) }))}
+                  className="input-glass"
+                />
               </div>
             ))}
           </div>
-          <button className="mt-6 btn-brand">Save Default Targets</button>
+          <button onClick={saveDefaultTargets} disabled={saving} className="mt-6 btn-brand flex items-center gap-2">
+            {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : savedLabel ? 'Saved!' : 'Save Default Targets'}
+          </button>
         </div>
       )}
     </div>
