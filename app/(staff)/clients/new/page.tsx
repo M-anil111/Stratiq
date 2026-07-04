@@ -24,6 +24,17 @@ const SERVICES = [
   'Graphic Design', 'Website Maintenance',
 ]
 
+// Services that require Goals & Expectations to be filled in
+const MARKETING_SERVICES = new Set([
+  'SEO (Local)', 'SEO (National)', 'SEO (E-commerce)', 'Content Marketing',
+  'Google Ads / PPC', 'Meta Ads (Facebook & Instagram)', 'LinkedIn Ads', 'TikTok Ads',
+  'Social Media Management', 'Video Marketing', 'Email Marketing',
+  'Reputation Management', 'Link Building',
+])
+
+const DOMAIN_REGISTRARS = ['GoDaddy', 'Namecheap', 'Google Domains', 'Cloudflare', 'Network Solutions', 'Hover', 'NameSilo', 'Porkbun', 'Other']
+const HOSTING_PROVIDERS = ['SiteGround', 'WP Engine', 'Bluehost', 'HostGator', 'Kinsta', 'Cloudflare Pages', 'Vercel', 'Netlify', 'AWS', 'DigitalOcean', 'GoDaddy Hosting', 'DreamHost', 'Other']
+
 const GOALS = [
   'Increase Website Traffic', 'Generate Leads', 'Improve Local Search Rankings',
   'Improve National Search Rankings', 'Brand Awareness', 'Social Media Growth',
@@ -404,6 +415,7 @@ const STEPS = [
   { label: 'Client Info', icon: Building2 },
   { label: 'Services', icon: Briefcase },
   { label: 'Goals', icon: Target },
+  { label: 'Hosting', icon: ClipboardList },
   { label: 'Review', icon: ClipboardList },
 ]
 
@@ -439,6 +451,9 @@ function ReviewRow({ label, value }: { label: string; value?: string | string[] 
 }
 
 interface FormData {
+  // Contact person (the human, may own multiple businesses)
+  contact_first_name: string; contact_last_name: string
+  // Business info
   company_name: string; google_place_id: string; website: string; about_company: string
   industry: string; num_employees: string; email: string; phone: string
   street_address: string; city: string; state: string; country: string
@@ -446,9 +461,13 @@ interface FormData {
   goals: string[]; stakeholder_expectations: string[]
   proposal_url: string; project_status: string
   sales_manager_id: string; dm_manager_id: string; marketing_manager_id: string
+  // Hosting & domain
+  domain_name: string; domain_registrar: string; domain_expiry: string
+  hosting_provider: string; hosting_expiry: string; nameservers: string; hosting_notes: string
 }
 
 const defaultForm: FormData = {
+  contact_first_name: '', contact_last_name: '',
   company_name: '', google_place_id: '', website: '', about_company: '',
   industry: '', num_employees: '', email: '', phone: '',
   street_address: '', city: '', state: '', country: 'US',
@@ -456,6 +475,8 @@ const defaultForm: FormData = {
   goals: [], stakeholder_expectations: [],
   proposal_url: '', project_status: 'in_onboarding',
   sales_manager_id: '', dm_manager_id: '', marketing_manager_id: '',
+  domain_name: '', domain_registrar: '', domain_expiry: '',
+  hosting_provider: '', hosting_expiry: '', nameservers: '', hosting_notes: '',
 }
 
 const defaultPkg = (service: string): ServicePackage => ({
@@ -492,10 +513,16 @@ export default function NewClientPage() {
   const totalMonthly = packages.reduce((sum, p) => sum + (parseFloat(p.price) || 0), 0)
   const totalSetup = packages.reduce((sum, p) => sum + (parseFloat(p.setup_fee) || 0), 0)
 
+  // Goals & Expectations only required when at least one marketing service is selected
+  const needsGoals = packages.some(p => MARKETING_SERVICES.has(p.service))
+
   const canNext = () => {
-    if (step === 0) return !!(form.company_name && form.website && form.email && form.phone)
+    if (step === 0) return !!(form.contact_first_name && form.company_name && form.website && form.email && form.phone)
     if (step === 1) return packages.length > 0 && packages.every(p => !!p.price)
-    if (step === 2) return !!(form.goals.length > 0 && form.stakeholder_expectations.length > 0 && form.target_audience)
+    if (step === 2) {
+      if (!needsGoals) return true
+      return !!(form.goals.length > 0 && form.stakeholder_expectations.length > 0 && form.target_audience)
+    }
     return true
   }
 
@@ -513,9 +540,16 @@ export default function NewClientPage() {
           marketing_manager_id: form.marketing_manager_id || null,
           services: packages.map(p => p.service),
           service_packages: packages,
-          goals: form.goals,
-          stakeholder_expectations: form.stakeholder_expectations,
+          goals: needsGoals ? form.goals : [],
+          stakeholder_expectations: needsGoals ? form.stakeholder_expectations : [],
           advertising_types: packages.filter(p => ['Google Ads / PPC', 'Meta Ads (Facebook & Instagram)', 'LinkedIn Ads', 'TikTok Ads'].includes(p.service)).flatMap(p => (p.deliverables.platforms || [])),
+          domain_name: form.domain_name || null,
+          domain_registrar: form.domain_registrar || null,
+          domain_expiry: form.domain_expiry || null,
+          hosting_provider: form.hosting_provider || null,
+          hosting_expiry: form.hosting_expiry || null,
+          nameservers: form.nameservers || null,
+          hosting_notes: form.hosting_notes || null,
         }),
       })
       if (res.ok) {
@@ -569,14 +603,34 @@ export default function NewClientPage() {
       <form ref={formRef} onSubmit={e => e.preventDefault()}>
 
       {step === 0 && (
-        <div className="glass-card p-6 space-y-6">
+        <div className="space-y-5">
+          {/* Contact Person */}
+          <div className="glass-card p-6 space-y-5">
+            <div>
+              <h2 className="text-lg font-semibold text-white mb-0.5">Contact Person</h2>
+              <p className="text-sm text-slate-400">The individual who owns or manages this business. One person can have multiple businesses.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="First Name" required>
+                <input className="input-glass" value={form.contact_first_name} onChange={setFE('contact_first_name')}
+                  placeholder="Jay" required />
+              </Field>
+              <Field label="Last Name" required>
+                <input className="input-glass" value={form.contact_last_name} onChange={setFE('contact_last_name')}
+                  placeholder="Mehta" required />
+              </Field>
+            </div>
+          </div>
+
+          {/* Business Info */}
+          <div className="glass-card p-6 space-y-5">
           <div>
-            <h2 className="text-lg font-semibold text-white mb-0.5">Company Information</h2>
-            <p className="text-sm text-slate-400">Search Google Business or type the client name manually</p>
+            <h2 className="text-lg font-semibold text-white mb-0.5">Business Information</h2>
+            <p className="text-sm text-slate-400">Search Google Business or type the company name manually</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="sm:col-span-2">
-              <Field label="Company Name" required>
+              <Field label="Company / Business Name" required>
                 <PlacesInput value={form.company_name}
                   onChange={(name, placeId) => setForm(f => ({ ...f, company_name: name, google_place_id: placeId || '' }))}
                   onDetails={d => {
@@ -682,7 +736,8 @@ export default function NewClientPage() {
               </div>
             </div>
           )}
-        </div>
+          </div>{/* end Business Info card */}
+        </div>{/* end step 0 outer */}
       )}
 
       {step === 1 && (
@@ -737,12 +792,29 @@ export default function NewClientPage() {
             <h2 className="text-lg font-semibold text-white mb-0.5">Goals & Expectations</h2>
             <p className="text-sm text-slate-400">Define what success looks like for this client</p>
           </div>
-          <Field label="Goals of Project" required><MultiChip options={GOALS} value={form.goals} onChange={setF('goals')} /></Field>
-          <Field label="Stakeholder Expectations" required><MultiChip options={STAKEHOLDER_EXPECTATIONS} value={form.stakeholder_expectations} onChange={setF('stakeholder_expectations')} /></Field>
-          <Field label="Target Audience" required hint="Who does this client's business serve?">
-            <input className="input-glass" value={form.target_audience} onChange={setFE('target_audience')}
-              placeholder="e.g. Homeowners 30-55 in Austin TX needing HVAC repairs" required />
-          </Field>
+
+          {!needsGoals ? (
+            <div className="flex items-start gap-3 p-4 bg-sky-500/10 border border-sky-500/20 rounded-xl">
+              <Target className="h-5 w-5 text-sky-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-sky-300">Goals not required for selected services</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Goals & Expectations apply to marketing campaigns (SEO, Ads, Social Media, etc.).
+                  Your selected services (maintenance, design, or development) don&apos;t require campaign goals — click Next to continue.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <Field label="Goals of Project" required><MultiChip options={GOALS} value={form.goals} onChange={setF('goals')} /></Field>
+              <Field label="Stakeholder Expectations" required><MultiChip options={STAKEHOLDER_EXPECTATIONS} value={form.stakeholder_expectations} onChange={setF('stakeholder_expectations')} /></Field>
+              <Field label="Target Audience" required hint="Who does this client's business serve?">
+                <input className="input-glass" value={form.target_audience} onChange={setFE('target_audience')}
+                  placeholder="e.g. Homeowners 30-55 in Austin TX needing HVAC repairs" />
+              </Field>
+            </>
+          )}
+
           <Field label="Business Hashtags" hint="Press Enter after each"><TagInput value={form.hashtags} onChange={setF('hashtags')} placeholder="#localrestaurant #austin" /></Field>
           <Field label="Business Categories" hint="Press Enter after each"><TagInput value={form.categories} onChange={setF('categories')} placeholder="Italian Restaurant, Fine Dining" /></Field>
           <Field label="Proposal / Agreement Link" hint="Google Drive or DocuSign link to the signed proposal">
@@ -752,6 +824,51 @@ export default function NewClientPage() {
       )}
 
       {step === 3 && (
+        <div className="glass-card p-6 space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold text-white mb-0.5">Hosting & Domain Details</h2>
+            <p className="text-sm text-slate-400">Track the client&apos;s hosting, domain registrar, and renewal dates in one place</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="sm:col-span-2">
+              <Field label="Domain Name" hint="The primary domain — e.g. example.com">
+                <input className="input-glass" value={form.domain_name} onChange={setFE('domain_name')} placeholder="example.com" />
+              </Field>
+            </div>
+            <Field label="Domain Registrar">
+              <select className={sel} value={form.domain_registrar} onChange={setFE('domain_registrar')}>
+                <option value="">Select or type…</option>
+                {DOMAIN_REGISTRARS.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </Field>
+            <Field label="Domain Expiry Date">
+              <input type="date" className="input-glass" value={form.domain_expiry} onChange={setFE('domain_expiry')} />
+            </Field>
+            <Field label="Hosting Provider">
+              <select className={sel} value={form.hosting_provider} onChange={setFE('hosting_provider')}>
+                <option value="">Select or type…</option>
+                {HOSTING_PROVIDERS.map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
+            </Field>
+            <Field label="Hosting Renewal Date">
+              <input type="date" className="input-glass" value={form.hosting_expiry} onChange={setFE('hosting_expiry')} />
+            </Field>
+            <div className="sm:col-span-2">
+              <Field label="Nameservers" hint="e.g. ns1.siteground.com, ns2.siteground.com">
+                <input className="input-glass" value={form.nameservers} onChange={setFE('nameservers')} placeholder="ns1.provider.com, ns2.provider.com" />
+              </Field>
+            </div>
+            <div className="sm:col-span-2">
+              <Field label="Hosting Notes" hint="Login URL, control panel type, any access notes">
+                <textarea className="input-glass min-h-[80px] resize-y" value={form.hosting_notes} onChange={setFE('hosting_notes')}
+                  placeholder="cPanel login at host.example.com/cpanel — credentials in LastPass…" />
+              </Field>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {step === 4 && (
         <div className="space-y-6">
           <div className="glass-card p-6">
             <h2 className="text-lg font-semibold text-white mb-1">Review & Confirm</h2>
@@ -759,16 +876,22 @@ export default function NewClientPage() {
               Submitting saves this client and sends an approval email to <span className="text-white font-medium">jay@jaymehta.co</span> with full pricing details. Once approved, QuickBooks customer & invoice are created automatically.
             </p>
             <div className="space-y-1 mb-6">
+              <ReviewRow label="Contact Person" value={[form.contact_first_name, form.contact_last_name].filter(Boolean).join(' ')} />
               <ReviewRow label="Company" value={form.company_name} />
               <ReviewRow label="Website" value={form.website} />
               <ReviewRow label="Industry" value={form.industry} />
-              <ReviewRow label="Contact" value={form.email} />
+              <ReviewRow label="Email" value={form.email} />
               <ReviewRow label="Phone" value={form.phone} />
               <ReviewRow label="Address" value={[form.street_address, form.city, form.state, form.country].filter(Boolean).join(', ')} />
               <ReviewRow label="Status" value={form.project_status} />
-              <ReviewRow label="Target Audience" value={form.target_audience} />
-              <ReviewRow label="Goals" value={form.goals} />
-              <ReviewRow label="Expectations" value={form.stakeholder_expectations} />
+              {needsGoals && <>
+                <ReviewRow label="Target Audience" value={form.target_audience} />
+                <ReviewRow label="Goals" value={form.goals} />
+                <ReviewRow label="Expectations" value={form.stakeholder_expectations} />
+              </>}
+              {form.domain_name && <ReviewRow label="Domain" value={form.domain_name} />}
+              {form.hosting_provider && <ReviewRow label="Hosting" value={form.hosting_provider} />}
+              {form.domain_registrar && <ReviewRow label="Registrar" value={form.domain_registrar} />}
               {form.proposal_url && <ReviewRow label="Proposal" value={form.proposal_url} />}
             </div>
             <p className="text-xs font-semibold text-sky-400 uppercase tracking-wider mb-3">Services & Pricing</p>
@@ -808,7 +931,7 @@ export default function NewClientPage() {
           className="flex items-center gap-2 px-5 py-2.5 border border-white/[0.08] rounded-xl text-sm font-medium text-slate-300 hover:bg-white/[0.05] transition-colors">
           <ChevronLeft className="h-4 w-4" />{step === 0 ? 'Cancel' : 'Back'}
         </button>
-        {step < 3 ? (
+        {step < 4 ? (
           <button type="button"
             onClick={() => { if (formRef.current?.reportValidity() !== false) setStep(s => s + 1) }}
             disabled={!canNext()}
