@@ -20,6 +20,8 @@ function pctChange(a: number | null | undefined, b: number | null | undefined) {
   return Math.round(((a - b) / b) * 1000) / 10
 }
 
+const selectClass = "bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+
 export default function ComparisonReportsPage() {
   const now = new Date()
   const [type, setType] = useState<ComparisonType>('month-over-month')
@@ -123,48 +125,51 @@ export default function ComparisonReportsPage() {
   return (
     <div className="p-4 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Comparison Reports</h1>
-        <p className="text-gray-500 text-sm">Compare performance across clients or months</p>
+        <h1 className="text-2xl font-bold text-white">Comparison Reports</h1>
+        <p className="text-slate-400 text-sm">Compare performance across clients or months</p>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">
         {types.map(t => (
           <button key={t.value} onClick={() => setType(t.value as ComparisonType)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${type === t.value ? 'bg-sky-500 text-white' : 'bg-white border border-gray-300 text-gray-700 hover:border-sky-400'}`}>
+            className={type === t.value
+              ? 'bg-sky-500 text-white rounded-full px-4 py-2 text-sm font-medium'
+              : 'bg-white/[0.05] border border-white/[0.08] text-slate-400 hover:text-white rounded-full px-4 py-2 text-sm font-medium transition-colors'
+            }>
             {t.label}
           </button>
         ))}
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6 flex flex-wrap gap-3 items-end">
+      <div className="glass-card p-4 mb-6 flex flex-wrap gap-3 items-end">
         {type === 'month-over-month' && (
           <>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Client</label>
-              <select value={clientA} onChange={e => setClientA(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[160px]">
+              <label className="block text-xs text-slate-400 mb-1">Client</label>
+              <select value={clientA} onChange={e => setClientA(e.target.value)} className={`${selectClass} min-w-[160px]`}>
                 <option value="">Select client…</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Month A</label>
+              <label className="block text-xs text-slate-400 mb-1">Month A</label>
               <div className="flex gap-1">
-                <select value={monthA} onChange={e => setMonthA(Number(e.target.value))} className="px-2 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                <select value={monthA} onChange={e => setMonthA(Number(e.target.value))} className={selectClass}>
                   {MONTHS.map((m, i) => <option key={m} value={i}>{m.slice(0,3)}</option>)}
                 </select>
-                <select value={yearA} onChange={e => setYearA(Number(e.target.value))} className="px-2 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                <select value={yearA} onChange={e => setYearA(Number(e.target.value))} className={selectClass}>
                   {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">vs Month B</label>
+              <label className="block text-xs text-slate-400 mb-1">vs Month B</label>
               <div className="flex gap-1">
-                <select value={monthB} onChange={e => setMonthB(Number(e.target.value))} className="px-2 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                <select value={monthB} onChange={e => setMonthB(Number(e.target.value))} className={selectClass}>
                   {MONTHS.map((m, i) => <option key={m} value={i}>{m.slice(0,3)}</option>)}
                 </select>
-                <select value={yearB} onChange={e => setYearB(Number(e.target.value))} className="px-2 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                <select value={yearB} onChange={e => setYearB(Number(e.target.value))} className={selectClass}>
                   {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
@@ -175,26 +180,26 @@ export default function ComparisonReportsPage() {
         {type === 'client-vs-client' && (
           <>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Client A</label>
-              <select value={clientA} onChange={e => setClientA(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[160px]">
+              <label className="block text-xs text-slate-400 mb-1">Client A</label>
+              <select value={clientA} onChange={e => setClientA(e.target.value)} className={`${selectClass} min-w-[160px]`}>
                 <option value="">Select client…</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">vs Client B</label>
-              <select value={clientB} onChange={e => setClientB(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[160px]">
+              <label className="block text-xs text-slate-400 mb-1">vs Client B</label>
+              <select value={clientB} onChange={e => setClientB(e.target.value)} className={`${selectClass} min-w-[160px]`}>
                 <option value="">Select client…</option>
                 {clients.filter(c => c.id !== clientA).map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Month</label>
+              <label className="block text-xs text-slate-400 mb-1">Month</label>
               <div className="flex gap-1">
-                <select value={monthA} onChange={e => setMonthA(Number(e.target.value))} className="px-2 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                <select value={monthA} onChange={e => setMonthA(Number(e.target.value))} className={selectClass}>
                   {MONTHS.map((m, i) => <option key={m} value={i}>{m.slice(0,3)}</option>)}
                 </select>
-                <select value={yearA} onChange={e => setYearA(Number(e.target.value))} className="px-2 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                <select value={yearA} onChange={e => setYearA(Number(e.target.value))} className={selectClass}>
                   {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
@@ -204,31 +209,31 @@ export default function ComparisonReportsPage() {
       </div>
 
       {loading && (
-        <div className="text-center py-8 text-gray-400 text-sm">Loading comparison data…</div>
+        <div className="text-center py-8 text-slate-400 text-sm">Loading comparison data…</div>
       )}
 
       {!loading && kpis.length > 0 && (
         <>
-          <div className="flex gap-4 mb-4 text-sm">
+          <div className="flex gap-4 mb-4 text-sm text-slate-300">
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-sky-500 inline-block" />{labelA}</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-gray-300 inline-block" />{labelB}</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-slate-500 inline-block" />{labelB}</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
             {kpis.map(kpi => (
-              <div key={kpi.label} className="bg-white rounded-xl border border-gray-100 p-4">
-                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-3">{kpi.label}</p>
+              <div key={kpi.label} className="glass-card p-4">
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-3">{kpi.label}</p>
                 <div className="flex justify-between items-end">
                   <div>
-                    <p className="text-xs text-gray-400 mb-0.5">{labelA}</p>
-                    <p className="text-lg font-bold text-gray-900">{kpi.a}</p>
+                    <p className="text-xs text-slate-500 mb-0.5">{labelA}</p>
+                    <p className="text-lg font-bold text-white">{kpi.a}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-400 mb-0.5">{labelB}</p>
-                    <p className="text-sm text-gray-500">{kpi.b}</p>
+                    <p className="text-xs text-slate-500 mb-0.5">{labelB}</p>
+                    <p className="text-sm text-slate-400">{kpi.b}</p>
                   </div>
                 </div>
                 {kpi.change !== 0 && (
-                  <div className={`mt-2 flex items-center gap-1 text-sm font-medium ${kpi.up ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={`mt-2 flex items-center gap-1 text-sm font-medium ${kpi.up ? 'text-emerald-400' : 'text-red-400'}`}>
                     {kpi.up ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                     {kpi.change > 0 ? '+' : ''}{kpi.change}%
                   </div>
@@ -240,15 +245,15 @@ export default function ComparisonReportsPage() {
       )}
 
       {!loading && kpis.length === 0 && (clientA || clientB) && (
-        <div className="bg-white rounded-xl border border-gray-100 p-6 text-center text-gray-400">
-          <p className="font-medium">No report data found for the selected period</p>
+        <div className="glass-card p-6 text-center text-slate-400">
+          <p className="font-medium text-slate-300">No report data found for the selected period</p>
           <p className="text-sm mt-1">Add marketing report data via the Marketing Reports page</p>
         </div>
       )}
 
       {!loading && !clientA && !clientB && (
-        <div className="bg-white rounded-xl border border-gray-100 p-6 text-center text-gray-400">
-          <p className="font-medium">Select a client to compare performance</p>
+        <div className="glass-card p-6 text-center text-slate-400">
+          <p className="font-medium text-slate-300">Select a client to compare performance</p>
         </div>
       )}
     </div>

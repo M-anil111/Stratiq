@@ -4,12 +4,12 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Edit2, Globe, Mail, Phone, MapPin, ExternalLink, Send, FileText, Plus, Folder } from 'lucide-react'
 
 const statusColors: Record<string, string> = {
-  active: 'bg-emerald-100 text-emerald-800',
-  hold: 'bg-amber-100 text-amber-800',
-  cancelled: 'bg-red-100 text-red-800',
-  completed: 'bg-gray-100 text-gray-700',
-  onboarding: 'bg-violet-100 text-violet-800',
-  prospect: 'bg-blue-100 text-blue-800',
+  active: 'bg-emerald-500/20 text-emerald-400',
+  hold: 'bg-amber-500/20 text-amber-400',
+  cancelled: 'bg-red-500/20 text-red-400',
+  completed: 'bg-slate-500/20 text-slate-400',
+  onboarding: 'bg-violet-500/20 text-violet-400',
+  prospect: 'bg-blue-500/20 text-blue-400',
 }
 
 const TABS = ['Overview', 'Projects', 'Reports', 'Messages', 'Files']
@@ -82,15 +82,15 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
   if (loading) return (
     <div className="p-4 lg:p-8 space-y-4">
-      <div className="h-10 w-48 bg-gray-100 rounded-lg animate-pulse" />
-      <div className="h-32 bg-gray-100 rounded-xl animate-pulse" />
+      <div className="h-10 w-48 skeleton rounded-lg" />
+      <div className="h-32 skeleton rounded-xl" />
     </div>
   )
 
   if (!client || client.error) return (
-    <div className="p-8 text-center text-gray-400">
+    <div className="p-8 text-center text-slate-400">
       <p className="font-medium">Client not found</p>
-      <button onClick={() => router.push('/clients')} className="mt-4 text-sky-600 text-sm">← Back to clients</button>
+      <button onClick={() => router.push('/clients')} className="mt-4 text-sky-400 text-sm">← Back to clients</button>
     </div>
   )
 
@@ -98,33 +98,33 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     <div className="p-4 lg:p-8">
       {/* Header */}
       <div className="flex items-start gap-4 mb-6">
-        <button onClick={() => router.push('/clients')} className="mt-1 p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+        <button onClick={() => router.push('/clients')} className="mt-1 p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.06]">
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-gray-900 truncate">{client.company_name}</h1>
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[client.project_status] || 'bg-gray-100 text-gray-700'}`}>
+            <h1 className="text-2xl font-bold text-white truncate">{client.company_name}</h1>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[client.project_status] || 'bg-slate-500/20 text-slate-400'}`}>
               {client.project_status}
             </span>
           </div>
           {client.website && (
-            <a href={client.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-sky-600 hover:text-sky-700 mt-1">
+            <a href={client.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-sky-400 hover:text-sky-300 mt-1">
               <Globe className="h-3.5 w-3.5" />
               {client.website.replace(/^https?:\/\//, '')}
             </a>
           )}
         </div>
-        <a href={`/clients/${params.id}/edit`} className="flex items-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50">
+        <a href={`/clients/${params.id}/edit`} className="flex items-center gap-2 px-3 py-2 border border-white/[0.08] text-slate-300 text-sm font-medium rounded-lg hover:bg-white/[0.06]">
           <Edit2 className="h-4 w-4" /> Edit
         </a>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
+      <div className="flex border-b border-white/[0.08] mb-6 overflow-x-auto">
         {TABS.map((tab, i) => (
           <button key={tab} onClick={() => setActiveTab(i)}
-            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === i ? 'border-sky-500 text-sky-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === i ? 'bg-white/[0.08] text-white border-b-2 border-sky-400' : 'border-transparent text-slate-400 hover:text-white'}`}>
             {tab}
           </button>
         ))}
@@ -133,25 +133,25 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       {/* Overview */}
       {activeTab === 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
-            <h2 className="font-semibold text-gray-900">Contact & Location</h2>
+          <div className="glass-card p-5 space-y-4">
+            <h2 className="font-semibold text-white">Contact & Location</h2>
             {[
               { icon: Mail, label: 'Email', value: client.email },
               { icon: Phone, label: 'Phone', value: client.phone },
               { icon: MapPin, label: 'Address', value: [client.street_address, client.city, client.state, client.country].filter(Boolean).join(', ') },
             ].map(row => row.value ? (
               <div key={row.label} className="flex items-start gap-3">
-                <row.icon className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
+                <row.icon className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-xs text-gray-500">{row.label}</p>
-                  <p className="text-sm text-gray-900">{row.value}</p>
+                  <p className="text-xs text-slate-400">{row.label}</p>
+                  <p className="text-sm text-slate-300">{row.value}</p>
                 </div>
               </div>
             ) : null)}
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
-            <h2 className="font-semibold text-gray-900">Business Info</h2>
+          <div className="glass-card p-5 space-y-4">
+            <h2 className="font-semibold text-white">Business Info</h2>
             {[
               { label: 'Industry', value: client.industry },
               { label: 'Company Size', value: client.num_employees ? `${client.num_employees} employees` : null },
@@ -160,37 +160,37 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
               { label: 'Target Audience', value: client.target_audience },
             ].map(row => row.value ? (
               <div key={row.label}>
-                <p className="text-xs text-gray-500">{row.label}</p>
-                <p className="text-sm text-gray-900">{row.value}</p>
+                <p className="text-xs text-slate-400">{row.label}</p>
+                <p className="text-sm text-slate-300">{row.value}</p>
               </div>
             ) : null)}
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
-            <h2 className="font-semibold text-gray-900">Team</h2>
+          <div className="glass-card p-5 space-y-3">
+            <h2 className="font-semibold text-white">Team</h2>
             {client.sales_manager && (
               <div>
-                <p className="text-xs text-gray-500">Sales Manager</p>
-                <p className="text-sm font-medium text-gray-900">{client.sales_manager.full_name}</p>
+                <p className="text-xs text-slate-400">Sales Manager</p>
+                <p className="text-sm font-medium text-slate-300">{client.sales_manager.full_name}</p>
               </div>
             )}
             {client.dm_manager && (
               <div>
-                <p className="text-xs text-gray-500">DM Manager</p>
-                <p className="text-sm font-medium text-gray-900">{client.dm_manager.full_name}</p>
+                <p className="text-xs text-slate-400">DM Manager</p>
+                <p className="text-sm font-medium text-slate-300">{client.dm_manager.full_name}</p>
               </div>
             )}
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
-            <h2 className="font-semibold text-gray-900">Links</h2>
+          <div className="glass-card p-5 space-y-3">
+            <h2 className="font-semibold text-white">Links</h2>
             {client.google_drive_folder_url && (
-              <a href={client.google_drive_folder_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-sky-600 hover:text-sky-700">
+              <a href={client.google_drive_folder_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300">
                 <ExternalLink className="h-3.5 w-3.5" /> Google Drive Folder
               </a>
             )}
             {client.ndisk_link && (
-              <a href={client.ndisk_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-sky-600 hover:text-sky-700">
+              <a href={client.ndisk_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300">
                 <ExternalLink className="h-3.5 w-3.5" /> nDisk
               </a>
             )}
@@ -202,22 +202,22 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       {activeTab === 1 && (
         <div>
           <div className="flex justify-end mb-4">
-            <a href={`/clients/${params.id}/projects/new`} className="flex items-center gap-2 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium rounded-lg">
+            <a href={`/clients/${params.id}/projects/new`} className="btn-brand flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg">
               <Plus className="h-4 w-4" /> Add Project
             </a>
           </div>
           {projects.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-gray-400">
+            <div className="glass-card p-12 text-center text-slate-400">
               <Globe className="h-10 w-10 mx-auto mb-3 opacity-30" />
               <p className="font-medium">No projects yet</p>
             </div>
           ) : (
             <div className="space-y-3">
               {projects.map(p => (
-                <a key={p.id} href={`/clients/${params.id}/projects/${p.id}`} className="flex items-center justify-between bg-white rounded-xl border border-gray-100 p-4 hover:shadow-sm transition-shadow">
+                <a key={p.id} href={`/clients/${params.id}/projects/${p.id}`} className="flex items-center justify-between glass-card p-4 hover:bg-white/[0.03] transition-colors">
                   <div className="flex items-center gap-3">
-                    <Globe className="h-4 w-4 text-gray-400" />
-                    <span className="font-medium text-gray-900">{p.domain}</span>
+                    <Globe className="h-4 w-4 text-slate-400" />
+                    <span className="font-medium text-white">{p.domain}</span>
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[p.status] || ''}`}>{p.status}</span>
                 </a>
@@ -244,11 +244,11 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         return (
           <div>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-semibold text-gray-700">Marketing Reports</h2>
+              <h2 className="text-base font-semibold text-slate-300">Marketing Reports</h2>
               <select
                 value={selectedMonth}
                 onChange={e => setSelectedMonth(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
               >
                 {monthOptions.map(m => {
                   const [y, mo] = m.split('-')
@@ -259,13 +259,13 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             </div>
             {reportsLoading ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {[0, 1].map(i => <div key={i} className="h-48 bg-gray-100 rounded-xl animate-pulse" />)}
+                {[0, 1].map(i => <div key={i} className="h-48 skeleton rounded-xl" />)}
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Google Ads */}
-                <div className="bg-gray-50 rounded-xl border border-gray-100 p-5">
-                  <h3 className="text-sm font-semibold text-sky-500 mb-4">Google Ads</h3>
+                <div className="glass-card p-5">
+                  <h3 className="text-sm font-semibold text-sky-400 mb-4">Google Ads</h3>
                   {googleData ? (
                     <div className="grid grid-cols-2 gap-3">
                       {[
@@ -275,19 +275,19 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                         { label: 'Spend', value: fmtMoney(googleData.spend) },
                         { label: 'CTR', value: googleData.ctr != null ? fmtPct(googleData.ctr) : (googleData.impressions && googleData.clicks ? fmtPct((googleData.clicks / googleData.impressions) * 100) : '—') },
                       ].map(row => (
-                        <div key={row.label} className="bg-white rounded-lg p-3 border border-gray-100">
-                          <p className="text-xs text-gray-500">{row.label}</p>
-                          <p className="text-sm font-semibold text-gray-900 mt-0.5">{row.value}</p>
+                        <div key={row.label} className="page-card rounded-lg p-3 border border-white/[0.05]">
+                          <p className="text-xs text-slate-400">{row.label}</p>
+                          <p className="text-sm font-semibold text-white mt-0.5">{row.value}</p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center h-32 text-gray-400 text-sm">No data synced yet</div>
+                    <div className="flex items-center justify-center h-32 text-slate-400 text-sm">No data synced yet</div>
                   )}
                 </div>
                 {/* Meta Ads */}
-                <div className="bg-gray-50 rounded-xl border border-gray-100 p-5">
-                  <h3 className="text-sm font-semibold text-sky-500 mb-4">Meta Ads</h3>
+                <div className="glass-card p-5">
+                  <h3 className="text-sm font-semibold text-sky-400 mb-4">Meta Ads</h3>
                   {metaData ? (
                     <div className="grid grid-cols-2 gap-3">
                       {[
@@ -296,14 +296,14 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                         { label: 'Spend', value: fmtMoney(metaData.spend) },
                         { label: 'ROAS', value: fmtRoas(metaData.roas) },
                       ].map(row => (
-                        <div key={row.label} className="bg-white rounded-lg p-3 border border-gray-100">
-                          <p className="text-xs text-gray-500">{row.label}</p>
-                          <p className="text-sm font-semibold text-gray-900 mt-0.5">{row.value}</p>
+                        <div key={row.label} className="page-card rounded-lg p-3 border border-white/[0.05]">
+                          <p className="text-xs text-slate-400">{row.label}</p>
+                          <p className="text-sm font-semibold text-white mt-0.5">{row.value}</p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center h-32 text-gray-400 text-sm">No data synced yet</div>
+                    <div className="flex items-center justify-center h-32 text-slate-400 text-sm">No data synced yet</div>
                   )}
                 </div>
               </div>
@@ -314,19 +314,19 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
       {/* Messages */}
       {activeTab === 3 && (
-        <div className="flex flex-col h-[500px] bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="flex flex-col h-[500px] glass-card overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-gray-400 text-sm">No messages yet</div>
+              <div className="flex items-center justify-center h-full text-slate-400 text-sm">No messages yet</div>
             ) : messages.map(msg => {
               const isStaff = msg.sender_type === 'staff'
               return (
                 <div key={msg.id} className={`flex items-end gap-2 ${isStaff ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${isStaff ? 'bg-sky-100 text-sky-700' : 'bg-gray-100 text-gray-600'}`}>
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${isStaff ? 'bg-sky-500/20 text-sky-400' : 'bg-white/[0.08] text-slate-400'}`}>
                     {(msg.sender_name || 'U').split(' ').map((n: string) => n[0]).join('').slice(0,2)}
                   </div>
-                  <div className={`max-w-[70%] px-3 py-2 rounded-2xl text-sm ${isStaff ? 'bg-sky-500 text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm'}`}>
-                    {!isStaff && <p className="text-xs font-medium mb-0.5 text-gray-500">{msg.sender_name}</p>}
+                  <div className={`max-w-[70%] px-3 py-2 rounded-2xl text-sm ${isStaff ? 'bg-sky-500 text-white rounded-br-sm' : 'bg-white/[0.08] text-slate-300 rounded-bl-sm'}`}>
+                    {!isStaff && <p className="text-xs font-medium mb-0.5 text-slate-400">{msg.sender_name}</p>}
                     <p>{msg.content}</p>
                   </div>
                 </div>
@@ -334,13 +334,13 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             })}
             <div ref={bottomRef} />
           </div>
-          <div className="p-3 border-t border-gray-100 flex gap-2">
+          <div className="p-3 border-t border-white/[0.08] flex gap-2">
             <input value={msgInput} onChange={e => setMsgInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="input-glass flex-1"
               placeholder="Message client..." />
             <button onClick={sendMessage} disabled={!msgInput.trim() || sending}
-              className="p-2 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white rounded-lg">
+              className="btn-brand p-2 disabled:opacity-50 rounded-lg">
               <Send className="h-4 w-4" />
             </button>
           </div>
@@ -351,7 +351,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       {activeTab === 4 && (
         <div>
           {files.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-gray-400">
+            <div className="glass-card p-12 text-center text-slate-400">
               <Folder className="h-10 w-10 mx-auto mb-3 opacity-30" />
               <p className="font-medium">No files yet</p>
               <p className="text-sm mt-1">Files uploaded to Google Drive for this client will appear here</p>
@@ -359,10 +359,10 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {files.map(file => (
-                <div key={file.id} className="bg-white rounded-xl border border-gray-100 p-4 flex flex-col items-center gap-2">
-                  <FileText className="h-8 w-8 text-gray-400" />
-                  <p className="text-xs font-medium text-gray-700 text-center line-clamp-2">{file.name}</p>
-                  <a href={file.webViewLink} target="_blank" rel="noopener noreferrer" className="text-xs text-sky-600 hover:text-sky-700">Open</a>
+                <div key={file.id} className="glass-card p-4 flex flex-col items-center gap-2">
+                  <FileText className="h-8 w-8 text-slate-400" />
+                  <p className="text-xs font-medium text-slate-300 text-center line-clamp-2">{file.name}</p>
+                  <a href={file.webViewLink} target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:text-sky-300">Open</a>
                 </div>
               ))}
             </div>

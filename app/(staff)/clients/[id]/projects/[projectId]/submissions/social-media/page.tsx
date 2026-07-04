@@ -11,13 +11,12 @@ const PLATFORMS = [
 const TYPES = ['Image', 'Video', 'Carousel', 'GIF']
 const STATUSES = ['Live', 'Under Review', 'Deleted']
 
-const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
-const selectClass = "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+const selectClass = "w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 const statusColors: Record<string, string> = {
-  live: 'bg-green-100 text-green-800',
-  under_review: 'bg-amber-100 text-amber-800',
-  deleted: 'bg-red-100 text-red-800',
+  live: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
+  under_review: 'bg-amber-500/15 text-amber-400 border border-amber-500/25',
+  deleted: 'bg-red-500/15 text-red-400 border border-red-500/25',
 }
 
 function today() { return new Date().toISOString().split('T')[0] }
@@ -115,24 +114,24 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
   return (
     <div>
       {/* Progress bar */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4">
+      <div className="glass-card p-4 mb-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">Social Media Posts — Monthly Target</span>
-          <span className="text-sm text-gray-500">{posts.length}/0</span>
+          <span className="text-sm font-medium text-slate-300">Social Media Posts — Monthly Target</span>
+          <span className="text-sm text-slate-400">{posts.length}/0</span>
         </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
           <div className="h-full bg-sky-500 rounded-full" style={{ width: '0%' }} />
         </div>
-        <p className="text-xs text-gray-400 mt-1">No target set for this month</p>
+        <p className="text-xs text-slate-500 mt-1">No target set for this month</p>
       </div>
 
       {/* Add button + Grid */}
-      <div className="bg-white rounded-xl border border-gray-100">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">Posts ({posts.length})</h2>
+      <div className="glass-card">
+        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
+          <h2 className="font-semibold text-white">Posts ({posts.length})</h2>
           <button
             onClick={openAdd}
-            className="flex items-center gap-2 px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium rounded-lg transition-colors"
+            className="btn-brand flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
           >
             <Plus className="h-4 w-4" />
             Add Post
@@ -140,25 +139,25 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
         </div>
 
         {posts.length === 0 ? (
-          <div className="p-12 text-center text-gray-400">
+          <div className="p-12 text-center text-slate-400">
             <p className="font-medium">No posts yet</p>
             <p className="text-sm mt-1">Click "Add Post" to log your first social media post</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead>
                 <tr>
                   {['Platform', 'Type', 'Status', 'Live Link', 'Date', 'Comment', 'Actions'].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+                    <th key={h} className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-white/[0.06]">
                 {posts.map(post => (
-                  <tr key={post.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium">{post.platform}</td>
-                    <td className="px-4 py-3 capitalize">{post.type}</td>
+                  <tr key={post.id} className="hover:bg-white/[0.03]">
+                    <td className="px-4 py-3 font-medium text-white">{post.platform}</td>
+                    <td className="px-4 py-3 capitalize text-slate-300">{post.type}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[post.status] || ''}`}>
                         {post.status.replace('_', ' ')}
@@ -166,27 +165,27 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                     </td>
                     <td className="px-4 py-3">
                       {post.live_link && (
-                        <a href={post.live_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sky-600 hover:text-sky-700">
+                        <a href={post.live_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sky-400 hover:text-sky-300">
                           <ExternalLink className="h-3 w-3" />
                           View
                         </a>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-gray-500">{post.submission_date}</td>
-                    <td className="px-4 py-3 text-gray-500 max-w-[150px] truncate">{post.comment}</td>
+                    <td className="px-4 py-3 text-slate-400">{post.submission_date}</td>
+                    <td className="px-4 py-3 text-slate-400 max-w-[150px] truncate">{post.comment}</td>
                     <td className="px-4 py-3">
                       {deleteId === post.id ? (
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <span className="text-gray-600">Delete?</span>
-                          <button onClick={() => setDeleteId(null)} className="px-2 py-0.5 border border-gray-300 rounded text-gray-600 hover:bg-gray-50">Cancel</button>
+                        <div className="flex items-center gap-1.5 text-xs bg-red-500/10 border border-red-500/20 rounded-xl px-2 py-1">
+                          <span className="text-red-400">Delete?</span>
+                          <button onClick={() => setDeleteId(null)} className="px-2 py-0.5 border border-white/[0.10] rounded text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all">Cancel</button>
                           <button onClick={handleDelete} disabled={deleting} className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded disabled:opacity-60">
                             {deleting ? '...' : 'Delete'}
                           </button>
                         </div>
                       ) : (
                         <div className="flex gap-1">
-                          <button onClick={() => openEdit(post)} className="p-1 text-gray-400 hover:text-sky-600"><Edit2 className="h-4 w-4" /></button>
-                          <button onClick={() => setDeleteId(post.id)} className="p-1 text-gray-400 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
+                          <button onClick={() => openEdit(post)} className="p-1 text-slate-400 hover:text-sky-400"><Edit2 className="h-4 w-4" /></button>
+                          <button onClick={() => setDeleteId(post.id)} className="p-1 text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
                         </div>
                       )}
                     </td>
@@ -198,35 +197,35 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
         )}
 
         {/* Email send footer */}
-        <div className="p-4 border-t border-gray-100 flex flex-wrap gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-sm rounded-lg transition-colors">
+        <div className="p-4 border-t border-white/[0.06] flex flex-wrap gap-2">
+          <button className="btn-brand flex items-center gap-1.5 px-3 py-1.5 text-sm">
             <Send className="h-3.5 w-3.5" /> Send to All
           </button>
-          <button className="px-3 py-1.5 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50">Send to DM Manager</button>
-          <button className="px-3 py-1.5 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50">Send to Sales Manager</button>
-          <button className="px-3 py-1.5 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50">Send to Client</button>
+          <button className="px-3 py-1.5 rounded-lg border border-white/[0.10] text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Send to DM Manager</button>
+          <button className="px-3 py-1.5 rounded-lg border border-white/[0.10] text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Send to Sales Manager</button>
+          <button className="px-3 py-1.5 rounded-lg border border-white/[0.10] text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Send to Client</button>
         </div>
       </div>
 
       {/* Add/Edit Post Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40">
-          <div className="bg-white w-full max-w-lg rounded-2xl p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="glass w-full max-w-lg rounded-2xl p-6 shadow-xl">
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-lg font-semibold">{editEntry ? 'Edit Social Media Post' : 'Add Social Media Post'}</h3>
-              <button onClick={closeModal}><X className="h-5 w-5 text-gray-400" /></button>
+              <h3 className="text-lg font-semibold text-white">{editEntry ? 'Edit Social Media Post' : 'Add Social Media Post'}</h3>
+              <button onClick={closeModal}><X className="h-5 w-5 text-slate-400" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Platform <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Platform <span className="text-red-400">*</span></label>
                   <select className={selectClass} value={form.platform} onChange={set('platform')} required>
                     <option value="">Select...</option>
                     {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Type <span className="text-red-400">*</span></label>
                   <select className={selectClass} value={form.type} onChange={set('type')} required>
                     {TYPES.map(t => <option key={t} value={t.toLowerCase()}>{t}</option>)}
                   </select>
@@ -234,37 +233,37 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Status <span className="text-red-400">*</span></label>
                   <select className={selectClass} value={form.status} onChange={set('status')} required>
                     {STATUSES.map(s => <option key={s} value={s.toLowerCase().replace(' ', '_')}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Submission Date <span className="text-red-500">*</span></label>
-                  <input className={inputClass} type="date" value={form.submission_date} onChange={set('submission_date')} required />
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Submission Date <span className="text-red-400">*</span></label>
+                  <input className="input-glass" type="date" value={form.submission_date} onChange={set('submission_date')} required />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Live Link</label>
-                <input className={inputClass} type="url" value={form.live_link} onChange={set('live_link')} placeholder="https://..." />
+                <label className="block text-sm font-medium text-slate-300 mb-1">Live Link</label>
+                <input className="input-glass" type="url" value={form.live_link} onChange={set('live_link')} placeholder="https://..." />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                  <input className={inputClass} value={form.username} onChange={set('username')} placeholder="@handle" />
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Username</label>
+                  <input className="input-glass" value={form.username} onChange={set('username')} placeholder="@handle" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                  <input className={inputClass} type={showPassword ? 'text' : 'password'} value={form.password} onChange={set('password')} placeholder="••••••" />
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
+                  <input className="input-glass" type={showPassword ? 'text' : 'password'} value={form.password} onChange={set('password')} placeholder="••••••" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Comment</label>
-                <textarea className={`${inputClass} resize-none h-20`} value={form.comment} onChange={set('comment')} placeholder="Optional notes..." />
+                <label className="block text-sm font-medium text-slate-300 mb-1">Comment</label>
+                <textarea className="input-glass resize-none h-20" value={form.comment} onChange={set('comment')} placeholder="Optional notes..." />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={closeModal} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
-                <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-sky-500 hover:bg-sky-600 disabled:opacity-60 text-white rounded-lg text-sm font-medium">
+                <button type="button" onClick={closeModal} className="flex-1 py-2.5 rounded-lg border border-white/[0.10] text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Cancel</button>
+                <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-2.5 btn-brand disabled:opacity-60 text-sm font-medium">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   {saving ? 'Saving...' : editEntry ? 'Update Post' : 'Save Post'}
                 </button>

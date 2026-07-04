@@ -23,6 +23,8 @@ interface Report {
   seo_onpage_count: number | null
 }
 
+const selectClass = "bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+
 export default function MarketingReportsPage() {
   const now = new Date()
   const [month, setMonth] = useState(now.getMonth())
@@ -82,62 +84,60 @@ export default function MarketingReportsPage() {
     setTimeout(() => setSaved(false), 2000)
   }
 
-  const inputClass = "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
-
   return (
     <div className="p-4 lg:p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Marketing Reports</h1>
-          <p className="text-gray-500 text-sm">Monthly unified report per client</p>
+          <h1 className="text-2xl font-bold text-white">Marketing Reports</h1>
+          <p className="text-slate-400 text-sm">Monthly unified report per client</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <select value={clientId} onChange={e => setClientId(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[160px]">
+          <select value={clientId} onChange={e => setClientId(e.target.value)} className={`${selectClass} min-w-[160px]`}>
             <option value="">Select client…</option>
             {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
           </select>
-          <select value={month} onChange={e => setMonth(Number(e.target.value))} className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+          <select value={month} onChange={e => setMonth(Number(e.target.value))} className={selectClass}>
             {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
           </select>
-          <select value={year} onChange={e => setYear(Number(e.target.value))} className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+          <select value={year} onChange={e => setYear(Number(e.target.value))} className={selectClass}>
             {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
       </div>
 
       {!clientId && (
-        <div className="bg-sky-50 border border-sky-200 rounded-xl p-4 mb-6">
-          <p className="text-sky-800 text-sm font-medium">Select a client to view their monthly report</p>
+        <div className="bg-sky-500/10 border border-sky-500/20 rounded-xl p-4 mb-6">
+          <p className="text-sky-300 text-sm font-medium">Select a client to view their monthly report</p>
         </div>
       )}
 
       {loading && (
-        <div className="flex items-center justify-center py-12 text-gray-400 text-sm">Loading report…</div>
+        <div className="flex items-center justify-center py-12 text-slate-400 text-sm">Loading report…</div>
       )}
 
       {clientId && !loading && (
         <>
           {/* Section A: SEO */}
-          <div className="bg-white rounded-xl border border-gray-100 mb-4">
+          <div className="glass-card mb-4">
             <button className="w-full flex items-center justify-between p-5 text-left" onClick={() => setSeoOpen(o => !o)}>
               <div>
-                <h2 className="font-semibold text-gray-900">Section A: SEO Performance</h2>
-                <p className="text-sm text-gray-500">Auto-calculated from submission data</p>
+                <h2 className="font-semibold text-white">Section A: SEO Performance</h2>
+                <p className="text-sm text-slate-400">Auto-calculated from submission data</p>
               </div>
-              {seoOpen ? <ChevronDown className="h-5 w-5 text-gray-400" /> : <ChevronRight className="h-5 w-5 text-gray-400" />}
+              {seoOpen ? <ChevronDown className="h-5 w-5 text-slate-400" /> : <ChevronRight className="h-5 w-5 text-slate-400" />}
             </button>
             {seoOpen && (
-              <div className="px-5 pb-5 border-t border-gray-50">
+              <div className="px-5 pb-5 border-t border-white/[0.06]">
                 <div className="grid grid-cols-3 gap-4 mt-4">
                   {[
                     { label: 'Off-Page Links', value: report?.seo_offpage_count ?? '—', sub: 'This month' },
                     { label: 'Blog Posts', value: report?.seo_blog_count ?? '—', sub: 'This month' },
                     { label: 'OnPage URLs', value: report?.seo_onpage_count ?? '—', sub: 'Optimized' },
                   ].map(stat => (
-                    <div key={stat.label} className="text-center p-3 bg-gray-50 rounded-lg">
-                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                      <p className="text-sm font-medium text-gray-700">{stat.label}</p>
-                      <p className="text-xs text-gray-400">{stat.sub}</p>
+                    <div key={stat.label} className="glass-card p-4 text-center">
+                      <p className="text-2xl font-bold text-white">{stat.value}</p>
+                      <p className="text-sm font-medium text-slate-300">{stat.label}</p>
+                      <p className="text-xs text-slate-500">{stat.sub}</p>
                     </div>
                   ))}
                 </div>
@@ -146,13 +146,13 @@ export default function MarketingReportsPage() {
           </div>
 
           {/* Section B: Google Ads */}
-          <div className="bg-white rounded-xl border border-gray-100 mb-4">
-            <button className="w-full flex items-center justify-between p-5 border-b border-gray-50 text-left" onClick={() => setGadsOpen(o => !o)}>
+          <div className="glass-card mb-4">
+            <button className="w-full flex items-center justify-between p-5 border-b border-white/[0.06] text-left" onClick={() => setGadsOpen(o => !o)}>
               <div>
-                <h2 className="font-semibold text-gray-900">Section B: Google Ads Performance</h2>
-                <p className="text-sm text-gray-500">Enter data or sync via Google Ads integration</p>
+                <h2 className="font-semibold text-white">Section B: Google Ads Performance</h2>
+                <p className="text-sm text-slate-400">Enter data or sync via Google Ads integration</p>
               </div>
-              {gadsOpen ? <ChevronDown className="h-5 w-5 text-gray-400" /> : <ChevronRight className="h-5 w-5 text-gray-400" />}
+              {gadsOpen ? <ChevronDown className="h-5 w-5 text-slate-400" /> : <ChevronRight className="h-5 w-5 text-slate-400" />}
             </button>
             {gadsOpen && (
               <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -165,10 +165,10 @@ export default function MarketingReportsPage() {
                   { label: 'ROAS', field: 'google_roas' as keyof Report },
                 ].map(item => (
                   <div key={item.label}>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">{item.label}</label>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">{item.label}</label>
                     {item.computed !== undefined
-                      ? <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm font-medium text-gray-700">{item.computed}</div>
-                      : <input className={inputClass} type="number" value={(form as any)[item.field!] ?? ''} onChange={set(item.field!)} placeholder="0" />
+                      ? <div className="px-3 py-2 bg-white/[0.05] rounded-lg text-sm font-medium text-slate-300">{item.computed}</div>
+                      : <input className="input-glass" type="number" value={(form as any)[item.field!] ?? ''} onChange={set(item.field!)} placeholder="0" />
                     }
                   </div>
                 ))}
@@ -177,13 +177,13 @@ export default function MarketingReportsPage() {
           </div>
 
           {/* Section C: Meta Ads */}
-          <div className="bg-white rounded-xl border border-gray-100 mb-4">
-            <button className="w-full flex items-center justify-between p-5 border-b border-gray-50 text-left" onClick={() => setMetaOpen(o => !o)}>
+          <div className="glass-card mb-4">
+            <button className="w-full flex items-center justify-between p-5 border-b border-white/[0.06] text-left" onClick={() => setMetaOpen(o => !o)}>
               <div>
-                <h2 className="font-semibold text-gray-900">Section C: Meta Ads Performance</h2>
-                <p className="text-sm text-gray-500">Facebook &amp; Instagram ad data</p>
+                <h2 className="font-semibold text-white">Section C: Meta Ads Performance</h2>
+                <p className="text-sm text-slate-400">Facebook &amp; Instagram ad data</p>
               </div>
-              {metaOpen ? <ChevronDown className="h-5 w-5 text-gray-400" /> : <ChevronRight className="h-5 w-5 text-gray-400" />}
+              {metaOpen ? <ChevronDown className="h-5 w-5 text-slate-400" /> : <ChevronRight className="h-5 w-5 text-slate-400" />}
             </button>
             {metaOpen && (
               <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -197,10 +197,10 @@ export default function MarketingReportsPage() {
                   { label: 'ROAS', field: 'meta_roas' as keyof Report },
                 ].map(item => (
                   <div key={item.label}>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">{item.label}</label>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">{item.label}</label>
                     {item.computed !== undefined
-                      ? <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm font-medium text-gray-700">{item.computed}</div>
-                      : <input className={inputClass} type="number" value={(form as any)[item.field!] ?? ''} onChange={set(item.field!)} placeholder="0" />
+                      ? <div className="px-3 py-2 bg-white/[0.05] rounded-lg text-sm font-medium text-slate-300">{item.computed}</div>
+                      : <input className="input-glass" type="number" value={(form as any)[item.field!] ?? ''} onChange={set(item.field!)} placeholder="0" />
                     }
                   </div>
                 ))}
@@ -211,10 +211,10 @@ export default function MarketingReportsPage() {
           {/* Actions */}
           <div className="flex gap-3 flex-wrap">
             <button onClick={handleSave} disabled={saving}
-              className="flex items-center gap-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-600 disabled:opacity-60 text-white text-sm font-medium rounded-lg">
+              className="btn-brand flex items-center gap-2 px-4 py-2.5 disabled:opacity-60 text-sm font-medium">
               <Send className="h-4 w-4" /> {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Report'}
             </button>
-            <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+            <button className="px-4 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] transition-all text-sm flex items-center gap-2">
               <Download className="h-4 w-4" /> Export PDF
             </button>
           </div>

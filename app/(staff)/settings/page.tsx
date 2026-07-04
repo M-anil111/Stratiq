@@ -13,19 +13,19 @@ export default function SettingsPage() {
   return (
     <div className="p-4 lg:p-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-500 text-sm">Configure Stratiq for your organization</p>
+        <h1 className="text-2xl font-bold text-white">Settings</h1>
+        <p className="text-slate-400 text-sm">Configure Stratiq for your organization</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {settingsSections.map(section => (
-          <Link key={section.href} href={section.href} className="flex items-start gap-4 p-5 bg-white rounded-xl border border-gray-100 hover:shadow-md transition-shadow group">
-            <div className="p-3 bg-gray-50 rounded-xl text-gray-600 group-hover:bg-sky-50 group-hover:text-sky-600 transition-colors shrink-0">
+          <Link key={section.href} href={section.href} className="flex items-start gap-4 p-5 glass-card hover:shadow-md transition-shadow group">
+            <div className="p-3 bg-white/[0.05] rounded-xl text-slate-400 group-hover:bg-sky-500/10 group-hover:text-sky-400 transition-colors shrink-0">
               <section.icon className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">{section.label}</h2>
-              <p className="text-sm text-gray-500 mt-0.5">{section.description}</p>
+              <h2 className="font-semibold text-white">{section.label}</h2>
+              <p className="text-sm text-slate-400 mt-0.5">{section.description}</p>
             </div>
           </Link>
         ))}

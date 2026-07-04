@@ -112,65 +112,65 @@ export default function ReportBuilderPage() {
 
   return (
     <div className="p-4 lg:p-8 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Report Builder</h1>
+      <h1 className="text-2xl font-bold text-white mb-6">Report Builder</h1>
 
       <div className="space-y-6">
         {/* Step 1 */}
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h2 className="text-sm font-semibold text-sky-500 mb-1">Step 1 — Select Clients</h2>
-          <p className="text-xs text-gray-500 mb-3">{selectedClients.size} selected</p>
+        <div className="glass-card p-5">
+          <h2 className="text-sm font-semibold text-sky-400 mb-1">Step 1 — Select Clients</h2>
+          <p className="text-xs text-slate-400 mb-3">{selectedClients.size} selected</p>
           <input
             type="text"
             placeholder="Search clients..."
             value={clientSearch}
             onChange={e => setClientSearch(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 mb-3"
+            className="input-glass mb-3"
           />
           <div className="max-h-48 overflow-y-auto space-y-1">
             {filteredClients.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">No clients found</p>
+              <p className="text-sm text-slate-500 text-center py-4">No clients found</p>
             ) : filteredClients.map(c => (
-              <label key={c.id} className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
+              <label key={c.id} className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-white/[0.05] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={selectedClients.has(c.id)}
                   onChange={() => toggleClient(c.id)}
-                  className="rounded border-gray-300 text-sky-500 focus:ring-sky-500"
+                  className="rounded border-white/[0.12] text-sky-500 focus:ring-sky-500 bg-white/[0.06]"
                 />
-                <span className="text-sm text-gray-800">{c.company_name}</span>
+                <span className="text-sm text-slate-300">{c.company_name}</span>
               </label>
             ))}
           </div>
         </div>
 
         {/* Step 2 */}
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h2 className="text-sm font-semibold text-sky-500 mb-4">Step 2 — Select Date Range</h2>
+        <div className="glass-card p-5">
+          <h2 className="text-sm font-semibold text-sky-400 mb-4">Step 2 — Select Date Range</h2>
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">From (YYYY-MM)</label>
+              <label className="block text-xs text-slate-400 mb-1">From (YYYY-MM)</label>
               <input
                 type="month"
                 value={from}
                 onChange={e => setFrom(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="input-glass"
               />
             </div>
             <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">To (YYYY-MM)</label>
+              <label className="block text-xs text-slate-400 mb-1">To (YYYY-MM)</label>
               <input
                 type="month"
                 value={to}
                 onChange={e => setTo(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="input-glass"
               />
             </div>
           </div>
         </div>
 
         {/* Step 3 */}
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h2 className="text-sm font-semibold text-sky-500 mb-4">Step 3 — Select Metrics</h2>
+        <div className="glass-card p-5">
+          <h2 className="text-sm font-semibold text-sky-400 mb-4">Step 3 — Select Metrics</h2>
           <div className="flex flex-wrap gap-3">
             {ALL_METRICS.map(m => (
               <label key={m} className="flex items-center gap-2 cursor-pointer">
@@ -178,20 +178,20 @@ export default function ReportBuilderPage() {
                   type="checkbox"
                   checked={selectedMetrics.has(m)}
                   onChange={() => toggleMetric(m)}
-                  className="rounded border-gray-300 text-sky-500 focus:ring-sky-500"
+                  className="rounded border-white/[0.12] text-sky-500 focus:ring-sky-500 bg-white/[0.06]"
                 />
-                <span className="text-sm text-gray-800">{METRIC_LABELS[m]}</span>
+                <span className="text-sm text-slate-300">{METRIC_LABELS[m]}</span>
               </label>
             ))}
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
 
         <button
           onClick={generateReport}
           disabled={loading}
-          className="w-full sm:w-auto px-6 py-2.5 bg-sky-500 hover:bg-sky-600 disabled:opacity-60 text-white text-sm font-medium rounded-lg"
+          className="btn-brand w-full sm:w-auto px-6 py-2.5 disabled:opacity-60 text-sm font-medium"
         >
           {loading ? 'Generating...' : 'Generate Report'}
         </button>
@@ -199,23 +199,23 @@ export default function ReportBuilderPage() {
         {/* Results */}
         {loading && (
           <div className="space-y-2">
-            {[0, 1, 2].map(i => <div key={i} className="h-10 bg-gray-100 rounded-lg animate-pulse" />)}
+            {[0, 1, 2].map(i => <div key={i} className="skeleton h-10 rounded-lg" />)}
           </div>
         )}
 
         {!loading && results !== null && (
           <div>
             {results.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-100 p-10 text-center text-gray-400">
-                <p className="font-medium">No data found for the selected filters</p>
+              <div className="glass-card p-10 text-center text-slate-400">
+                <p className="font-medium text-slate-300">No data found for the selected filters</p>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-                  <p className="text-sm font-semibold text-gray-700">{results.length} client{results.length !== 1 ? 's' : ''}</p>
+              <div className="glass-card overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06]">
+                  <p className="text-sm font-semibold text-slate-300">{results.length} client{results.length !== 1 ? 's' : ''}</p>
                   <button
                     onClick={exportCsv}
-                    className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50"
+                    className="px-4 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] transition-all text-sm flex items-center gap-2"
                   >
                     Export CSV
                   </button>
@@ -223,15 +223,15 @@ export default function ReportBuilderPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-gray-50 border-b border-gray-100">
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 whitespace-nowrap">Client</th>
+                      <tr className="bg-white/[0.05] border-b border-white/[0.06]">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">Client</th>
                         {activeMetrics.map(m => (
-                          <th key={`g-${m}`} className="px-3 py-3 text-right text-xs font-semibold text-sky-500 whitespace-nowrap">
+                          <th key={`g-${m}`} className="px-3 py-3 text-right text-xs font-semibold text-sky-400 whitespace-nowrap">
                             Google {METRIC_LABELS[m]}
                           </th>
                         ))}
                         {activeMetrics.map(m => (
-                          <th key={`meta-${m}`} className="px-3 py-3 text-right text-xs font-semibold text-sky-500 whitespace-nowrap">
+                          <th key={`meta-${m}`} className="px-3 py-3 text-right text-xs font-semibold text-sky-400 whitespace-nowrap">
                             Meta {METRIC_LABELS[m]}
                           </th>
                         ))}
@@ -239,15 +239,15 @@ export default function ReportBuilderPage() {
                     </thead>
                     <tbody>
                       {results.map((row, i) => (
-                        <tr key={row.client_id} className={i % 2 === 0 ? '' : 'bg-gray-50'}>
-                          <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{row.client_name}</td>
+                        <tr key={row.client_id} className={i % 2 === 0 ? '' : 'bg-white/[0.02]'}>
+                          <td className="px-4 py-3 font-medium text-white whitespace-nowrap">{row.client_name}</td>
                           {activeMetrics.map(m => (
-                            <td key={`g-${m}`} className="px-3 py-3 text-right text-gray-700 whitespace-nowrap">
+                            <td key={`g-${m}`} className="px-3 py-3 text-right text-slate-300 whitespace-nowrap">
                               {fmtVal(m, row.google_ads?.[m])}
                             </td>
                           ))}
                           {activeMetrics.map(m => (
-                            <td key={`meta-${m}`} className="px-3 py-3 text-right text-gray-700 whitespace-nowrap">
+                            <td key={`meta-${m}`} className="px-3 py-3 text-right text-slate-300 whitespace-nowrap">
                               {fmtVal(m, row.meta_ads?.[m])}
                             </td>
                           ))}

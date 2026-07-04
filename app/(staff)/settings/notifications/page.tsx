@@ -48,20 +48,20 @@ export default function NotificationsSettingsPage() {
   return (
     <div className="p-4 lg:p-8 max-w-2xl">
       <div className="flex items-center gap-3 mb-6">
-        <Bell className="h-6 w-6 text-sky-600" />
-        <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
+        <Bell className="h-6 w-6 text-sky-400" />
+        <h1 className="text-2xl font-bold text-white">Notifications</h1>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50">
+      <div className="glass-card divide-y divide-white/[0.06]">
         {prefLabels.map(({ key, label, description }) => (
           <div key={key} className="flex items-start justify-between p-4 gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-900">{label}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{description}</p>
+              <p className="text-sm font-medium text-white">{label}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{description}</p>
             </div>
             <button
               onClick={() => toggle(key)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${prefs[key] ? 'bg-sky-500' : 'bg-gray-200'}`}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${prefs[key] ? 'bg-sky-500' : 'bg-white/[0.12]'}`}
             >
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${prefs[key] ? 'translate-x-4' : 'translate-x-0'}`} />
             </button>
@@ -70,8 +70,8 @@ export default function NotificationsSettingsPage() {
       </div>
 
       <div className="flex items-center gap-3 mt-6">
-        <button onClick={save} className="px-6 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-medium">Save Preferences</button>
-        {saved && <span className="text-sm text-green-600 font-medium">✓ Saved</span>}
+        <button onClick={save} className="btn-brand">Save Preferences</button>
+        {saved && <span className="text-sm text-green-400 font-medium">✓ Saved</span>}
       </div>
     </div>
   )

@@ -56,9 +56,9 @@ const integrations = [
 ]
 
 const statusConfig = {
-  connected: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50', label: 'Connected' },
-  disconnected: { icon: XCircle, color: 'text-gray-400', bg: 'bg-gray-50', label: 'Not Connected' },
-  error: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-50', label: 'Error' },
+  connected: { icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/10', label: 'Connected' },
+  disconnected: { icon: XCircle, color: 'text-slate-400', bg: 'bg-white/[0.05]', label: 'Not Connected' },
+  error: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10', label: 'Error' },
 }
 
 export default function IntegrationsPage() {
@@ -69,8 +69,8 @@ export default function IntegrationsPage() {
   return (
     <div className="p-4 lg:p-8 max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Integrations</h1>
-        <p className="text-gray-500 text-sm">Connect external platforms to pull data automatically</p>
+        <h1 className="text-2xl font-bold text-white">Integrations</h1>
+        <p className="text-slate-400 text-sm">Connect external platforms to pull data automatically</p>
       </div>
 
       <div className="space-y-4">
@@ -79,27 +79,27 @@ export default function IntegrationsPage() {
           const config = statusConfig[status]
           const Icon = config.icon
           return (
-            <div key={integration.id} className="bg-white rounded-xl border border-gray-100 p-5">
+            <div key={integration.id} className="glass-card p-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
                   <div className="text-2xl">{integration.icon}</div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="font-semibold text-gray-900">{integration.name}</h2>
+                      <h2 className="font-semibold text-white">{integration.name}</h2>
                       {integration.badge && (
-                        <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 rounded-full">{integration.badge}</span>
+                        <span className="px-2 py-0.5 text-xs font-medium bg-amber-500/20 text-amber-300 rounded-full">{integration.badge}</span>
                       )}
                       <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.color}`}>
                         <Icon className="h-3 w-3" />
                         {config.label}
                       </div>
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">{integration.description}</p>
+                    <p className="text-sm text-slate-400 mt-1">{integration.description}</p>
                     {integration.steps && status === 'disconnected' && (
                       <ol className="mt-3 space-y-1">
                         {integration.steps.map((step, i) => (
-                          <li key={i} className="text-xs text-gray-400 flex gap-1.5">
-                            <span className="font-medium text-gray-500">{i + 1}.</span>
+                          <li key={i} className="text-xs text-slate-400 flex gap-1.5">
+                            <span className="font-medium text-slate-300">{i + 1}.</span>
                             {step}
                           </li>
                         ))}
@@ -109,21 +109,21 @@ export default function IntegrationsPage() {
                 </div>
                 <div className="shrink-0">
                   {integration.badge ? (
-                    <span className="text-xs text-gray-400">Available in Phase 2</span>
+                    <span className="text-xs text-slate-400">Available in Phase 2</span>
                   ) : status === 'connected' ? (
                     <div className="flex gap-2">
-                      <button className="flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600">
+                      <button className="flex items-center gap-1 px-3 py-1.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all">
                         <RefreshCw className="h-3.5 w-3.5" /> Sync
                       </button>
                       <button onClick={() => setStatuses(s => ({ ...s, [integration.id]: 'disconnected' }))}
-                        className="px-3 py-1.5 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50">
+                        className="px-3 py-1.5 text-sm border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/10 transition-all">
                         Disconnect
                       </button>
                     </div>
                   ) : (
                     <button
                       onClick={() => setStatuses(s => ({ ...s, [integration.id]: 'connected' }))}
-                      className="px-4 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium rounded-lg transition-colors"
+                      className="btn-brand"
                     >
                       Connect
                     </button>
