@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { LayoutDashboard, Users, BarChart3, Target, MoreHorizontal, UserCog, Settings, LogOut, X } from 'lucide-react'
+import { LayoutDashboard, Users, BarChart3, Target, MoreHorizontal, UserCog, Settings, LogOut, X, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const tabs = [
@@ -18,8 +18,14 @@ export function MobileNav() {
 
   return (
     <>
-      {/* Bottom tab bar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 flex items-center">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center"
+        style={{
+          background: 'rgba(6,10,18,0.88)',
+          backdropFilter: 'blur(28px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(28px) saturate(200%)',
+          borderTop: '1px solid rgba(255,255,255,0.07)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}>
         {tabs.map(tab => {
           const isActive = pathname === tab.href || pathname.startsWith(tab.href + '/')
           return (
@@ -27,45 +33,71 @@ export function MobileNav() {
               key={tab.href}
               href={tab.href}
               className={cn(
-                'flex-1 flex flex-col items-center gap-0.5 py-2 text-xs transition-colors',
-                isActive ? 'text-sky-600' : 'text-gray-500'
+                'flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium transition-all duration-200',
+                isActive ? 'text-sky-400' : 'text-slate-500'
               )}
             >
-              <tab.icon className={cn('h-5 w-5', isActive && 'text-sky-500')} />
+              <div className={cn(
+                'p-1.5 rounded-xl transition-all duration-200',
+                isActive ? 'bg-sky-500/15' : ''
+              )}>
+                <tab.icon className={cn('h-5 w-5 transition-all duration-200', isActive ? 'text-sky-400' : 'text-slate-500')} />
+              </div>
               <span>{tab.label}</span>
             </Link>
           )
         })}
         <button
           onClick={() => setMoreOpen(true)}
-          className={cn('flex-1 flex flex-col items-center gap-0.5 py-2 text-xs', moreOpen ? 'text-sky-600' : 'text-gray-500')}
+          className={cn('flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors', moreOpen ? 'text-sky-400' : 'text-slate-500')}
         >
-          <MoreHorizontal className="h-5 w-5" />
+          <div className={cn('p-1.5 rounded-xl transition-all duration-200', moreOpen ? 'bg-sky-500/15' : '')}>
+            <MoreHorizontal className="h-5 w-5" />
+          </div>
           <span>More</span>
         </button>
       </nav>
 
-      {/* More slide-up panel */}
       {moreOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setMoreOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-6 space-y-4">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold text-gray-900">More</h3>
-              <button onClick={() => setMoreOpen(false)}><X className="h-5 w-5 text-gray-500" /></button>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMoreOpen(false)} />
+          <div className="absolute bottom-0 left-0 right-0 rounded-t-3xl p-6 animate-slide-up"
+            style={{
+              background: 'rgba(8,12,20,0.95)',
+              backdropFilter: 'blur(36px) saturate(200%)',
+              WebkitBackdropFilter: 'blur(36px) saturate(200%)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderBottom: 'none',
+            }}>
+            <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-6" />
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center">
+                  <Sparkles className="h-3.5 w-3.5 text-white" />
+                </div>
+                <span className="font-semibold text-white">Stratiq</span>
+              </div>
+              <button onClick={() => setMoreOpen(false)} className="p-2 rounded-xl bg-white/[0.06] text-slate-400 hover:text-white transition-colors">
+                <X className="h-4 w-4" />
+              </button>
             </div>
-            <Link href="/team" onClick={() => setMoreOpen(false)} className="flex items-center gap-3 py-3 text-gray-700 border-b border-gray-100">
-              <UserCog className="h-5 w-5 text-gray-500" />
-              <span className="font-medium">Team</span>
-            </Link>
-            <Link href="/settings" onClick={() => setMoreOpen(false)} className="flex items-center gap-3 py-3 text-gray-700 border-b border-gray-100">
-              <Settings className="h-5 w-5 text-gray-500" />
-              <span className="font-medium">Settings</span>
-            </Link>
-            <button className="flex items-center gap-3 py-3 text-red-600 w-full">
-              <LogOut className="h-5 w-5" />
-              <span className="font-medium">Sign Out</span>
-            </button>
+            <div className="space-y-1">
+              <Link href="/team" onClick={() => setMoreOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-white/[0.06] transition-all duration-200">
+                <UserCog className="h-5 w-5 text-slate-400" />
+                <span className="font-medium">Team</span>
+              </Link>
+              <Link href="/settings" onClick={() => setMoreOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-white/[0.06] transition-all duration-200">
+                <Settings className="h-5 w-5 text-slate-400" />
+                <span className="font-medium">Settings</span>
+              </Link>
+              <div className="divider-glass my-3" />
+              <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 w-full transition-all duration-200">
+                <LogOut className="h-5 w-5" />
+                <span className="font-medium">Sign Out</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

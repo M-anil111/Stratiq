@@ -3,10 +3,9 @@ import { MobileNav } from '@/components/layout/mobile-nav'
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-mesh">
       <Sidebar />
-      {/* Main content — offset for sidebar on desktop */}
-      <div className="lg:ml-60 pb-20 lg:pb-0">
+      <div className="lg:ml-60 pb-20 lg:pb-0 min-h-screen">
         {children}
       </div>
       <MobileNav />
