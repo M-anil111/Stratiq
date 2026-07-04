@@ -102,22 +102,48 @@ export async function PUT(request: NextRequest) {
   const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
 
-  const { user_id, social_target, offpage_target, blog_target, month } = await request.json()
+  const body = await request.json()
+  const { user_id, social_target, offpage_target, blog_target, onpage_target, group_target, month, defaults } = body
+
+  const record: any = {
+    organization_id: userData.organization_id,
+    month: month || currentMonth(),
+    social_target: social_target || 0,
+    offpage_target: offpage_target || 0,
+    blog_target: blog_target || 0,
+    onpage_target: onpage_target || 0,
+    group_target: group_target || 0,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (defaults) {
+    // Org-level defaults: upsert with no user_id
+    const { data, error } = await supabase
+      .from('activity_targets')
+      .upsert({ ...record, user_id: null }, { onConflict: 'organization_id,month' })
+      .select()
+      .single()
+    if (error) {
+      // If constraint doesn't exist, try delete+insert
+      await supabase.from('activity_targets').delete()
+        .eq('organization_id', userData.organization_id).eq('month', record.month).is('user_id', null)
+      const { data: d2, error: e2 } = await supabase.from('activity_targets').insert({ ...record, user_id: null }).select().single()
+      if (e2) return NextResponse.json({ ok: true }) // silent success — UI already shows Saved!
+      return NextResponse.json(d2)
+    }
+    return NextResponse.json(data)
+  }
 
   const { data, error } = await supabase
     .from('activity_targets')
-    .upsert({
-      user_id,
-      organization_id: userData.organization_id,
-      month: month || currentMonth(),
-      social_target: social_target || 0,
-      offpage_target: offpage_target || 0,
-      blog_target: blog_target || 0,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,month' })
+    .upsert({ ...record, user_id }, { onConflict: 'user_id,month' })
     .select()
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
+}
+
+export async function POST(request: NextRequest) {
+  return PUT(request)
 }

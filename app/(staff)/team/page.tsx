@@ -25,6 +25,7 @@ export default function TeamPage() {
   const [inviteForm, setInviteForm] = useState(DEFAULT_FORM)
   const [inviting, setInviting] = useState(false)
   const [inviteError, setInviteError] = useState('')
+  const [inviteSuccess, setInviteSuccess] = useState('')
   const [hideRoleSelect, setHideRoleSelect] = useState(false)
 
   useEffect(() => {
@@ -52,26 +53,28 @@ export default function TeamPage() {
   function closeInvite() {
     setShowInvite(false)
     setInviteError('')
+    setInviteSuccess('')
   }
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
     setInviteError('')
+    setInviteSuccess('')
     setInviting(true)
     try {
-      const res = await fetch('/api/team', {
+      const res = await fetch('/api/team/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(inviteForm),
       })
+      const d = await res.json()
       if (!res.ok) {
-        const d = await res.json()
         setInviteError(d.error || 'Failed to invite member')
         return
       }
-      const newMember = await res.json()
-      setMembers(prev => [...prev, newMember])
-      closeInvite()
+      if (d.member) setMembers(prev => [...prev, d.member])
+      setInviteSuccess(`Invite sent to ${inviteForm.email}`)
+      setTimeout(() => closeInvite(), 2000)
     } catch {
       setInviteError('Network error. Please try again.')
     } finally {
@@ -324,6 +327,7 @@ export default function TeamPage() {
                 </div>
               )}
               {inviteError && <p className="text-sm text-red-400">{inviteError}</p>}
+              {inviteSuccess && <p className="text-sm text-green-400 flex items-center gap-1">✓ {inviteSuccess}</p>}
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={closeInvite} className="flex-1 px-4 py-2.5 rounded-xl border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors text-sm font-medium">
                   Cancel
