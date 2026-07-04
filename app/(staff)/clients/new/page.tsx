@@ -466,6 +466,7 @@ interface FormData {
   domain_name: string; domain_registrar: string; domain_expiry: string
   hosting_provider: string; hosting_expiry: string; nameservers: string; hosting_notes: string
   display_name: string
+  parent_client_id: string
 }
 
 const defaultForm: FormData = {
@@ -480,6 +481,7 @@ const defaultForm: FormData = {
   domain_name: '', domain_registrar: '', domain_expiry: '',
   hosting_provider: '', hosting_expiry: '', nameservers: '', hosting_notes: '',
   display_name: '',
+  parent_client_id: '',
 }
 
 const defaultPkg = (service: string): ServicePackage => ({
@@ -497,11 +499,22 @@ export default function NewClientPage() {
   const [success, setSuccess] = useState<{ id: string; name: string } | null>(null)
   const [users, setUsers] = useState<{ id: string; full_name: string; role: string }[]>([])
   const [autoFilled, setAutoFilled] = useState<Set<string>>(new Set())
+  // Contact person search flow
+  const [contactMode, setContactMode] = useState<'search' | 'new' | 'linked'>('search')
   const [contactSearch, setContactSearch] = useState('')
   const [contactResults, setContactResults] = useState<any[]>([])
   const [contactSearching, setContactSearching] = useState(false)
-  const [contactSelected, setContactSelected] = useState(false)
+  const [contactSearched, setContactSearched] = useState(false)
   const contactSearchRef = useRef<NodeJS.Timeout>()
+  // Sub-client
+  const [isSubClient, setIsSubClient] = useState(false)
+  const [parentSearch, setParentSearch] = useState('')
+  const [parentResults, setParentResults] = useState<any[]>([])
+  const [parentSearching, setParentSearching] = useState(false)
+  const [parentSelected, setParentSelected] = useState<{ id: string; name: string } | null>(null)
+  const parentSearchRef = useRef<NodeJS.Timeout>()
+  // Display name mode
+  const [displayNameMode, setDisplayNameMode] = useState<'business' | 'contact' | 'custom'>('business')
 
   useEffect(() => {
     fetch('/api/users').then(r => r.json()).then(d => Array.isArray(d) && setUsers(d))
@@ -559,6 +572,7 @@ export default function NewClientPage() {
           nameservers: form.nameservers || null,
           hosting_notes: form.hosting_notes || null,
           display_name: form.display_name || null,
+          related_client_id: form.parent_client_id || null,
         }),
       })
       if (res.ok) {
@@ -614,75 +628,132 @@ export default function NewClientPage() {
       {step === 0 && (
         <div className="space-y-5">
           {/* Contact Person */}
-          <div className="glass-card p-6 space-y-5">
+          <div className="glass-card p-6 space-y-4">
             <div>
               <h2 className="text-lg font-semibold text-white mb-0.5">Contact Person</h2>
               <p className="text-sm text-slate-400">The individual who owns or manages this business. One person can have multiple businesses.</p>
             </div>
-            {/* Search for existing contact */}
-            {!contactSelected && (
-              <div className="mb-4">
-                <label className="text-xs font-medium text-slate-400 mb-1.5 block">Search existing contacts</label>
+
+            {/* Mode: search */}
+            {contactMode === 'search' && (
+              <>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
-                  <input className="input-glass pl-9 pr-9 text-sm w-full"
-                    placeholder="Type a name to find existing contacts…"
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                  <input className="input-glass pl-9 pr-9 w-full"
+                    placeholder="Search existing contacts by name…"
                     value={contactSearch}
+                    autoFocus
                     onChange={e => {
                       const q = e.target.value
                       setContactSearch(q)
+                      setContactSearched(false)
                       clearTimeout(contactSearchRef.current)
                       if (q.length >= 2) {
                         setContactSearching(true)
                         contactSearchRef.current = setTimeout(async () => {
-                          const res = await fetch(`/api/contacts?q=${encodeURIComponent(q)}`)
-                          if (res.ok) setContactResults(await res.json())
+                          try {
+                            const res = await fetch(`/api/contacts?q=${encodeURIComponent(q)}`)
+                            if (res.ok) setContactResults(await res.json())
+                          } catch { /* ignore */ }
                           setContactSearching(false)
+                          setContactSearched(true)
                         }, 300)
                       } else {
                         setContactResults([])
                       }
                     }}
                   />
-                  {contactSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-slate-400" />}
+                  {contactSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />}
                 </div>
+
+                {/* Results dropdown */}
                 {contactResults.length > 0 && (
-                  <div className="mt-1 rounded-xl border border-white/[0.12] bg-[#0f1929] overflow-hidden">
+                  <div className="rounded-xl border border-white/[0.12] bg-[#0a1628] overflow-hidden">
                     {contactResults.map(contact => (
                       <button key={`${contact.contact_first_name}|${contact.contact_last_name}`} type="button"
                         onClick={() => {
                           setForm(f => ({ ...f, contact_first_name: contact.contact_first_name, contact_last_name: contact.contact_last_name }))
-                          setContactSelected(true)
+                          setContactMode('linked')
                           setContactSearch('')
                           setContactResults([])
+                          setContactSearched(false)
                         }}
-                        className="w-full text-left px-4 py-3 hover:bg-white/[0.06] border-b border-white/[0.05] last:border-0">
-                        <p className="text-sm font-medium text-white">{contact.contact_first_name} {contact.contact_last_name}</p>
+                        className="w-full text-left px-4 py-3 hover:bg-white/[0.06] border-b border-white/[0.05] last:border-0 transition-colors">
+                        <p className="text-sm font-semibold text-white">{contact.contact_first_name} {contact.contact_last_name}</p>
                         <p className="text-xs text-slate-500 mt-0.5">{contact.businesses.length} business{contact.businesses.length !== 1 ? 'es' : ''}: {contact.businesses.map((b: any) => b.company_name).join(', ')}</p>
                       </button>
                     ))}
-                    <div className="px-4 py-2 bg-white/[0.02] text-xs text-slate-500">Or fill in the name fields below to create a new contact</div>
                   </div>
                 )}
-                {contactSelected && (
-                  <div className="mt-2 flex items-center gap-2 text-xs text-emerald-400">
-                    <CheckCircle className="h-3.5 w-3.5" />
-                    Linked to existing contact
-                    <button type="button" onClick={() => setContactSelected(false)} className="text-slate-500 hover:text-slate-300 ml-1">Change</button>
+
+                {/* No results → show Add New button */}
+                {contactSearched && contactResults.length === 0 && !contactSearching && (
+                  <div className="flex items-center justify-between rounded-xl border border-white/[0.10] bg-white/[0.03] px-4 py-3">
+                    <p className="text-sm text-slate-400">No existing contact found for &ldquo;{contactSearch}&rdquo;</p>
+                    <button type="button"
+                      onClick={() => {
+                        const parts = contactSearch.trim().split(' ')
+                        setForm(f => ({ ...f, contact_first_name: parts[0] || '', contact_last_name: parts.slice(1).join(' ') || '' }))
+                        setContactMode('new')
+                        setContactSearch('')
+                      }}
+                      className="text-sm font-semibold text-sky-400 hover:text-sky-300 shrink-0 ml-3 flex items-center gap-1">
+                      + Add New Client
+                    </button>
                   </div>
                 )}
+
+                {/* Skip search → add new directly */}
+                {!contactSearched && contactSearch.length < 2 && (
+                  <button type="button" onClick={() => setContactMode('new')}
+                    className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                    + Add new contact instead
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* Mode: linked to existing contact */}
+            {contactMode === 'linked' && (
+              <div className="flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-white">{form.contact_first_name} {form.contact_last_name}</p>
+                    <p className="text-xs text-emerald-400">Linked to existing contact</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => {
+                  setContactMode('search')
+                  setForm(f => ({ ...f, contact_first_name: '', contact_last_name: '' }))
+                }} className="text-xs text-slate-500 hover:text-slate-300">Change</button>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="First Name" required>
-                <input className="input-glass" value={form.contact_first_name} onChange={setFE('contact_first_name')}
-                  placeholder="Jay" required />
-              </Field>
-              <Field label="Last Name" required>
-                <input className="input-glass" value={form.contact_last_name} onChange={setFE('contact_last_name')}
-                  placeholder="Mehta" required />
-              </Field>
-            </div>
+
+            {/* Mode: new contact — show name fields */}
+            {contactMode === 'new' && (
+              <>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">New Contact</p>
+                  <button type="button" onClick={() => {
+                    setContactMode('search')
+                    setForm(f => ({ ...f, contact_first_name: '', contact_last_name: '' }))
+                  }} className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1">
+                    <X className="h-3 w-3" /> Cancel
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="First Name" required>
+                    <input className="input-glass" value={form.contact_first_name} onChange={setFE('contact_first_name')}
+                      placeholder="Jay" autoFocus required />
+                  </Field>
+                  <Field label="Last Name" required>
+                    <input className="input-glass" value={form.contact_last_name} onChange={setFE('contact_last_name')}
+                      placeholder="Mehta" required />
+                  </Field>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Business Info */}
@@ -751,12 +822,100 @@ export default function NewClientPage() {
               </select>
             </Field>
             <div className="sm:col-span-2">
-              <Field label={<>Display Name <InfoTooltip content="How this client appears in lists. Defaults to the business name. Set to the contact person's name if you want all their businesses grouped under their name." /></>}
-                hint="Leave blank to use business name">
-                <input className="input-glass" value={form.display_name || ''}
-                  onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))}
-                  placeholder={form.company_name || 'e.g. Jay Mehta or Mindshare Consulting Inc'} />
+              <Field label={<>Display Name <InfoTooltip content="How this client appears in lists and on invoices. Pick from the options below or enter a custom name." /></>}>
+                <div className="space-y-2">
+                  {/* Segmented picker */}
+                  <div className="flex flex-col gap-1.5">
+                    {[
+                      { mode: 'business' as const, label: 'Business Name', preview: form.company_name || '(enter company name above)' },
+                      { mode: 'contact' as const, label: 'Contact Name', preview: [form.contact_first_name, form.contact_last_name].filter(Boolean).join(' ') || '(enter contact above)' },
+                      { mode: 'custom' as const, label: 'Custom', preview: null },
+                    ].map(opt => (
+                      <button key={opt.mode} type="button"
+                        onClick={() => {
+                          setDisplayNameMode(opt.mode)
+                          if (opt.mode === 'business') setForm(f => ({ ...f, display_name: '' }))
+                          else if (opt.mode === 'contact') setForm(f => ({ ...f, display_name: [f.contact_first_name, f.contact_last_name].filter(Boolean).join(' ') }))
+                        }}
+                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border text-left transition-all ${displayNameMode === opt.mode ? 'border-sky-500 bg-sky-500/10 text-white' : 'border-white/[0.10] bg-white/[0.03] text-slate-400 hover:border-white/20'}`}>
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${displayNameMode === opt.mode ? 'border-sky-500' : 'border-white/30'}`}>
+                          {displayNameMode === opt.mode && <div className="w-2 h-2 rounded-full bg-sky-500" />}
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium">{opt.label}</span>
+                          {opt.preview && <span className="text-xs text-slate-500 ml-2">{opt.preview}</span>}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  {displayNameMode === 'custom' && (
+                    <input className="input-glass mt-1" value={form.display_name || ''}
+                      onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))}
+                      placeholder="e.g. Jay's Group or It Sprinkles" autoFocus />
+                  )}
+                </div>
               </Field>
+            </div>
+
+            {/* Sub-client */}
+            <div className="sm:col-span-2">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${isSubClient ? 'border-violet-500 bg-violet-500/20' : 'border-white/20 group-hover:border-white/30'}`}
+                  onClick={() => { setIsSubClient(v => !v); if (!isSubClient) { setParentSearch(''); setParentSelected(null); setForm(f => ({ ...f, parent_client_id: '' })) } }}>
+                  {isSubClient && <Check className="h-3 w-3 text-violet-400" />}
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-slate-200">Is a sub-client</span>
+                  <span className="text-xs text-slate-500 ml-2">Bill under a parent client, like QuickBooks sub-customers</span>
+                </div>
+              </label>
+              {isSubClient && (
+                <div className="mt-3 ml-8">
+                  <label className="text-xs font-medium text-slate-400 mb-1.5 block">Parent Client</label>
+                  {parentSelected ? (
+                    <div className="flex items-center justify-between rounded-lg border border-violet-500/30 bg-violet-500/5 px-4 py-2.5">
+                      <span className="text-sm font-medium text-white">{parentSelected.name}</span>
+                      <button type="button" onClick={() => { setParentSelected(null); setForm(f => ({ ...f, parent_client_id: '' })) }}
+                        className="text-xs text-slate-500 hover:text-slate-300">Change</button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                      <input className="input-glass pl-9 w-full" placeholder="Search clients…"
+                        value={parentSearch}
+                        onChange={e => {
+                          const q = e.target.value
+                          setParentSearch(q)
+                          clearTimeout(parentSearchRef.current)
+                          if (q.length >= 2) {
+                            setParentSearching(true)
+                            parentSearchRef.current = setTimeout(async () => {
+                              try {
+                                const res = await fetch(`/api/clients?search=${encodeURIComponent(q)}&limit=8`)
+                                if (res.ok) { const d = await res.json(); setParentResults(d.clients || []) }
+                              } catch { /* ignore */ }
+                              setParentSearching(false)
+                            }, 300)
+                          } else { setParentResults([]) }
+                        }}
+                      />
+                      {parentSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />}
+                      {parentResults.length > 0 && (
+                        <div className="absolute z-50 mt-1 w-full rounded-xl border border-white/[0.12] bg-[#0a1628] shadow-2xl overflow-hidden">
+                          {parentResults.map((c: any) => (
+                            <button key={c.id} type="button"
+                              onClick={() => { setParentSelected({ id: c.id, name: c.display_name || c.company_name }); setForm(f => ({ ...f, parent_client_id: c.id })); setParentSearch(''); setParentResults([]) }}
+                              className="w-full text-left px-4 py-3 hover:bg-white/[0.06] border-b border-white/[0.05] last:border-0 transition-colors">
+                              <p className="text-sm font-medium text-white">{c.display_name || c.company_name}</p>
+                              {c.contact_first_name && <p className="text-xs text-slate-500 mt-0.5">{c.contact_first_name} {c.contact_last_name}</p>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="sm:col-span-2">
               <Field label="Street Address" filled={autoFilled.has('street_address')}>

@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
       nameservers: body.nameservers || null,
       hosting_notes: body.hosting_notes || null,
       display_name: body.display_name || null,
+      related_client_id: body.related_client_id || null,
     })
     .select()
     .single()
