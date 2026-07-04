@@ -199,6 +199,7 @@ function MultiChip({ options, value, onChange }: { options: string[]; value: str
 interface PlaceDetails {
   name: string; phone: string; website: string
   street_address: string; city: string; state: string; country: string
+  industry: string; categories: string[]; about: string
 }
 
 function PlacesInput({ value, onChange, onDetails }: {
@@ -443,6 +444,7 @@ interface FormData {
   hashtags: string[]; categories: string[]; target_audience: string
   goals: string[]; stakeholder_expectations: string[]
   proposal_url: string; project_status: string
+  sales_manager_id: string; dm_manager_id: string; marketing_manager_id: string
 }
 
 const defaultForm: FormData = {
@@ -452,6 +454,7 @@ const defaultForm: FormData = {
   hashtags: [], categories: [], target_audience: '',
   goals: [], stakeholder_expectations: [],
   proposal_url: '', project_status: 'in_onboarding',
+  sales_manager_id: '', dm_manager_id: '', marketing_manager_id: '',
 }
 
 const defaultPkg = (service: string): ServicePackage => ({
@@ -467,6 +470,11 @@ export default function NewClientPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState<{ id: string; name: string } | null>(null)
+  const [users, setUsers] = useState<{ id: string; full_name: string; role: string }[]>([])
+
+  useEffect(() => {
+    fetch('/api/users').then(r => r.json()).then(d => Array.isArray(d) && setUsers(d))
+  }, [])
 
   const setF = (field: keyof FormData) => (val: any) => setForm(f => ({ ...f, [field]: val }))
   const setFE = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -498,6 +506,9 @@ export default function NewClientPage() {
         body: JSON.stringify({
           ...form,
           num_employees: form.num_employees ? parseInt(form.num_employees) : null,
+          sales_manager_id: form.sales_manager_id || null,
+          dm_manager_id: form.dm_manager_id || null,
+          marketing_manager_id: form.marketing_manager_id || null,
           services: packages.map(p => p.service),
           service_packages: packages,
           goals: form.goals,
@@ -574,6 +585,9 @@ export default function NewClientPage() {
                     city: d.city || f.city,
                     state: d.state || f.state,
                     country: d.country || f.country,
+                    industry: d.industry || f.industry,
+                    categories: d.categories?.length ? d.categories : f.categories,
+                    about_company: d.about || f.about_company,
                   }))} />
               </Field>
             </div>
@@ -623,6 +637,33 @@ export default function NewClientPage() {
               </select>
             </Field>
           </div>
+
+          {/* Team Assignment */}
+          {users.length > 0 && (
+            <div className="border-t border-white/[0.08] pt-6">
+              <h3 className="text-sm font-semibold text-white mb-4">Team Assignment</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <Field label="Sales Manager">
+                  <select className={sel} value={form.sales_manager_id} onChange={setFE('sales_manager_id')}>
+                    <option value="">Unassigned</option>
+                    {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+                  </select>
+                </Field>
+                <Field label="Development Manager">
+                  <select className={sel} value={form.dm_manager_id} onChange={setFE('dm_manager_id')}>
+                    <option value="">Unassigned</option>
+                    {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+                  </select>
+                </Field>
+                <Field label="Marketing Manager">
+                  <select className={sel} value={form.marketing_manager_id} onChange={setFE('marketing_manager_id')}>
+                    <option value="">Unassigned</option>
+                    {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+                  </select>
+                </Field>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

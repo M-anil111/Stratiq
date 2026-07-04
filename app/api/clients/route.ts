@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from('clients')
-    .select('*, sales_manager:users!sales_manager_id(full_name, email), dm_manager:users!dm_manager_id(full_name, email)', { count: 'exact' })
+    .select('*, sales_manager:users!sales_manager_id(full_name, email), dm_manager:users!dm_manager_id(full_name, email), marketing_manager:users!marketing_manager_id(full_name, email)', { count: 'exact' })
     .eq('organization_id', userData.organization_id)
     .order('company_name')
     .range(offset, offset + limit - 1)
@@ -54,6 +54,9 @@ export async function POST(request: NextRequest) {
     .from('clients')
     .insert({
       organization_id: userData.organization_id,
+      sales_manager_id: body.sales_manager_id || null,
+      dm_manager_id: body.dm_manager_id || null,
+      marketing_manager_id: body.marketing_manager_id || null,
       company_name: body.company_name,
       website: body.website,
       about_company: body.about_company,
