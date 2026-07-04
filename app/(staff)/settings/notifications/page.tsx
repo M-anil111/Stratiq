@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Bell } from 'lucide-react'
 
 interface Prefs {
@@ -32,6 +32,19 @@ const prefLabels: { key: keyof Prefs; label: string; description: string }[] = [
 export default function NotificationsSettingsPage() {
   const [prefs, setPrefs] = useState<Prefs>(defaultPrefs)
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/settings/notifications')
+      .then(r => r.json())
+      .then(data => {
+        if (data && typeof data === 'object' && !data.error) {
+          setPrefs(p => ({ ...p, ...data }))
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
   const toggle = (key: keyof Prefs) => setPrefs(p => ({ ...p, [key]: !p[key] }))
 
@@ -70,7 +83,7 @@ export default function NotificationsSettingsPage() {
       </div>
 
       <div className="flex items-center gap-3 mt-6">
-        <button onClick={save} className="btn-brand">Save Preferences</button>
+        <button onClick={save} disabled={loading} className="btn-brand disabled:opacity-50">Save Preferences</button>
         {saved && <span className="text-sm text-green-400 font-medium">✓ Saved</span>}
       </div>
     </div>
