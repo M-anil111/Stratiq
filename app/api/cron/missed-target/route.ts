@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
   let alertsSent = 0
   const errors: string[] = []
 
-  for (const [, { email, name, missed }] of managerAlerts) {
+  for (const [, { email, name, missed }] of Array.from(managerAlerts)) {
     try {
       await sendMissedTargetAlert(email, { name, missed })
       alertsSent++

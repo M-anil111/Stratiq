@@ -1,3 +1,4 @@
+export { sendEmail } from '@/lib/email/index'
 import { sendEmail } from '@/lib/email/index'
 import { generateFridayReminderEmail } from '@/lib/email/templates/friday-reminder'
 import { generateMissedTargetEmail } from '@/lib/email/templates/missed-target'

@@ -221,7 +221,7 @@ export default function BlogPage({ params }: { params: { id: string; projectId: 
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
-                  <PasswordField value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••" />
+                  <PasswordField value={form.password} onChange={v => setForm(f => ({ ...f, password: v }))} placeholder="••••••" />
                 </div>
               </div>
               <div>

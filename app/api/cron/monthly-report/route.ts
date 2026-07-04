@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
 
   const { data: clients, error } = await supabase
     .from('clients')
-    .select('id, company_name, primary_contact_email, projects(id, domain)')
-    .eq('status', 'active')
+    .select('id, company_name, email, organization_id, projects(id)')
+    .eq('project_status', 'active')
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   const errors: string[] = []
 
   for (const client of clients) {
-    if (!client.primary_contact_email) continue
+    if (!(client as any).email) continue
 
     const orgId = (client as any).organization_id
     const projects: any[] = (client as any).projects || []
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     const reportUrl = `${BASE_URL}/client-portal`
 
     try {
-      await sendMonthlyReport(client.primary_contact_email, {
+      await sendMonthlyReport((client as any).email, {
         client_name: client.company_name,
         report_url: reportUrl,
         month: monthLabel,

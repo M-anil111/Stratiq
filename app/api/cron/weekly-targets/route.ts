@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
   let emailsSent = 0
   const errors: string[] = []
 
-  for (const [, { email, name, sections }] of userSummaries) {
+  for (const [, { email, name, sections }] of Array.from(userSummaries)) {
     const team_summary = Array.from(sections.values())
     try {
       await sendWeeklyTargetSummary(email, { name, team_summary })

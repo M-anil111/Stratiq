@@ -18,7 +18,7 @@ export async function PUT(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: userData } = await supabase.from('users').select('organization_id, role').eq('id', user.id).single()
-  if (!['super_admin', 'admin'].includes(userData?.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!userData || !['super_admin', 'admin'].includes(userData.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { name, contact_email, billing_email, timezone, logo_url } = await request.json()
   const { data, error } = await supabase

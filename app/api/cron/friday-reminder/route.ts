@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
   let remindersSent = 0
   const errors: string[] = []
 
-  for (const [, { email, name, pending }] of userPendingMap) {
+  for (const [, { email, name, pending }] of Array.from(userPendingMap)) {
     try {
       await sendFridayReminder(email, { name, pending_items: pending })
       remindersSent++

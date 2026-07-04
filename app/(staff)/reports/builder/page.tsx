@@ -74,10 +74,10 @@ export default function ReportBuilderPage() {
     setLoading(true)
     setResults(null)
     const params = new URLSearchParams({
-      clients: [...selectedClients].join(','),
+      clients: Array.from(selectedClients).join(','),
       from,
       to,
-      metrics: [...selectedMetrics].join(','),
+      metrics: Array.from(selectedMetrics).join(','),
     })
     const res = await fetch(`/api/reports/builder?${params}`)
     const data = await res.json()

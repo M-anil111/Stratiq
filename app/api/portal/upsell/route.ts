@@ -21,7 +21,7 @@ export async function GET() {
     .eq('client_id', portalAccess.client_id)
 
   const allServices = (projects || []).flatMap(p => p.services || [])
-  const unique = [...new Set(allServices)]
+  const unique = Array.from(new Set(allServices))
   const recommendations = getUpsellRecommendations(unique)
   return NextResponse.json(recommendations)
 }

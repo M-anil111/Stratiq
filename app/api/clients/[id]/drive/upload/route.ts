@@ -36,17 +36,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const driveFile = await uploadFile(supabase, targetFolderId, buffer, fileField.name, mimeType)
 
-  // Persist metadata in google_drive_files table (if it exists — ignore error if not)
-  await supabase.from('google_drive_files').insert({
-    client_id: params.id,
-    organization_id: userData.organization_id,
-    file_id: driveFile.id,
-    name: driveFile.name,
-    mime_type: driveFile.mimeType,
-    size: driveFile.size ? parseInt(driveFile.size) : null,
-    folder_id: targetFolderId,
-    web_view_link: driveFile.webViewLink,
-  }).then(() => {}).catch(() => {}) // non-fatal
+  // Persist metadata in google_drive_files table (non-fatal)
+  try {
+    await supabase.from('google_drive_files').insert({
+      client_id: params.id,
+      organization_id: userData.organization_id,
+      file_id: driveFile.id,
+      name: driveFile.name,
+      mime_type: driveFile.mimeType,
+      size: driveFile.size ? parseInt(driveFile.size) : null,
+      folder_id: targetFolderId,
+      web_view_link: driveFile.webViewLink,
+    })
+  } catch { /* ignore */ }
 
   return NextResponse.json(driveFile, { status: 201 })
 }

@@ -46,7 +46,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { proje
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: userData } = await supabase.from('users').select('organization_id, role').eq('id', user.id).single()
-  if (!['super_admin', 'admin', 'manager'].includes(userData?.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!userData || !['super_admin', 'admin', 'manager'].includes(userData.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { error } = await supabase
     .from('projects')

@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: userData } = await supabase.from('users').select('organization_id, role').eq('id', user.id).single()
-  if (!['super_admin', 'admin'].includes(userData?.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!userData || !['super_admin', 'admin'].includes(userData.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { name, field_type, required, entity_type } = await request.json()
 
@@ -71,7 +71,7 @@ export async function DELETE(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: userData } = await supabase.from('users').select('organization_id, role').eq('id', user.id).single()
-  if (!['super_admin', 'admin'].includes(userData?.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!userData || !['super_admin', 'admin'].includes(userData.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const id = request.nextUrl.searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
@@ -92,7 +92,7 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: userData } = await supabase.from('users').select('organization_id, role').eq('id', user.id).single()
-  if (!['super_admin', 'admin'].includes(userData?.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!userData || !['super_admin', 'admin'].includes(userData.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id, ...updates } = await request.json()
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
