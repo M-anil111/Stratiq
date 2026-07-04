@@ -1,5 +1,5 @@
 'use client'
-import { useState, KeyboardEvent } from 'react'
+import { useState, useEffect, KeyboardEvent } from 'react'
 import { Plus, Edit2, Trash2, X, Loader2, Send } from 'lucide-react'
 
 const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
@@ -56,6 +56,14 @@ function TagInput({ label, tags, onChange }: { label: string; tags: string[]; on
 
 export default function OnPagePage({ params }: { params: { id: string; projectId: string } }) {
   const [entries, setEntries] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/projects/${params.projectId}/onpage`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setEntries(data) })
+      .finally(() => setLoading(false))
+  }, [params.projectId])
   const [showForm, setShowForm] = useState(false)
   const [editEntry, setEditEntry] = useState<any | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)

@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, ExternalLink, Edit2, Trash2, X, Loader2, Send } from 'lucide-react'
 
 const PLATFORMS = [
@@ -29,7 +29,15 @@ const emptyForm = () => ({
 
 export default function SocialMediaPage({ params }: { params: { id: string; projectId: string } }) {
   const [posts, setPosts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+
+  useEffect(() => {
+    fetch(`/api/projects/${params.projectId}/social-media`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setPosts(data) })
+      .finally(() => setLoading(false))
+  }, [params.projectId])
   const [editEntry, setEditEntry] = useState<any | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)

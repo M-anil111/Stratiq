@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, ExternalLink, Edit2, Trash2, X, Loader2, Send } from 'lucide-react'
 
 const PLATFORMS = [
@@ -38,6 +38,14 @@ const emptyForm = () => ({
 
 export default function GroupPage({ params }: { params: { id: string; projectId: string } }) {
   const [entries, setEntries] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/projects/${params.projectId}/group-postings`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setEntries(data) })
+      .finally(() => setLoading(false))
+  }, [params.projectId])
   const [showForm, setShowForm] = useState(false)
   const [editEntry, setEditEntry] = useState<any | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
