@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
 
   try {
-    const { token, realmId } = await getQBToken(supabase, userData.organization_id)
+    const { token, realmId } = await getQBToken(supabase)
 
     const isSandbox = process.env.QUICKBOOKS_SANDBOX === 'true'
     const base = isSandbox

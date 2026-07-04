@@ -736,8 +736,8 @@ export default function NewClientPage() {
               </div>
             </div>
           )}
-          </div>{/* end Business Info card */}
-        </div>{/* end step 0 outer */}
+          </div>
+        </div>
       )}
 
       {step === 1 && (

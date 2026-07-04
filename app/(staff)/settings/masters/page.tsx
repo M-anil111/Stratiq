@@ -139,7 +139,7 @@ export default function MastersPage() {
           </>
         )}
         {m.approval_status === 'approved' && isAdmin && (
-          <button onClick={() => handleAction(m.id, undefined, { is_active: !m.is_active })}
+          <button onClick={() => handleAction(m.id, 'update', { is_active: !m.is_active })}
             className="p-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 text-slate-400 transition-colors"
             title={m.is_active ? 'Deactivate' : 'Activate'}>
             {m.is_active ? <ToggleRight size={15} className="text-emerald-400" /> : <ToggleLeft size={15} />}
