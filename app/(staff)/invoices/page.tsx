@@ -25,7 +25,9 @@ interface LineItem {
   qty: number
   unit_price: number
   amount: number
+  qb_item_id?: string
 }
+interface QbItem { id: string; name: string; description: string; unit_price: number }
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-slate-500/20 text-slate-300',
@@ -48,6 +50,7 @@ function balanceDue(inv: Invoice) {
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [qbItems, setQbItems] = useState<QbItem[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -80,6 +83,9 @@ export default function InvoicesPage() {
       const list = d?.clients || (Array.isArray(d) ? d : [])
       setClients(list)
     })
+    fetch('/api/integrations/quickbooks/items').then(r => r.json()).then(d => {
+      if (d?.items) setQbItems(d.items)
+    }).catch(() => {})
   }, [])
 
   useEffect(() => { loadInvoices() }, [loadInvoices])
@@ -143,6 +149,7 @@ export default function InvoicesPage() {
           qty: parseFloat(li.qty) || 1,
           unit_price: parseFloat(li.unit_price) || 0,
           amount: parseFloat(li.amount) || 0,
+          ...(li.qb_item_id ? { qb_item_id: li.qb_item_id } : {}),
         })),
       }),
     })
@@ -281,7 +288,27 @@ export default function InvoicesPage() {
                   {newInvoice.line_items.map((li, idx) => (
                     <tr key={idx}>
                       <td className="py-1.5 pr-3">
-                        <input value={li.description} onChange={e => updateLineItem(idx, 'description', e.target.value)} placeholder="Service description" className="input-glass text-sm" />
+                        <div className="flex gap-1">
+                          <input value={li.description} onChange={e => updateLineItem(idx, 'description', e.target.value)} placeholder="Service description" className="input-glass text-sm flex-1" />
+                          {qbItems.length > 0 && (
+                            <select
+                              value=""
+                              onChange={e => {
+                                const item = qbItems.find(q => q.id === e.target.value)
+                                if (!item) return
+                                setNewInvoice(prev => {
+                                  const items = [...prev.line_items]
+                                  items[idx] = { ...items[idx], description: item.description || item.name, unit_price: String(item.unit_price), amount: String((parseFloat(String(items[idx].qty)) || 1) * item.unit_price), qb_item_id: item.id }
+                                  return { ...prev, line_items: items }
+                                })
+                              }}
+                              className="bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-slate-400 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500/50 max-w-[120px]"
+                            >
+                              <option value="">QB item…</option>
+                              {qbItems.map(q => <option key={q.id} value={q.id}>{q.name}</option>)}
+                            </select>
+                          )}
+                        </div>
                       </td>
                       <td className="py-1.5 pr-3 w-20">
                         <input type="number" value={li.qty} onChange={e => updateLineItem(idx, 'qty', e.target.value)} className="input-glass text-sm" />
