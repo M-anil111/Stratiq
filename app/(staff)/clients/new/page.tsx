@@ -201,25 +201,32 @@ function PlacesInput({ value, onChange }: { value: string; onChange: (name: stri
   const [results, setResults] = useState<{ name: string; address: string; place_id: string }[]>([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [searched, setSearched] = useState(false)
   const timeoutRef = useRef<NodeJS.Timeout>()
   const wrapRef = useRef<HTMLDivElement>(null)
 
   const search = useCallback(async (q: string, signal?: AbortSignal) => {
-    if (q.length < 2) { setResults([]); return }
+    if (q.length < 2) { setResults([]); setSearched(false); return }
     setLoading(true)
     try {
       const res = await fetch(`/api/places/search?q=${encodeURIComponent(q)}`, { signal })
+      if (!res.ok) { setResults([]); return }
       const data = await res.json()
       setResults(data.results || [])
+      setSearched(true)
     } catch (err: any) {
-      if (err.name !== 'AbortError') setResults([])
+      if (err.name !== 'AbortError') { setResults([]); setSearched(true) }
     } finally { setLoading(false) }
   }, [])
 
   useEffect(() => {
     const controller = new AbortController()
     clearTimeout(timeoutRef.current)
-    timeoutRef.current = setTimeout(() => search(query, controller.signal), 350)
+    if (query.length >= 2) {
+      timeoutRef.current = setTimeout(() => search(query, controller.signal), 350)
+    } else {
+      setResults([]); setSearched(false)
+    }
     return () => { clearTimeout(timeoutRef.current); controller.abort() }
   }, [query, search])
 
@@ -231,6 +238,8 @@ function PlacesInput({ value, onChange }: { value: string; onChange: (name: stri
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  const showDropdown = open && (results.length > 0 || (searched && !loading && query.length >= 2))
+
   return (
     <div ref={wrapRef} className="relative">
       <div className="relative">
@@ -238,22 +247,30 @@ function PlacesInput({ value, onChange }: { value: string; onChange: (name: stri
         <input className="input-glass pl-9 pr-9" value={query}
           placeholder="Search Google Business or type name…" required
           onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true) }}
-          onFocus={() => results.length > 0 && setOpen(true)} />
+          onFocus={() => setOpen(true)} />
         {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 animate-spin" />}
       </div>
-      {open && results.length > 0 && (
+      {showDropdown && (
         <div className="absolute z-50 mt-1 w-full rounded-xl border border-white/[0.12] bg-[#0f1929] shadow-2xl overflow-hidden">
-          {results.map(r => (
-            <button key={r.place_id} type="button"
-              className="w-full text-left px-4 py-3 hover:bg-white/[0.06] transition-colors border-b border-white/[0.05] last:border-0"
-              onClick={() => { setQuery(r.name); onChange(r.name, r.place_id); setOpen(false) }}>
-              <p className="text-sm font-medium text-white">{r.name}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{r.address}</p>
-            </button>
-          ))}
-          <div className="px-4 py-2 bg-white/[0.02]">
-            <p className="text-xs text-slate-600">Not listed? Just type the name above and continue.</p>
-          </div>
+          {results.length > 0 ? (
+            <>
+              {results.map(r => (
+                <button key={r.place_id} type="button"
+                  className="w-full text-left px-4 py-3 hover:bg-white/[0.06] transition-colors border-b border-white/[0.05] last:border-0"
+                  onClick={() => { setQuery(r.name); onChange(r.name, r.place_id); setOpen(false) }}>
+                  <p className="text-sm font-medium text-white">{r.name}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{r.address}</p>
+                </button>
+              ))}
+              <div className="px-4 py-2 bg-white/[0.02]">
+                <p className="text-xs text-slate-600">Not listed? Just type the name above and continue.</p>
+              </div>
+            </>
+          ) : (
+            <div className="px-4 py-3">
+              <p className="text-sm text-slate-400">No matches found — just type the business name above and continue.</p>
+            </div>
+          )}
         </div>
       )}
     </div>
