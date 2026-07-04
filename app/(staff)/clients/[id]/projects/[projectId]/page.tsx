@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ChevronLeft, Edit, FileText, ArrowRight } from 'lucide-react'
+import ProjectTabs from './ProjectTabs'
 
 export default async function ProjectDetailPage({ params }: { params: { id: string; projectId: string } }) {
   return (
@@ -40,20 +41,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
         <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
       </Link>
 
-      {/* Tabs placeholder */}
-      <div className="glass-card">
-        <div className="flex border-b border-white/[0.08] overflow-x-auto">
-          {['Project Info', 'Submission Details', 'Reporting', 'Files'].map((tab, i) => (
-            <button key={tab} className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${i === 0 ? 'bg-white/[0.08] text-white border-sky-400' : 'border-transparent text-slate-400 hover:text-white'}`}>
-              {tab}
-            </button>
-          ))}
-        </div>
-        <div className="p-6 text-center text-slate-400">
-          <p className="font-medium">Connect your Supabase database to view project details.</p>
-          <p className="text-sm mt-1">Configure your environment variables to enable data loading.</p>
-        </div>
-      </div>
+      <ProjectTabs projectId={params.projectId} />
     </div>
   )
 }
