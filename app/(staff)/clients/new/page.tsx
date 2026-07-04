@@ -11,9 +11,9 @@ import {
 const INDUSTRIES = [
   'Restaurant / Food & Beverage', 'Retail / E-commerce', 'Healthcare / Medical',
   'Legal / Law Firm', 'Real Estate', 'Construction / Contractor',
-  'Finance / Accounting', 'Technology / SaaS', 'Education', 'Non-Profit',
-  'Automotive', 'Beauty / Salon / Spa', 'Entertainment / Events',
-  'Travel / Hospitality', 'Home Services / Plumbing / HVAC', 'Other',
+  'Finance / Accounting', 'Technology / SaaS', 'Consulting / Professional Services',
+  'Education', 'Non-Profit', 'Automotive', 'Beauty / Salon / Spa',
+  'Entertainment / Events', 'Travel / Hospitality', 'Home Services / Plumbing / HVAC', 'Other',
 ]
 
 const SERVICES = [
@@ -142,11 +142,12 @@ const SERVICE_DELIVERABLES: Record<string, DeliverableField[]> = {
   ],
 }
 
-function Field({ label, required, children, hint }: { label: string; required?: boolean; children: React.ReactNode; hint?: string }) {
+function Field({ label, required, children, hint, filled }: { label: string; required?: boolean; children: React.ReactNode; hint?: string; filled?: boolean }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-300 mb-1.5">
+      <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
         {label}{required && <span className="text-red-400 ml-0.5">*</span>}
+        {filled && <span className="text-[10px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">Auto-filled</span>}
       </label>
       {children}
       {hint && <p className="text-xs text-slate-500 mt-1">{hint}</p>}
@@ -197,7 +198,7 @@ function MultiChip({ options, value, onChange }: { options: string[]; value: str
 }
 
 interface PlaceDetails {
-  name: string; phone: string; website: string
+  name: string; phone: string; website: string; email_suggestion: string
   street_address: string; city: string; state: string; country: string
   industry: string; categories: string[]; about: string
 }
@@ -471,6 +472,7 @@ export default function NewClientPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState<{ id: string; name: string } | null>(null)
   const [users, setUsers] = useState<{ id: string; full_name: string; role: string }[]>([])
+  const [autoFilled, setAutoFilled] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetch('/api/users').then(r => r.json()).then(d => Array.isArray(d) && setUsers(d))
@@ -577,40 +579,48 @@ export default function NewClientPage() {
               <Field label="Company Name" required>
                 <PlacesInput value={form.company_name}
                   onChange={(name, placeId) => setForm(f => ({ ...f, company_name: name, google_place_id: placeId || '' }))}
-                  onDetails={d => setForm(f => ({
-                    ...f,
-                    phone: d.phone || f.phone,
-                    website: d.website || f.website,
-                    street_address: d.street_address || f.street_address,
-                    city: d.city || f.city,
-                    state: d.state || f.state,
-                    country: d.country || f.country,
-                    industry: d.industry || f.industry,
-                    categories: d.categories?.length ? d.categories : f.categories,
-                    about_company: d.about || f.about_company,
-                  }))} />
+                  onDetails={d => {
+                    const filled = new Set<string>()
+                    setForm(f => {
+                      const next = { ...f }
+                      if (d.phone) { next.phone = d.phone; filled.add('phone') }
+                      if (d.website) { next.website = d.website; filled.add('website') }
+                      if (d.email_suggestion && !f.email) { next.email = d.email_suggestion; filled.add('email') }
+                      if (d.street_address) { next.street_address = d.street_address; filled.add('street_address') }
+                      if (d.city) { next.city = d.city; filled.add('city') }
+                      if (d.state) { next.state = d.state; filled.add('state') }
+                      if (d.country) { next.country = d.country; filled.add('country') }
+                      if (d.industry) { next.industry = d.industry; filled.add('industry') }
+                      if (d.categories?.length) { next.categories = d.categories; filled.add('categories') }
+                      if (d.about) { next.about_company = d.about; filled.add('about_company') }
+                      return next
+                    })
+                    setAutoFilled(filled)
+                  }} />
               </Field>
             </div>
-            <Field label="Website / Domain" required hint="Domain only: example.com">
-              <input className="input-glass" value={form.website} onChange={setFE('website')} placeholder="example.com" required />
+            <Field label="Website / Domain" required hint="Domain only: example.com" filled={autoFilled.has('website')}>
+              <input className="input-glass" value={form.website} onChange={e => { setFE('website')(e); setAutoFilled(s => { const n = new Set(s); n.delete('website'); return n }) }} placeholder="example.com" required />
             </Field>
-            <Field label="Industry" required>
-              <select className={sel} value={form.industry} onChange={setFE('industry')} required>
+            <Field label="Industry" required filled={autoFilled.has('industry')}>
+              <select className={sel} value={form.industry} onChange={e => { setFE('industry')(e); setAutoFilled(s => { const n = new Set(s); n.delete('industry'); return n }) }} required>
                 <option value="">Select industry…</option>
                 {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
               </select>
             </Field>
             <div className="sm:col-span-2">
-              <Field label="About Company" required>
-                <textarea className="input-glass min-h-[90px] resize-y" value={form.about_company} onChange={setFE('about_company')}
+              <Field label="About Company" required filled={autoFilled.has('about_company')}
+                hint={autoFilled.has('about_company') ? 'Auto-filled from Google — review and edit as needed' : 'Describe the business, what they sell, and who they serve'}>
+                <textarea className="input-glass min-h-[90px] resize-y" value={form.about_company} onChange={e => { setFE('about_company')(e); setAutoFilled(s => { const n = new Set(s); n.delete('about_company'); return n }) }}
                   placeholder="Describe the business, what they sell, and who they serve…" required />
               </Field>
             </div>
-            <Field label="Contact Email" required>
-              <input type="email" className="input-glass" value={form.email} onChange={setFE('email')} placeholder="contact@client.com" required />
+            <Field label="Contact Email" required filled={autoFilled.has('email')}
+              hint={autoFilled.has('email') ? 'Suggested from website domain — confirm with client' : undefined}>
+              <input type="email" className="input-glass" value={form.email} onChange={e => { setFE('email')(e); setAutoFilled(s => { const n = new Set(s); n.delete('email'); return n }) }} placeholder="contact@client.com" required />
             </Field>
-            <Field label="Phone Number" required>
-              <input className="input-glass" value={form.phone} onChange={setFE('phone')} placeholder="(512) 621-8822" required />
+            <Field label="Phone Number" required filled={autoFilled.has('phone')}>
+              <input className="input-glass" value={form.phone} onChange={e => { setFE('phone')(e); setAutoFilled(s => { const n = new Set(s); n.delete('phone'); return n }) }} placeholder="(512) 621-8822" required />
             </Field>
             <Field label="Number of Employees">
               <input type="number" min="1" className="input-glass" value={form.num_employees} onChange={setFE('num_employees')} placeholder="50" />
@@ -623,11 +633,19 @@ export default function NewClientPage() {
                 <option value="on_hold">On Hold</option>
               </select>
             </Field>
-            <div className="sm:col-span-2"><Field label="Street Address"><input className="input-glass" value={form.street_address} onChange={setFE('street_address')} placeholder="123 Main Street" /></Field></div>
-            <Field label="City"><input className="input-glass" value={form.city} onChange={setFE('city')} placeholder="Austin" /></Field>
-            <Field label="State"><input className="input-glass" value={form.state} onChange={setFE('state')} placeholder="TX" /></Field>
-            <Field label="Country">
-              <select className={sel} value={form.country} onChange={setFE('country')}>
+            <div className="sm:col-span-2">
+              <Field label="Street Address" filled={autoFilled.has('street_address')}>
+                <input className="input-glass" value={form.street_address} onChange={e => { setFE('street_address')(e); setAutoFilled(s => { const n = new Set(s); n.delete('street_address'); return n }) }} placeholder="123 Main Street" />
+              </Field>
+            </div>
+            <Field label="City" filled={autoFilled.has('city')}>
+              <input className="input-glass" value={form.city} onChange={e => { setFE('city')(e); setAutoFilled(s => { const n = new Set(s); n.delete('city'); return n }) }} placeholder="Austin" />
+            </Field>
+            <Field label="State" filled={autoFilled.has('state')}>
+              <input className="input-glass" value={form.state} onChange={e => { setFE('state')(e); setAutoFilled(s => { const n = new Set(s); n.delete('state'); return n }) }} placeholder="TX" />
+            </Field>
+            <Field label="Country" filled={autoFilled.has('country')}>
+              <select className={sel} value={form.country} onChange={e => { setFE('country')(e); setAutoFilled(s => { const n = new Set(s); n.delete('country'); return n }) }}>
                 <option value="US">United States</option>
                 <option value="CA">Canada</option>
                 <option value="GB">United Kingdom</option>
