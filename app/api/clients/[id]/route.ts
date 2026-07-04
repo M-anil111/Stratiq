@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
   const { data, error } = await supabase
     .from('clients')
-    .select('*, sales_manager:users!sales_manager_id(id,full_name,email), dm_manager:users!dm_manager_id(id,full_name,email), projects(id,domain,status,services)')
+    .select('*, sales_manager:users!sales_manager_id(id,full_name,email), dm_manager:users!dm_manager_id(id,full_name,email), marketing_manager:users!marketing_manager_id(id,full_name,email), projects(id,domain,status,services,start_date,created_at)')
     .eq('id', params.id)
     .eq('organization_id', userData.organization_id)
     .single()
@@ -32,25 +32,46 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
   const userData = await getOrgClient(supabase, user.id)
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
+  if (!['super_admin', 'admin', 'manager'].includes(userData.role)) {
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  }
 
   const body = await request.json()
-  const {
-    company_name, website, about_company, industry, email, phone,
-    street_address, city, state, country, num_employees, project_status,
-    services, advertising_types, goals, stakeholder_expectations,
-    target_audience, website_last_updated, ndisk_link, google_drive_folder_url,
-    sales_manager_id, dm_manager_id,
-  } = body
   const { data, error } = await supabase
     .from('clients')
     .update({
-      company_name, website, about_company, industry, email, phone,
-      street_address, city, state, country,
-      num_employees: num_employees ? parseInt(num_employees, 10) : null,
-      project_status, services, advertising_types, goals,
-      stakeholder_expectations, target_audience, website_last_updated,
-      ndisk_link, google_drive_folder_url, sales_manager_id, dm_manager_id,
-      updated_at: new Date().toISOString(),
+      sales_manager_id: body.sales_manager_id ?? undefined,
+      dm_manager_id: body.dm_manager_id ?? undefined,
+      marketing_manager_id: body.marketing_manager_id ?? undefined,
+      company_name: body.company_name,
+      website: body.website,
+      about_company: body.about_company,
+      industry: body.industry,
+      email: body.email,
+      phone: body.phone,
+      street_address: body.street_address,
+      city: body.city,
+      state: body.state,
+      country: body.country,
+      hashtags: body.hashtags,
+      categories: body.categories,
+      num_employees: body.num_employees ? parseInt(body.num_employees) : null,
+      project_status: body.project_status,
+      services: body.services,
+      service_packages: body.service_packages,
+      advertising_types: body.advertising_types,
+      goals: body.goals,
+      stakeholder_expectations: body.stakeholder_expectations,
+      target_audience: body.target_audience,
+      website_last_updated: body.website_last_updated || null,
+      ndisk_link: body.ndisk_link,
+      google_drive_folder_url: body.google_drive_folder_url,
+      proposal_url: body.proposal_url || null,
+      client_degree: body.client_degree,
+      client_pin: body.client_pin,
+      maint_since: body.maint_since,
+      maint_degree: body.maint_degree,
+      credit_status: body.credit_status,
     })
     .eq('id', params.id)
     .eq('organization_id', userData.organization_id)
@@ -67,15 +88,17 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const userData = await getOrgClient(supabase, user.id)
-  if (!['super_admin', 'admin'].includes(userData?.role)) {
+  if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
+  if (!['super_admin', 'admin'].includes(userData.role)) {
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
   }
 
-  // Verify belongs to org
-  const { data: client } = await supabase.from('clients').select('id').eq('id', params.id).eq('organization_id', userData.organization_id).single()
-  if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const { error } = await supabase
+    .from('clients')
+    .delete()
+    .eq('id', params.id)
+    .eq('organization_id', userData.organization_id)
 
-  const { error } = await supabase.from('clients').delete().eq('id', params.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }
