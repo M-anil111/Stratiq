@@ -7,6 +7,7 @@ import {
   Building2, Briefcase, Target, ClipboardList, Search, DollarSign,
   AlertCircle,
 } from 'lucide-react'
+import { InfoTooltip } from '@/components/ui/tooltip'
 
 const INDUSTRIES = [
   'Restaurant / Food & Beverage', 'Retail / E-commerce', 'Healthcare / Medical',
@@ -153,10 +154,10 @@ const SERVICE_DELIVERABLES: Record<string, DeliverableField[]> = {
   ],
 }
 
-function Field({ label, required, children, hint, filled }: { label: string; required?: boolean; children: React.ReactNode; hint?: string; filled?: boolean }) {
+function Field({ label, required, children, hint, filled }: { label: React.ReactNode; required?: boolean; children: React.ReactNode; hint?: string; filled?: boolean }) {
   return (
     <div>
-      <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
+      <label className="flex items-center gap-1.5 text-sm font-medium text-slate-300 mb-1.5">
         {label}{required && <span className="text-red-400 ml-0.5">*</span>}
         {filled && <span className="text-[10px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">Auto-filled</span>}
       </label>
@@ -653,10 +654,10 @@ export default function NewClientPage() {
                   }} />
               </Field>
             </div>
-            <Field label="Website / Domain" required hint="Domain only: example.com" filled={autoFilled.has('website')}>
+            <Field label={<>Website / Domain <InfoTooltip content="Enter the root domain only — e.g. example.com (no https://). This is used to auto-suggest the client email and for SEO tracking." /></>} required hint="Domain only: example.com" filled={autoFilled.has('website')}>
               <input className="input-glass" value={form.website} onChange={e => { setFE('website')(e); setAutoFilled(s => { const n = new Set(s); n.delete('website'); return n }) }} placeholder="example.com" required />
             </Field>
-            <Field label="Industry" required filled={autoFilled.has('industry')}>
+            <Field label={<>Industry <InfoTooltip content="Used to categorize the client and match reporting templates. Auto-filled from Google Business where possible." /></>} required filled={autoFilled.has('industry')}>
               <select className={sel} value={form.industry} onChange={e => { setFE('industry')(e); setAutoFilled(s => { const n = new Set(s); n.delete('industry'); return n }) }} required>
                 <option value="">Select industry…</option>
                 {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
@@ -715,19 +716,19 @@ export default function NewClientPage() {
             <div className="border-t border-white/[0.08] pt-6">
               <h3 className="text-sm font-semibold text-white mb-4">Team Assignment</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                <Field label="Sales Manager">
+                <Field label={<>Sales Manager <InfoTooltip content="The team member responsible for the client relationship and upsell opportunities." /></>}>
                   <select className={sel} value={form.sales_manager_id} onChange={setFE('sales_manager_id')}>
                     <option value="">Unassigned</option>
                     {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
                   </select>
                 </Field>
-                <Field label="Development Manager">
+                <Field label={<>Development Manager <InfoTooltip content="Oversees technical deliverables: web design, maintenance, and development tasks." /></>}>
                   <select className={sel} value={form.dm_manager_id} onChange={setFE('dm_manager_id')}>
                     <option value="">Unassigned</option>
                     {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
                   </select>
                 </Field>
-                <Field label="Marketing Manager">
+                <Field label={<>Marketing Manager <InfoTooltip content="Accountable for SEO, ads, social media, and all marketing deliverables for this client." /></>}>
                   <select className={sel} value={form.marketing_manager_id} onChange={setFE('marketing_manager_id')}>
                     <option value="">Unassigned</option>
                     {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
@@ -806,9 +807,9 @@ export default function NewClientPage() {
             </div>
           ) : (
             <>
-              <Field label="Goals of Project" required><MultiChip options={GOALS} value={form.goals} onChange={setF('goals')} /></Field>
-              <Field label="Stakeholder Expectations" required><MultiChip options={STAKEHOLDER_EXPECTATIONS} value={form.stakeholder_expectations} onChange={setF('stakeholder_expectations')} /></Field>
-              <Field label="Target Audience" required hint="Who does this client's business serve?">
+              <Field label={<>Goals of Project <InfoTooltip content="Select all marketing goals. These are used to align strategy and appear in monthly reports." /></>} required><MultiChip options={GOALS} value={form.goals} onChange={setF('goals')} /></Field>
+              <Field label={<>Stakeholder Expectations <InfoTooltip content="What reporting and communication does this client expect? These drive the automated report schedule." /></>} required><MultiChip options={STAKEHOLDER_EXPECTATIONS} value={form.stakeholder_expectations} onChange={setF('stakeholder_expectations')} /></Field>
+              <Field label={<>Target Audience <InfoTooltip content="Describe who the client's business serves — location, demographics, and intent. Used for ad targeting and SEO content strategy." /></>} required hint="Who does this client's business serve?">
                 <input className="input-glass" value={form.target_audience} onChange={setFE('target_audience')}
                   placeholder="e.g. Homeowners 30-55 in Austin TX needing HVAC repairs" />
               </Field>
@@ -831,7 +832,7 @@ export default function NewClientPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="sm:col-span-2">
-              <Field label="Domain Name" hint="The primary domain — e.g. example.com">
+              <Field label={<>Domain Name <InfoTooltip content="The client's primary domain. Used to track renewal alerts and DNS records." /></>} hint="The primary domain — e.g. example.com">
                 <input className="input-glass" value={form.domain_name} onChange={setFE('domain_name')} placeholder="example.com" />
               </Field>
             </div>
@@ -854,7 +855,7 @@ export default function NewClientPage() {
               <input type="date" className="input-glass" value={form.hosting_expiry} onChange={setFE('hosting_expiry')} />
             </Field>
             <div className="sm:col-span-2">
-              <Field label="Nameservers" hint="e.g. ns1.siteground.com, ns2.siteground.com">
+              <Field label={<>Nameservers <InfoTooltip content="Nameservers control where the domain's DNS is managed. Required when migrating hosting or troubleshooting DNS issues." /></>} hint="e.g. ns1.siteground.com, ns2.siteground.com">
                 <input className="input-glass" value={form.nameservers} onChange={setFE('nameservers')} placeholder="ns1.provider.com, ns2.provider.com" />
               </Field>
             </div>
@@ -925,7 +926,15 @@ export default function NewClientPage() {
         </div>
       )}
 
-      <div className="flex gap-3 justify-between mt-8 pb-10">
+      {/* Spacer so sticky bar doesn't overlap content on mobile */}
+      <div className="h-24 sm:h-0" />
+
+      {/* Nav buttons — sticky on mobile, inline on sm+ */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 sm:static sm:z-auto
+        bg-[rgba(10,16,30,0.95)] sm:bg-transparent
+        border-t border-white/[0.08] sm:border-0
+        px-4 py-3 sm:px-0 sm:py-0 sm:mt-8
+        flex gap-3 justify-between backdrop-blur-sm sm:backdrop-blur-none">
         <button type="button"
           onClick={() => step > 0 ? setStep(s => s - 1) : router.push('/clients')}
           className="flex items-center gap-2 px-5 py-2.5 border border-white/[0.08] rounded-xl text-sm font-medium text-slate-300 hover:bg-white/[0.05] transition-colors">
