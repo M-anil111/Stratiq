@@ -13,14 +13,29 @@ export async function GET() {
     .from('organization_settings')
     .select('key, value')
     .eq('organization_id', userData.organization_id)
-    .like('key', 'integration_%')
+    .in('key', [
+      'google_connected', 'qb_connected', 'meta_connected',
+      'google_access_token', 'qb_access_token', 'meta_access_token',
+    ])
 
   const settings: Record<string, string> = {}
   for (const row of data || []) {
-    settings[row.key] = row.value
+    // Expose connection flags; strip actual tokens from response
+    if (!row.key.endsWith('_token') && !row.key.endsWith('_expiry')) {
+      settings[row.key] = row.value
+    }
   }
+  // Derive connected flags from token presence when explicit flag missing
+  const hasGoogle = settings.google_connected === 'true' || !!data?.find(r => r.key === 'google_access_token' && r.value)
+  const hasQb = settings.qb_connected === 'true'
+  const hasMeta = settings.meta_connected === 'true'
 
-  return NextResponse.json(settings)
+  return NextResponse.json({
+    ...settings,
+    google_connected: hasGoogle ? 'true' : 'false',
+    qb_connected: hasQb ? 'true' : 'false',
+    meta_connected: hasMeta ? 'true' : 'false',
+  })
 }
 
 export async function PUT(request: NextRequest) {

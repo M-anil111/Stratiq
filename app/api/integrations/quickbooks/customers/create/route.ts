@@ -82,8 +82,7 @@ export async function POST(req: NextRequest) {
       client_id: clientId,
       platform: 'quickbooks',
       external_id: qbId,
-      ad_account_id: qbId,
-      ad_account_name: qbName,
+      config: { name: qbName },
     }, { onConflict: 'client_id,platform' })
 
     return NextResponse.json({ qb_customer_id: qbId, display_name: qbName })

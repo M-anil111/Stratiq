@@ -1,12 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+
+async function getGoogleToken(supabase: any, orgId: string): Promise<string> {
+  const { data: rows } = await supabase
+    .from('organization_settings')
+    .select('key, value')
+    .eq('organization_id', orgId)
+    .in('key', ['google_access_token', 'google_refresh_token', 'google_token_expiry', 'google_connected'])
+
+  const settings: Record<string, string> = {}
+  for (const r of rows || []) settings[r.key] = r.value
+
+  if (settings.google_connected !== 'true' || !settings.google_access_token) {
+    throw new Error('Google not connected')
+  }
+
+  // Refresh if within 60s of expiry
+  if (Number(settings.google_token_expiry) < Date.now() + 60000) {
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: process.env.GOOGLE_CLIENT_ID!,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        refresh_token: settings.google_refresh_token,
+      }),
+    })
+    const tokens = await res.json()
+    if (tokens.access_token) {
+      await supabase.from('organization_settings').upsert([
+        { organization_id: orgId, key: 'google_access_token', value: tokens.access_token },
+        { organization_id: orgId, key: 'google_token_expiry', value: String(Date.now() + (tokens.expires_in || 3600) * 1000) },
+      ], { onConflict: 'organization_id,key' })
+      return tokens.access_token
+    }
+  }
+
+  return settings.google_access_token
+}
 
 export async function POST(request: NextRequest) {
-  // Verify caller is authorized (staff or cron)
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
+  if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
 
   const body = await request.json()
   const { client_id, customer_id, period_start, period_end } = body
@@ -14,21 +54,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
+  let access_token: string
   try {
-    // Fetch access token
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        client_id: process.env.GOOGLE_ADS_CLIENT_ID!,
-        client_secret: process.env.GOOGLE_ADS_CLIENT_SECRET!,
-        refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
-      }),
-    })
-    const { access_token } = await tokenRes.json()
+    access_token = await getGoogleToken(supabase, userData.organization_id)
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 400 })
+  }
 
-    // GAQL query for campaign stats
+  try {
     const gaqlQuery = `
       SELECT
         campaign.name,
@@ -36,7 +69,8 @@ export async function POST(request: NextRequest) {
         metrics.clicks,
         metrics.ctr,
         metrics.conversions,
-        metrics.cost_micros
+        metrics.cost_micros,
+        metrics.conversions_value
       FROM campaign
       WHERE segments.date BETWEEN '${period_start}' AND '${period_end}'
         AND campaign.status = 'ENABLED'
@@ -49,7 +83,7 @@ export async function POST(request: NextRequest) {
         headers: {
           'Authorization': `Bearer ${access_token}`,
           'developer-token': process.env.GOOGLE_ADS_DEVELOPER_TOKEN!,
-          'login-customer-id': process.env.GOOGLE_ADS_MCC_ID!,
+          'login-customer-id': process.env.GOOGLE_ADS_MCC_ID || customer_id,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ query: gaqlQuery }),
@@ -57,45 +91,73 @@ export async function POST(request: NextRequest) {
     )
 
     const adsData = await adsRes.json()
+    if (!adsRes.ok) {
+      return NextResponse.json({ error: adsData?.error?.message || `Google Ads API error ${adsRes.status}` }, { status: 502 })
+    }
 
-    // Aggregate metrics across all campaigns
-    let impressions = 0, clicks = 0, conversions = 0, cost_micros = 0
-    for (const batch of adsData) {
+    let impressions = 0, clicks = 0, conversions = 0, cost_micros = 0, conversions_value = 0
+    const campaigns: any[] = []
+
+    for (const batch of Array.isArray(adsData) ? adsData : [adsData]) {
       for (const row of batch.results || []) {
-        impressions += Number(row.metrics?.impressions || 0)
-        clicks += Number(row.metrics?.clicks || 0)
-        conversions += Number(row.metrics?.conversions || 0)
-        cost_micros += Number(row.metrics?.costMicros || 0)
+        const imp = Number(row.metrics?.impressions || 0)
+        const clk = Number(row.metrics?.clicks || 0)
+        const conv = Number(row.metrics?.conversions || 0)
+        const cost = Number(row.metrics?.costMicros || 0)
+        const convVal = Number(row.metrics?.conversionsValue || 0)
+        impressions += imp
+        clicks += clk
+        conversions += conv
+        cost_micros += cost
+        conversions_value += convVal
+        campaigns.push({
+          name: row.campaign?.name,
+          impressions: imp,
+          clicks: clk,
+          conversions: conv,
+          spend: Math.round(cost / 10000) / 100,
+          ctr: imp > 0 ? Math.round((clk / imp) * 10000) / 100 : 0,
+        })
       }
     }
 
-    const spend = cost_micros / 1_000_000
-    const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0
+    const spend = Math.round(cost_micros / 10000) / 100
+    const ctr = impressions > 0 ? Math.round((clicks / impressions) * 10000) / 100 : 0
+    const roas = spend > 0 ? Math.round((conversions_value / spend) * 100) / 100 : 0
 
-    // Upsert into marketing_reports
-    const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
-    const admin = createAdminClient()
-    const { data, error } = await admin
+    const [yearStr, monthStr] = period_start.split('-')
+    const year = parseInt(yearStr)
+    const month = parseInt(monthStr)
+
+    const googleData = {
+      impressions,
+      clicks,
+      ctr,
+      conversions: Math.round(conversions),
+      spend,
+      roas,
+      revenue: Math.round(conversions_value * 100) / 100,
+      campaigns,
+      period_start,
+      period_end,
+      synced_at: new Date().toISOString(),
+    }
+
+    const { data, error } = await supabase
       .from('marketing_reports')
       .upsert({
         client_id,
-        organization_id: userData?.organization_id,
-        period_start,
-        period_end,
-        report_type: 'google_ads',
-        google_impressions: impressions,
-        google_clicks: clicks,
-        google_ctr: Math.round(ctr * 100) / 100,
-        google_conversions: conversions,
-        google_spend: Math.round(spend * 100) / 100,
-        status: 'published',
+        organization_id: userData.organization_id,
+        year,
+        month,
+        google_ads_data: googleData,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'client_id,period_start,period_end,report_type' })
+      }, { onConflict: 'client_id,year,month' })
       .select()
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json(data)
+    return NextResponse.json({ ...data, google: googleData })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

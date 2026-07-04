@@ -88,15 +88,16 @@ export default function IntegrationsPage() {
       .then(data => {
         setGoogleStatus(data.google_connected === 'true' ? 'connected' : 'disconnected')
         setQbStatus(data.qb_connected === 'true' ? 'connected' : 'disconnected')
+        setMetaStatus(data.meta_connected === 'true' ? 'connected' : 'loading')
+        if (data.meta_connected !== 'true') {
+          // Verify meta by attempting to fetch accounts
+          fetch('/api/integrations/meta-ads/accounts')
+            .then(r => r.json())
+            .then(d => setMetaStatus(d.error === 'not_connected' ? 'disconnected' : d.error ? 'error' : 'connected'))
+            .catch(() => setMetaStatus('disconnected'))
+        }
       })
-      .catch(() => { setGoogleStatus('disconnected'); setQbStatus('disconnected') })
-    // Check Meta status
-    fetch('/api/integrations/meta-ads/accounts')
-      .then(r => r.json())
-      .then(d => {
-        setMetaStatus(d.error === 'not_connected' ? 'disconnected' : d.error ? 'error' : 'connected')
-      })
-      .catch(() => setMetaStatus('disconnected'))
+      .catch(() => { setGoogleStatus('disconnected'); setQbStatus('disconnected'); setMetaStatus('disconnected') })
   }, [])
 
   const handleGoogleDisconnect = async () => {

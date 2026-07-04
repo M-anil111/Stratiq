@@ -34,7 +34,7 @@ const NOTE_ICONS: Record<string, any> = {
   activity: ClipboardList,
 }
 
-const TABS = ['Overview', 'Tasks', 'Notes', 'Reports', 'Messages', 'Files', 'Integrations']
+const TABS = ['Overview', 'Tasks', 'Notes', 'Reports', 'Messages', 'Files', 'Integrations', 'Invoices']
 
 export default function ClientDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -96,6 +96,15 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [syncingGoogle, setSyncingGoogle] = useState(false)
   const [googleSyncDone, setGoogleSyncDone] = useState(false)
 
+  // Invoices
+  const [invoices, setInvoices] = useState<any[]>([])
+  const [invoicesLoading, setInvoicesLoading] = useState(false)
+  const [showInvoiceForm, setShowInvoiceForm] = useState(false)
+  const [newInvoice, setNewInvoice] = useState({ due_date: '', notes: '', tax_amount: '', line_items: [{ description: '', qty: '1', unit_price: '', amount: '' }] })
+  const [savingInvoice, setSavingInvoice] = useState(false)
+  const [pushingQb, setPushingQb] = useState<string | null>(null)
+  const [syncingQbInvoices, setSyncingQbInvoices] = useState(false)
+
   // Drive
   const [driveFiles, setDriveFiles] = useState<any[]>([])
   const [driveFolders, setDriveFolders] = useState<any[]>([])
@@ -155,6 +164,13 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     }
     if (activeTab === 5) {
       loadDrive(null)
+    }
+    if (activeTab === 7) {
+      setInvoicesLoading(true)
+      fetch(`/api/invoices?clientId=${params.id}`)
+        .then(r => r.json())
+        .then(d => { setInvoices(Array.isArray(d) ? d : []); setInvoicesLoading(false) })
+        .catch(() => setInvoicesLoading(false))
     }
     if (activeTab === 6) {
       fetch(`/api/clients/${params.id}/integrations`).then(r => r.json()).then(d => {
@@ -1081,6 +1097,30 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             )}
           </div>
 
+          {/* QB Sync Invoices — shown when QB customer is mapped */}
+          {savedQbCustomer && (
+            <div className="glass-card p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-sm">QB</div>
+                  <div>
+                    <h3 className="font-semibold text-white text-sm">Sync QB Invoices</h3>
+                    <p className="text-xs text-slate-400">Pull open invoices from QuickBooks into Stratiq</p>
+                  </div>
+                </div>
+                <button disabled={syncingQbInvoices} onClick={async () => {
+                  setSyncingQbInvoices(true)
+                  const res = await fetch('/api/integrations/quickbooks/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId: params.id }) })
+                  setSyncingQbInvoices(false)
+                  if (res.ok) { setActiveTab(7) }
+                }} className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-lg transition-all disabled:opacity-50">
+                  <RefreshCw className={`h-3.5 w-3.5 ${syncingQbInvoices ? 'animate-spin' : ''}`} />
+                  {syncingQbInvoices ? 'Syncing…' : 'Sync Invoices'}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Meta Ads */}
           <div className="glass-card p-5">
             <div className="flex items-center gap-3 mb-4">
@@ -1091,6 +1131,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
               </div>
               {savedMetaAccount && <span className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400"><CheckCircle className="h-3 w-3" /> Mapped</span>}
             </div>
+
             {metaAccountsError === 'not_connected' ? (
               <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-4 text-sm text-amber-300">
                 Meta Ads is not connected. <a href="/settings/integrations" className="underline hover:text-amber-200">Connect in Settings → Integrations</a>
@@ -1129,6 +1170,155 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {activeTab === 7 && (
+        <div className="max-w-4xl space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Invoices</h2>
+              <p className="text-sm text-slate-400">Create and manage invoices for {client?.company_name}</p>
+            </div>
+            <div className="flex gap-2">
+              {savedQbCustomer && (
+                <button disabled={syncingQbInvoices} onClick={async () => {
+                  setSyncingQbInvoices(true)
+                  const res = await fetch('/api/integrations/quickbooks/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId: params.id }) })
+                  const d = await res.json()
+                  setSyncingQbInvoices(false)
+                  if (res.ok) {
+                    setInvoicesLoading(true)
+                    fetch(`/api/invoices?clientId=${params.id}`).then(r => r.json()).then(data => { setInvoices(Array.isArray(data) ? data : []); setInvoicesLoading(false) })
+                  }
+                }} className="flex items-center gap-1.5 px-3 py-2 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50">
+                  <RefreshCw className={`h-3.5 w-3.5 ${syncingQbInvoices ? 'animate-spin' : ''}`} />
+                  {syncingQbInvoices ? 'Syncing…' : 'Sync from QB'}
+                </button>
+              )}
+              <button onClick={() => setShowInvoiceForm(v => !v)} className="btn-brand flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl">
+                <Plus className="h-4 w-4" /> New Invoice
+              </button>
+            </div>
+          </div>
+
+          {/* Create invoice form */}
+          {showInvoiceForm && (
+            <div className="glass-card p-5 space-y-4">
+              <h3 className="font-semibold text-white">New Invoice</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Due Date</label>
+                  <input type="date" value={newInvoice.due_date} onChange={e => setNewInvoice(v => ({ ...v, due_date: e.target.value }))}
+                    className="w-full bg-white/[0.06] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Tax Amount ($)</label>
+                  <input type="number" step="0.01" placeholder="0.00" value={newInvoice.tax_amount} onChange={e => setNewInvoice(v => ({ ...v, tax_amount: e.target.value }))}
+                    className="w-full bg-white/[0.06] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50" />
+                </div>
+              </div>
+              {/* Line items */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs text-slate-400">Line Items</label>
+                  <button onClick={() => setNewInvoice(v => ({ ...v, line_items: [...v.line_items, { description: '', qty: '1', unit_price: '', amount: '' }] }))}
+                    className="text-xs text-sky-400 hover:text-sky-300">+ Add Line</button>
+                </div>
+                <div className="space-y-2">
+                  {newInvoice.line_items.map((li, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+                      <input placeholder="Description" value={li.description} onChange={e => setNewInvoice(v => { const l = [...v.line_items]; l[idx] = { ...l[idx], description: e.target.value }; return { ...v, line_items: l } })}
+                        className="col-span-6 bg-white/[0.06] border border-white/[0.12] text-white rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500/50" />
+                      <input placeholder="Qty" type="number" value={li.qty} onChange={e => setNewInvoice(v => { const l = [...v.line_items]; l[idx] = { ...l[idx], qty: e.target.value, amount: String((parseFloat(e.target.value) || 0) * (parseFloat(l[idx].unit_price) || 0)) }; return { ...v, line_items: l } })}
+                        className="col-span-2 bg-white/[0.06] border border-white/[0.12] text-white rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500/50" />
+                      <input placeholder="Unit $" type="number" step="0.01" value={li.unit_price} onChange={e => setNewInvoice(v => { const l = [...v.line_items]; l[idx] = { ...l[idx], unit_price: e.target.value, amount: String((parseFloat(l[idx].qty) || 0) * (parseFloat(e.target.value) || 0)) }; return { ...v, line_items: l } })}
+                        className="col-span-2 bg-white/[0.06] border border-white/[0.12] text-white rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500/50" />
+                      <span className="col-span-1 text-sm text-slate-300 tabular-nums text-right">${(parseFloat(li.amount) || 0).toFixed(2)}</span>
+                      <button onClick={() => setNewInvoice(v => ({ ...v, line_items: v.line_items.filter((_, i) => i !== idx) }))} className="col-span-1 text-slate-500 hover:text-red-400 flex justify-center"><X className="h-4 w-4" /></button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end mt-2 text-sm text-slate-300">
+                  Total: <span className="ml-2 font-semibold text-white tabular-nums">
+                    ${(newInvoice.line_items.reduce((s, li) => s + (parseFloat(li.amount) || 0), 0) + (parseFloat(newInvoice.tax_amount) || 0)).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+              <textarea placeholder="Notes (optional)" value={newInvoice.notes} onChange={e => setNewInvoice(v => ({ ...v, notes: e.target.value }))} rows={2}
+                className="w-full bg-white/[0.06] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 placeholder:text-slate-500 resize-none" />
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setShowInvoiceForm(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Cancel</button>
+                <button disabled={savingInvoice || newInvoice.line_items.every(li => !li.description)} onClick={async () => {
+                  setSavingInvoice(true)
+                  const res = await fetch('/api/invoices', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_id: params.id, due_date: newInvoice.due_date || null, tax_amount: parseFloat(newInvoice.tax_amount) || 0, notes: newInvoice.notes || null, line_items: newInvoice.line_items.filter(li => li.description) }),
+                  })
+                  if (res.ok) {
+                    const inv = await res.json()
+                    setInvoices(v => [inv, ...v])
+                    setShowInvoiceForm(false)
+                    setNewInvoice({ due_date: '', notes: '', tax_amount: '', line_items: [{ description: '', qty: '1', unit_price: '', amount: '' }] })
+                  }
+                  setSavingInvoice(false)
+                }} className="btn-brand px-4 py-2 text-sm font-medium rounded-xl disabled:opacity-50">
+                  {savingInvoice ? 'Creating…' : 'Create Invoice'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Invoice list */}
+          {invoicesLoading ? (
+            <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 skeleton rounded-xl" />)}</div>
+          ) : invoices.length === 0 ? (
+            <div className="glass-card p-10 text-center text-slate-500 text-sm">No invoices yet. Create one above or sync from QuickBooks.</div>
+          ) : (
+            <div className="glass-card rounded-2xl overflow-hidden divide-y divide-white/[0.04]">
+              {invoices.map(inv => {
+                const statusColors: Record<string, string> = {
+                  draft: 'bg-slate-500/20 text-slate-400',
+                  sent: 'bg-sky-500/20 text-sky-400',
+                  paid: 'bg-emerald-500/20 text-emerald-400',
+                  overdue: 'bg-red-500/20 text-red-400',
+                  voided: 'bg-slate-700/20 text-slate-600',
+                }
+                return (
+                  <div key={inv.id} className="flex items-center gap-4 px-5 py-3.5">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-white">{inv.invoice_number}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[inv.status] || statusColors.draft}`}>{inv.status}</span>
+                        {inv.qb_invoice_id && <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">QB Synced</span>}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-0.5">
+                        Issued {inv.issue_date}{inv.due_date ? ` · Due ${inv.due_date}` : ''}
+                        {inv.amount_paid > 0 && inv.amount_paid < inv.total ? ` · $${(inv.total - inv.amount_paid).toFixed(2)} outstanding` : ''}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-base font-semibold text-white tabular-nums">${(inv.total || 0).toFixed(2)}</div>
+                      {inv.amount_paid > 0 && <div className="text-xs text-emerald-400">${inv.amount_paid.toFixed(2)} paid</div>}
+                    </div>
+                    {savedQbCustomer && !inv.qb_invoice_id && (
+                      <button disabled={pushingQb === inv.id} onClick={async () => {
+                        setPushingQb(inv.id)
+                        const res = await fetch(`/api/invoices/${inv.id}/push-to-qb`, { method: 'POST' })
+                        const d = await res.json()
+                        if (res.ok) setInvoices(v => v.map(i => i.id === inv.id ? { ...i, qb_invoice_id: d.qb_invoice_id } : i))
+                        setPushingQb(null)
+                      }} className="flex items-center gap-1 px-2.5 py-1.5 text-xs border border-green-500/30 text-green-400 rounded-lg hover:bg-green-500/10 transition-colors disabled:opacity-50 whitespace-nowrap">
+                        {pushingQb === inv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                        Push to QB
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
