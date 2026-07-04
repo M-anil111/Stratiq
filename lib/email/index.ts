@@ -1,6 +1,10 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let _resend: Resend | null = null
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || 'placeholder')
+  return _resend
+}
 
 export async function sendEmail({
   to,
@@ -13,7 +17,7 @@ export async function sendEmail({
   html: string
   from?: string
 }) {
-  const { data, error } = await resend.emails.send({ from, to, subject, html })
+  const { data, error } = await getResend().emails.send({ from, to, subject, html })
   if (error) throw new Error(`Email send failed: ${error.message}`)
   return data
 }
