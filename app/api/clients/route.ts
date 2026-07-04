@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClientFolder } from '@/lib/google-drive'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -79,5 +80,13 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Auto-create Google Drive folder for new client (non-fatal)
+  try {
+    const folderId = await createClientFolder(supabase, body.company_name)
+    await supabase.from('clients').update({ google_drive_folder_id: folderId }).eq('id', data.id)
+    data.google_drive_folder_id = folderId
+  } catch { /* Drive not connected or env var missing — skip */ }
+
   return NextResponse.json(data, { status: 201 })
 }

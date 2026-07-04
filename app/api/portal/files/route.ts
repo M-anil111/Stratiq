@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { listFilesInFolder } from '@/lib/google-drive'
+import { listFiles, listFilesInFolder } from '@/lib/google-drive'
 
 export async function GET() {
   const supabase = await createClient()
@@ -9,16 +9,26 @@ export async function GET() {
 
   const { data: portalAccess } = await supabase
     .from('client_portal_access')
-    .select('client_id, clients(company_name)')
+    .select('client_id, clients(company_name, google_drive_folder_id)')
     .eq('user_id', user.id)
     .single()
 
   if (!portalAccess) return NextResponse.json([])
 
+  const clientData = portalAccess.clients as any
+  const companyName = clientData?.company_name || 'Unknown'
+  const folderId = clientData?.google_drive_folder_id
+
   try {
-    const companyName = (portalAccess.clients as any)?.company_name || 'Unknown'
-    const files = await listFilesInFolder(companyName)
-    return NextResponse.json(files)
+    if (folderId) {
+      // Use OAuth-based Drive API with folder id
+      const files = await listFiles(supabase, folderId)
+      return NextResponse.json(files)
+    } else {
+      // Fallback: service-account lookup by folder name
+      const files = await listFilesInFolder(companyName)
+      return NextResponse.json(files)
+    }
   } catch {
     return NextResponse.json([])
   }

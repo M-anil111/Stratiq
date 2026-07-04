@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { encryptIfPresent } from '@/lib/encryption'
+import { createClientFolder, createProjectFolder } from '@/lib/google-drive'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -45,6 +46,25 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     .single()
 
   if (projectError) return NextResponse.json({ error: projectError.message }, { status: 500 })
+
+  // Auto-create Drive subfolder for the project (non-fatal)
+  try {
+    const { data: clientData } = await supabase
+      .from('clients')
+      .select('company_name, google_drive_folder_id')
+      .eq('id', params.id)
+      .single()
+    if (clientData) {
+      let clientFolderId = clientData.google_drive_folder_id
+      if (!clientFolderId) {
+        clientFolderId = await createClientFolder(supabase, clientData.company_name)
+        await supabase.from('clients').update({ google_drive_folder_id: clientFolderId }).eq('id', params.id)
+      }
+      const projectFolderId = await createProjectFolder(supabase, clientFolderId, body.domain || project.id)
+      await supabase.from('projects').update({ google_drive_folder_id: projectFolderId }).eq('id', project.id)
+      project.google_drive_folder_id = projectFolderId
+    }
+  } catch { /* Drive not connected — skip */ }
 
   // Insert tracking tools
   if (body.tracking_tools?.length) {
