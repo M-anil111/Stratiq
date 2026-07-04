@@ -35,6 +35,9 @@ export default function MarketingReportsPage() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [sendError, setSendError] = useState('')
   const [seoOpen, setSeoOpen] = useState(true)
   const [gadsOpen, setGadsOpen] = useState(true)
   const [metaOpen, setMetaOpen] = useState(true)
@@ -82,6 +85,27 @@ export default function MarketingReportsPage() {
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleSendToClient = async () => {
+    if (!clientId) return
+    const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`
+    setSending(true)
+    setSendError('')
+    const res = await fetch(`/api/clients/${clientId}/reports/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ month: monthStr }),
+    })
+    setSending(false)
+    if (res.ok) {
+      setSent(true)
+      setTimeout(() => setSent(false), 3000)
+    } else {
+      const err = await res.json()
+      setSendError(err.error || 'Failed to send')
+      setTimeout(() => setSendError(''), 4000)
+    }
   }
 
   return (
@@ -209,14 +233,16 @@ export default function MarketingReportsPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-3 flex-wrap items-center">
             <button onClick={handleSave} disabled={saving}
               className="btn-brand flex items-center gap-2 px-4 py-2.5 disabled:opacity-60 text-sm font-medium">
-              <Send className="h-4 w-4" /> {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Report'}
+              <Download className="h-4 w-4" /> {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Report'}
             </button>
-            <button className="px-4 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] transition-all text-sm flex items-center gap-2">
-              <Download className="h-4 w-4" /> Export PDF
+            <button onClick={handleSendToClient} disabled={sending || !clientId}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium">
+              <Send className="h-4 w-4" /> {sending ? 'Sending…' : sent ? 'Sent!' : 'Send to Client'}
             </button>
+            {sendError && <span className="text-red-400 text-sm">{sendError}</span>}
           </div>
         </>
       )}
