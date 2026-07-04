@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       google_drive_folder_url: body.google_drive_folder_url,
       proposal_url: body.proposal_url || null,
       google_place_id: body.google_place_id || null,
-      proposal_status: 'pending_approval',
+      proposal_status: 'approved',
       contact_first_name: body.contact_first_name || null,
       contact_last_name: body.contact_last_name || null,
       domain_name: body.domain_name || null,
@@ -107,12 +107,23 @@ export async function POST(request: NextRequest) {
     data.google_drive_folder_id = folderId
   } catch { /* Drive not connected or env var missing — skip */ }
 
-  // Send approval email (non-fatal)
+  // Send notification email to all configured recipients (non-fatal)
   try {
     const pkgs: any[] = body.service_packages || []
     const totalMonthly = pkgs.reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0)
     const totalSetup = pkgs.reduce((s: number, p: any) => s + (parseFloat(p.setup_fee) || 0), 0)
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
+
+    // Pull notification recipients from org settings; fall back to env var
+    const { data: notifRow } = await supabase
+      .from('organization_settings')
+      .select('value')
+      .eq('organization_id', userData.organization_id)
+      .eq('key', 'notification_emails')
+      .single()
+    const recipientList = notifRow?.value
+      ? notifRow.value.split(',').map((e: string) => e.trim()).filter(Boolean)
+      : (process.env.APPROVAL_EMAIL || 'jay@jaymehta.co').split(',').map((e: string) => e.trim())
 
     const servicesHtml = pkgs.map((p: any) => `
       <tr>
@@ -123,14 +134,15 @@ export async function POST(request: NextRequest) {
       ${(parseFloat(p.setup_fee) || 0) > 0 ? `<tr><td colspan="2" style="padding:4px 12px;color:#64748b;font-size:12px">  └ Setup fee</td><td style="padding:4px 12px;color:#94a3b8;font-size:12px;text-align:right">$${(parseFloat(p.setup_fee) || 0).toLocaleString()}</td></tr>` : ''}
     `).join('')
 
+    for (const recipient of recipientList) {
     await sendEmail({
-      to: process.env.APPROVAL_EMAIL || 'jay@jaymehta.co',
-      subject: `New Client Added: ${body.company_name} — $${totalMonthly.toLocaleString()}/mo — Approval Required`,
+      to: recipient,
+      subject: `New Client Added: ${body.company_name} — $${totalMonthly.toLocaleString()}/mo`,
       html: `
         <div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;background:#0a1628;color:#e2e8f0;border-radius:12px;overflow:hidden">
           <div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:24px 32px">
-            <h1 style="margin:0;font-size:22px;color:#fff">New Client — Approval Required</h1>
-            <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px">Review and approve to create the QuickBooks customer & invoice</p>
+            <h1 style="margin:0;font-size:22px;color:#fff">New Client Added</h1>
+            <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px">A new client has been onboarded in Stratiq</p>
           </div>
           <div style="padding:32px">
             <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
@@ -173,6 +185,7 @@ export async function POST(request: NextRequest) {
         </div>
       `,
     })
+    } // end for recipient loop
   } catch { /* Email may fail if Resend not configured — don't block */ }
 
   return NextResponse.json(data, { status: 201 })

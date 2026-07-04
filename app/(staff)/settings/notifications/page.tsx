@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Bell, Check, Loader2, Users, FolderKanban, BarChart3, Settings2 } from 'lucide-react'
+import { Bell, Check, Loader2, Users, FolderKanban, BarChart3, Settings2, Mail, X, Plus } from 'lucide-react'
 
 interface NotifItem {
   key: string
@@ -68,6 +68,12 @@ export default function NotificationsPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
+  // Notification recipients (org-level)
+  const [recipientEmails, setRecipientEmails] = useState<string[]>([])
+  const [recipientInput, setRecipientInput] = useState('')
+  const [savingRecipients, setSavingRecipients] = useState(false)
+  const [recipientsSaved, setRecipientsSaved] = useState(false)
+
   useEffect(() => {
     fetch('/api/settings/notifications')
       .then(r => r.ok ? r.json() : {})
@@ -76,7 +82,33 @@ export default function NotificationsPage() {
         setLoading(false)
       })
       .catch(() => setLoading(false))
+    fetch('/api/settings/notification-recipients')
+      .then(r => r.ok ? r.json() : { emails: '' })
+      .then(d => {
+        const list = (d.emails || '').split(',').map((e: string) => e.trim()).filter(Boolean)
+        setRecipientEmails(list)
+      })
+      .catch(() => {})
   }, [])
+
+  const addRecipient = () => {
+    const email = recipientInput.trim().toLowerCase()
+    if (!email || recipientEmails.includes(email)) { setRecipientInput(''); return }
+    setRecipientEmails(v => [...v, email])
+    setRecipientInput('')
+  }
+
+  const saveRecipients = async () => {
+    setSavingRecipients(true)
+    await fetch('/api/settings/notification-recipients', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emails: recipientEmails.join(',') }),
+    })
+    setSavingRecipients(false)
+    setRecipientsSaved(true)
+    setTimeout(() => setRecipientsSaved(false), 2500)
+  }
 
   const set = (key: string, val: boolean) => setPrefs(p => ({ ...p, [key]: val }))
 
@@ -118,6 +150,49 @@ export default function NotificationsPage() {
       <div className="flex justify-end gap-6 pr-4 mb-2">
         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider w-12 text-center">Email</span>
         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider w-12 text-center">In-App</span>
+      </div>
+
+      {/* Notification Recipients */}
+      <div className="glass-card rounded-2xl overflow-hidden mb-6">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06] bg-white/[0.02]">
+          <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4 text-sky-400" />
+            <span className="text-sm font-semibold text-slate-200">Client Notification Recipients</span>
+          </div>
+          <button onClick={saveRecipients} disabled={savingRecipients}
+            className="flex items-center gap-1.5 text-xs btn-brand px-3 py-1.5 rounded-lg font-medium disabled:opacity-60">
+            {savingRecipients ? <Loader2 className="h-3 w-3 animate-spin" /> : recipientsSaved ? <Check className="h-3 w-3" /> : null}
+            {savingRecipients ? 'Saving…' : recipientsSaved ? 'Saved!' : 'Save'}
+          </button>
+        </div>
+        <div className="p-5 space-y-3">
+          <p className="text-xs text-slate-400">These email addresses receive a notification whenever a new client is added. Typically your accountant, sales agent, marketing manager, etc.</p>
+          <div className="flex flex-wrap gap-2 min-h-[40px]">
+            {recipientEmails.map(email => (
+              <span key={email} className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/20 px-3 py-1 text-sm">
+                {email}
+                <button type="button" onClick={() => setRecipientEmails(v => v.filter(e => e !== email))}>
+                  <X className="h-3 w-3 text-sky-400 hover:text-red-400" />
+                </button>
+              </span>
+            ))}
+            {recipientEmails.length === 0 && <p className="text-sm text-slate-600">No recipients added yet</p>}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              className="flex-1 bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 placeholder:text-slate-500"
+              placeholder="accountant@example.com"
+              value={recipientInput}
+              onChange={e => setRecipientInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addRecipient() } }}
+            />
+            <button type="button" onClick={addRecipient}
+              className="flex items-center gap-1 px-3 py-2 bg-sky-500/20 border border-sky-500/30 text-sky-400 rounded-lg text-sm hover:bg-sky-500/30 transition-colors">
+              <Plus className="h-4 w-4" /> Add
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   ChevronLeft, ChevronRight, Check, Loader2, CheckCircle, X,
   Building2, Briefcase, Target, ClipboardList, Search, DollarSign,
-  AlertCircle,
+  AlertCircle, Plus,
 } from 'lucide-react'
 import { InfoTooltip } from '@/components/ui/tooltip'
 
@@ -149,7 +149,6 @@ const SERVICE_DELIVERABLES: Record<string, DeliverableField[]> = {
     { key: 'tool', label: 'Design Tool', type: 'select', options: ['Canva', 'Adobe Illustrator', 'Figma', 'Photoshop', 'Client Preference'] },
   ],
   'Website Maintenance': [
-    { key: 'hours_per_month', label: 'Hours / Month', type: 'number', placeholder: '5' },
     { key: 'includes', label: 'Includes', type: 'multiselect', options: ['Plugin Updates', 'Security Scans', 'Backups', 'Content Updates', 'Speed Optimization', 'Uptime Monitoring', 'SSL Management'] },
   ],
 }
@@ -463,8 +462,9 @@ interface FormData {
   proposal_url: string; project_status: string
   sales_manager_id: string; dm_manager_id: string; marketing_manager_id: string
   // Hosting & domain
-  domain_name: string; domain_registrar: string; domain_expiry: string
-  hosting_provider: string; hosting_expiry: string; nameservers: string; hosting_notes: string
+  domain_name: string; domain_registrar: string
+  hosting_provider: string; hosting_notes: string
+  hosting_includes_backup: string; backup_frequency: string; support_type: string
   display_name: string
   parent_client_id: string
 }
@@ -478,8 +478,9 @@ const defaultForm: FormData = {
   goals: [], stakeholder_expectations: [],
   proposal_url: '', project_status: 'in_onboarding',
   sales_manager_id: '', dm_manager_id: '', marketing_manager_id: '',
-  domain_name: '', domain_registrar: '', domain_expiry: '',
-  hosting_provider: '', hosting_expiry: '', nameservers: '', hosting_notes: '',
+  domain_name: '', domain_registrar: '',
+  hosting_provider: '', hosting_notes: '',
+  hosting_includes_backup: '', backup_frequency: '', support_type: '',
   display_name: '',
   parent_client_id: '',
 }
@@ -499,6 +500,9 @@ export default function NewClientPage() {
   const [success, setSuccess] = useState<{ id: string; name: string } | null>(null)
   const [users, setUsers] = useState<{ id: string; full_name: string; role: string }[]>([])
   const [autoFilled, setAutoFilled] = useState<Set<string>>(new Set())
+  const [proposalFile, setProposalFile] = useState<File | null>(null)
+  const [uploadingProposal, setUploadingProposal] = useState(false)
+  const proposalInputRef = useRef<HTMLInputElement>(null)
   // Contact person search flow
   const [contactMode, setContactMode] = useState<'search' | 'new' | 'linked'>('search')
   const [contactSearch, setContactSearch] = useState('')
@@ -550,11 +554,26 @@ export default function NewClientPage() {
   const handleSubmit = async () => {
     setSaving(true); setError('')
     try {
+      // Upload proposal file to Drive first if selected
+      let proposalUrl = form.proposal_url
+      if (proposalFile) {
+        setUploadingProposal(true)
+        const fd = new FormData()
+        fd.append('file', proposalFile)
+        const uploadRes = await fetch('/api/drive/upload-proposal', { method: 'POST', body: fd })
+        setUploadingProposal(false)
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json()
+          proposalUrl = uploadData.url
+        }
+      }
+
       const res = await fetch('/api/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
+          proposal_url: proposalUrl,
           num_employees: form.num_employees ? parseInt(form.num_employees) : null,
           sales_manager_id: form.sales_manager_id || null,
           dm_manager_id: form.dm_manager_id || null,
@@ -566,11 +585,10 @@ export default function NewClientPage() {
           advertising_types: packages.filter(p => ['Google Ads / PPC', 'Meta Ads (Facebook & Instagram)', 'LinkedIn Ads', 'TikTok Ads'].includes(p.service)).flatMap(p => (p.deliverables.platforms || [])),
           domain_name: form.domain_name || null,
           domain_registrar: form.domain_registrar || null,
-          domain_expiry: form.domain_expiry || null,
           hosting_provider: form.hosting_provider || null,
-          hosting_expiry: form.hosting_expiry || null,
-          nameservers: form.nameservers || null,
           hosting_notes: form.hosting_notes || null,
+          backup_frequency: form.backup_frequency || null,
+          support_type: form.support_type || null,
           display_name: form.display_name || null,
           related_client_id: form.parent_client_id || null,
         }),
@@ -596,10 +614,10 @@ export default function NewClientPage() {
               <CheckCircle className="h-10 w-10 text-emerald-400" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Client Added!</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">Client Created!</h2>
           <p className="text-slate-300 font-medium mb-1">{success.name}</p>
-          <p className="text-slate-400 text-sm mb-1">Approval email sent to jay@jaymehta.co</p>
-          <p className="text-slate-500 text-xs mb-6">Once approved, QuickBooks customer & invoice will be created automatically.</p>
+          <p className="text-slate-400 text-sm mb-1">Notifications sent to your team</p>
+          <p className="text-slate-500 text-xs mb-6">The client is now active in Stratiq. You can link QuickBooks from the client&apos;s Integrations tab.</p>
           <p className="text-slate-400 text-sm flex items-center justify-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" /> Taking you to the client dashboard…
           </p>
@@ -1047,8 +1065,24 @@ export default function NewClientPage() {
 
           <Field label="Business Hashtags" hint="Press Enter after each"><TagInput value={form.hashtags} onChange={setF('hashtags')} placeholder="#localrestaurant #austin" /></Field>
           <Field label="Business Categories" hint="Press Enter after each"><TagInput value={form.categories} onChange={setF('categories')} placeholder="Italian Restaurant, Fine Dining" /></Field>
-          <Field label="Proposal / Agreement Link" hint="Google Drive or DocuSign link to the signed proposal">
-            <input className="input-glass" value={form.proposal_url} onChange={setFE('proposal_url')} placeholder="https://drive.google.com/file/d/…" />
+          <Field label="Proposal / Agreement" hint="Upload PDF or Word doc — saved to Google Drive automatically">
+            <input ref={proposalInputRef} type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+              className="hidden" onChange={e => setProposalFile(e.target.files?.[0] || null)} />
+            {proposalFile ? (
+              <div className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-white">{proposalFile.name}</p>
+                  <p className="text-xs text-emerald-400 mt-0.5">Will upload to Google Drive on submit</p>
+                </div>
+                <button type="button" onClick={() => { setProposalFile(null); if (proposalInputRef.current) proposalInputRef.current.value = '' }}
+                  className="text-slate-500 hover:text-red-400"><X className="h-4 w-4" /></button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => proposalInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2 border border-dashed border-white/[0.15] rounded-lg py-4 text-slate-400 hover:border-sky-500/50 hover:text-sky-400 transition-all text-sm">
+                <Plus className="h-4 w-4" /> Choose File
+              </button>
+            )}
           </Field>
         </div>
       )}
@@ -1061,37 +1095,59 @@ export default function NewClientPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="sm:col-span-2">
-              <Field label={<>Domain Name <InfoTooltip content="The client's primary domain. Used to track renewal alerts and DNS records." /></>} hint="The primary domain — e.g. example.com">
+              <Field label={<>Domain Name <InfoTooltip content="The client's primary domain." /></>} hint="e.g. example.com">
                 <input className="input-glass" value={form.domain_name} onChange={setFE('domain_name')} placeholder="example.com" />
               </Field>
             </div>
             <Field label="Domain Registrar">
               <select className={sel} value={form.domain_registrar} onChange={setFE('domain_registrar')}>
-                <option value="">Select or type…</option>
+                <option value="">Select…</option>
                 {DOMAIN_REGISTRARS.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </Field>
-            <Field label="Domain Expiry Date">
-              <input type="date" className="input-glass" value={form.domain_expiry} onChange={setFE('domain_expiry')} />
-            </Field>
             <Field label="Hosting Provider">
               <select className={sel} value={form.hosting_provider} onChange={setFE('hosting_provider')}>
-                <option value="">Select or type…</option>
+                <option value="">Select…</option>
                 {HOSTING_PROVIDERS.map(h => <option key={h} value={h}>{h}</option>)}
               </select>
             </Field>
-            <Field label="Hosting Renewal Date">
-              <input type="date" className="input-glass" value={form.hosting_expiry} onChange={setFE('hosting_expiry')} />
+            <Field label="Includes Backup?">
+              <div className="flex gap-3">
+                {['Yes', 'No'].map(opt => (
+                  <button key={opt} type="button"
+                    onClick={() => { setForm(f => ({ ...f, hosting_includes_backup: opt, backup_frequency: opt === 'No' ? '' : f.backup_frequency })) }}
+                    className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-all ${form.hosting_includes_backup === opt ? 'border-sky-500 bg-sky-500/10 text-white' : 'border-white/[0.12] bg-white/[0.04] text-slate-400 hover:border-white/20'}`}>
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </Field>
+            {form.hosting_includes_backup === 'Yes' && (
+              <Field label="Backup Frequency">
+                <select className={sel} value={form.backup_frequency} onChange={setFE('backup_frequency')}>
+                  <option value="">Select…</option>
+                  <option value="daily">Daily</option>
+                  <option value="biweekly">Bi-weekly</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </Field>
+            )}
+            <Field label="Support Type">
+              <div className="flex gap-3">
+                {['24×7', '8×5'].map(opt => (
+                  <button key={opt} type="button"
+                    onClick={() => setForm(f => ({ ...f, support_type: opt }))}
+                    className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-all ${form.support_type === opt ? 'border-violet-500 bg-violet-500/10 text-white' : 'border-white/[0.12] bg-white/[0.04] text-slate-400 hover:border-white/20'}`}>
+                    {opt}
+                  </button>
+                ))}
+              </div>
             </Field>
             <div className="sm:col-span-2">
-              <Field label={<>Nameservers <InfoTooltip content="Nameservers control where the domain's DNS is managed. Required when migrating hosting or troubleshooting DNS issues." /></>} hint="e.g. ns1.siteground.com, ns2.siteground.com">
-                <input className="input-glass" value={form.nameservers} onChange={setFE('nameservers')} placeholder="ns1.provider.com, ns2.provider.com" />
-              </Field>
-            </div>
-            <div className="sm:col-span-2">
-              <Field label="Hosting Notes" hint="Login URL, control panel type, any access notes">
+              <Field label="Hosting Notes" hint="Login URL, control panel type, credentials location">
                 <textarea className="input-glass min-h-[80px] resize-y" value={form.hosting_notes} onChange={setFE('hosting_notes')}
-                  placeholder="cPanel login at host.example.com/cpanel — credentials in LastPass…" />
+                  placeholder="cPanel login at host.example.com — credentials in LastPass…" />
               </Field>
             </div>
           </div>
@@ -1180,7 +1236,7 @@ export default function NewClientPage() {
           <button type="button" onClick={handleSubmit} disabled={saving}
             className="flex items-center gap-2 px-6 py-2.5 btn-brand rounded-xl text-sm font-medium disabled:opacity-60 transition-all">
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {saving ? 'Saving…' : 'Create Client & Send for Approval'}
+            {uploadingProposal ? 'Uploading proposal…' : saving ? 'Creating…' : 'Create Client'}
           </button>
         )}
       </div>

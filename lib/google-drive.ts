@@ -91,6 +91,13 @@ export async function createClientFolder(supabase: any, clientName: string): Pro
   return findOrCreateFolder(token, clientName, stratiqFolderId)
 }
 
+export async function createOrgProposalsFolder(supabase: any): Promise<string> {
+  const token = await getAccessToken(supabase)
+  const rootId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID!
+  const stratiqFolderId = await findOrCreateFolder(token, 'Stratiq', rootId)
+  return findOrCreateFolder(token, 'Proposals', stratiqFolderId)
+}
+
 export async function createProjectFolder(supabase: any, clientFolderId: string, projectName: string): Promise<string> {
   const token = await getAccessToken(supabase)
   return findOrCreateFolder(token, projectName, clientFolderId)
