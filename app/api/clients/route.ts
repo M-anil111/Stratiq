@@ -92,6 +92,7 @@ export async function POST(request: NextRequest) {
       hosting_expiry: body.hosting_expiry || null,
       nameservers: body.nameservers || null,
       hosting_notes: body.hosting_notes || null,
+      display_name: body.display_name || null,
     })
     .select()
     .single()

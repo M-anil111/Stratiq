@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Plus, Search, Users, Globe, Mail, Phone, MapPin, ExternalLink,
   ChevronRight, Edit2, FileText, Loader2, X, Star, TrendingUp,
@@ -142,6 +142,17 @@ export default function ClientsPage() {
       .catch(() => setClientLoading(false))
   }
 
+  // Group clients by contact person
+  const grouped = useMemo(() => {
+    const map = new Map<string, { contactName: string; clients: any[] }>()
+    for (const c of clients) {
+      const key = [c.contact_first_name, c.contact_last_name].filter(Boolean).join(' ') || c.company_name
+      if (!map.has(key)) map.set(key, { contactName: key, clients: [] })
+      map.get(key)!.clients.push(c)
+    }
+    return Array.from(map.values())
+  }, [clients])
+
   const pkgs: any[] = client?.service_packages || []
   const projects: any[] = client?.projects || []
   const monthlyRevenue = pkgs.reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0)
@@ -203,36 +214,50 @@ export default function ClientsPage() {
             <div className="px-4 py-8 text-center text-slate-500 text-sm">
               {search ? 'No clients match' : 'No clients yet'}
             </div>
-          ) : clients.map(c => (
-            <button key={c.id} onClick={() => selectClient(c.id)}
-              className={`w-full text-left px-3 py-3 border-b border-white/[0.04] transition-colors flex items-center gap-3
-                ${selectedId === c.id ? 'bg-sky-500/10 border-l-2 border-l-sky-500' : 'hover:bg-white/[0.04]'}`}>
-              <AvatarBadge name={c.company_name} size="sm" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[c.project_status] || 'bg-slate-500'}`} />
-                  <p className="text-sm font-medium text-white truncate">{c.company_name}</p>
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-500 truncate">{c.sales_manager?.full_name || c.industry || '—'}</p>
-                  {c.service_packages?.length > 0 && (
-                    <p className="text-xs text-sky-400 shrink-0 ml-2">
-                      ${c.service_packages.reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0).toLocaleString()}
-                    </p>
-                  )}
-                </div>
-                {c.created_at && (
-                  <p className="text-[10px] text-slate-600 mt-0.5">
-                    {new Date(c.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </p>
+          ) : grouped.map(group => {
+            const isMulti = group.clients.length > 1
+            return (
+              <div key={group.contactName}>
+                {/* Contact person header — only show if they have multiple businesses */}
+                {isMulti && (
+                  <div className="px-3 py-2 flex items-center gap-2 bg-white/[0.02] border-b border-white/[0.04]">
+                    <div className="w-6 h-6 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-[10px] font-bold text-violet-400">
+                      {group.contactName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
+                    </div>
+                    <span className="text-xs font-semibold text-violet-300 truncate flex-1">{group.contactName}</span>
+                    <span className="text-[10px] text-slate-600">{group.clients.length} biz</span>
+                  </div>
                 )}
+                {group.clients.map(c => {
+                  const displayName = c.display_name || c.company_name
+                  const mrr = (c.service_packages || []).reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0)
+                  return (
+                    <button key={c.id} onClick={() => selectClient(c.id)}
+                      className={`w-full text-left border-b border-white/[0.04] transition-colors flex items-center gap-3
+                        ${isMulti ? 'pl-6 pr-3 py-2.5' : 'px-3 py-3'}
+                        ${selectedId === c.id ? 'bg-sky-500/10 border-l-2 border-l-sky-500' : 'hover:bg-white/[0.04]'}`}>
+                      {isMulti && <span className="text-slate-700 text-xs mr-0.5">└</span>}
+                      <AvatarBadge name={displayName} size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[c.project_status] || 'bg-slate-500'}`} />
+                          <p className="text-sm font-medium text-white truncate">{displayName}</p>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-slate-500 truncate">{c.sales_manager?.full_name || c.industry || '—'}</p>
+                          {mrr > 0 && <p className="text-xs text-sky-400 shrink-0 ml-2">${mrr.toLocaleString()}</p>}
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
-            </button>
-          ))}
+            )
+          })}
         </div>
 
         <div className="px-3 py-2 border-t border-white/[0.06]">
-          <p className="text-xs text-slate-600">{clients.length} client{clients.length !== 1 ? 's' : ''}</p>
+          <p className="text-xs text-slate-600">{clients.length} businesses · {grouped.length} contact{grouped.length !== 1 ? 's' : ''}</p>
         </div>
       </div>
 

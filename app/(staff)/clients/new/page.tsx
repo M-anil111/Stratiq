@@ -465,6 +465,7 @@ interface FormData {
   // Hosting & domain
   domain_name: string; domain_registrar: string; domain_expiry: string
   hosting_provider: string; hosting_expiry: string; nameservers: string; hosting_notes: string
+  display_name: string
 }
 
 const defaultForm: FormData = {
@@ -478,6 +479,7 @@ const defaultForm: FormData = {
   sales_manager_id: '', dm_manager_id: '', marketing_manager_id: '',
   domain_name: '', domain_registrar: '', domain_expiry: '',
   hosting_provider: '', hosting_expiry: '', nameservers: '', hosting_notes: '',
+  display_name: '',
 }
 
 const defaultPkg = (service: string): ServicePackage => ({
@@ -495,6 +497,11 @@ export default function NewClientPage() {
   const [success, setSuccess] = useState<{ id: string; name: string } | null>(null)
   const [users, setUsers] = useState<{ id: string; full_name: string; role: string }[]>([])
   const [autoFilled, setAutoFilled] = useState<Set<string>>(new Set())
+  const [contactSearch, setContactSearch] = useState('')
+  const [contactResults, setContactResults] = useState<any[]>([])
+  const [contactSearching, setContactSearching] = useState(false)
+  const [contactSelected, setContactSelected] = useState(false)
+  const contactSearchRef = useRef<NodeJS.Timeout>()
 
   useEffect(() => {
     fetch('/api/users').then(r => r.json()).then(d => Array.isArray(d) && setUsers(d))
@@ -551,6 +558,7 @@ export default function NewClientPage() {
           hosting_expiry: form.hosting_expiry || null,
           nameservers: form.nameservers || null,
           hosting_notes: form.hosting_notes || null,
+          display_name: form.display_name || null,
         }),
       })
       if (res.ok) {
@@ -611,6 +619,60 @@ export default function NewClientPage() {
               <h2 className="text-lg font-semibold text-white mb-0.5">Contact Person</h2>
               <p className="text-sm text-slate-400">The individual who owns or manages this business. One person can have multiple businesses.</p>
             </div>
+            {/* Search for existing contact */}
+            {!contactSelected && (
+              <div className="mb-4">
+                <label className="text-xs font-medium text-slate-400 mb-1.5 block">Search existing contacts</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+                  <input className="input-glass pl-9 pr-9 text-sm w-full"
+                    placeholder="Type a name to find existing contacts…"
+                    value={contactSearch}
+                    onChange={e => {
+                      const q = e.target.value
+                      setContactSearch(q)
+                      clearTimeout(contactSearchRef.current)
+                      if (q.length >= 2) {
+                        setContactSearching(true)
+                        contactSearchRef.current = setTimeout(async () => {
+                          const res = await fetch(`/api/contacts?q=${encodeURIComponent(q)}`)
+                          if (res.ok) setContactResults(await res.json())
+                          setContactSearching(false)
+                        }, 300)
+                      } else {
+                        setContactResults([])
+                      }
+                    }}
+                  />
+                  {contactSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-slate-400" />}
+                </div>
+                {contactResults.length > 0 && (
+                  <div className="mt-1 rounded-xl border border-white/[0.12] bg-[#0f1929] overflow-hidden">
+                    {contactResults.map(contact => (
+                      <button key={`${contact.contact_first_name}|${contact.contact_last_name}`} type="button"
+                        onClick={() => {
+                          setForm(f => ({ ...f, contact_first_name: contact.contact_first_name, contact_last_name: contact.contact_last_name }))
+                          setContactSelected(true)
+                          setContactSearch('')
+                          setContactResults([])
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-white/[0.06] border-b border-white/[0.05] last:border-0">
+                        <p className="text-sm font-medium text-white">{contact.contact_first_name} {contact.contact_last_name}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{contact.businesses.length} business{contact.businesses.length !== 1 ? 'es' : ''}: {contact.businesses.map((b: any) => b.company_name).join(', ')}</p>
+                      </button>
+                    ))}
+                    <div className="px-4 py-2 bg-white/[0.02] text-xs text-slate-500">Or fill in the name fields below to create a new contact</div>
+                  </div>
+                )}
+                {contactSelected && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-emerald-400">
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Linked to existing contact
+                    <button type="button" onClick={() => setContactSelected(false)} className="text-slate-500 hover:text-slate-300 ml-1">Change</button>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <Field label="First Name" required>
                 <input className="input-glass" value={form.contact_first_name} onChange={setFE('contact_first_name')}
@@ -688,6 +750,14 @@ export default function NewClientPage() {
                 <option value="on_hold">On Hold</option>
               </select>
             </Field>
+            <div className="sm:col-span-2">
+              <Field label={<>Display Name <InfoTooltip content="How this client appears in lists. Defaults to the business name. Set to the contact person's name if you want all their businesses grouped under their name." /></>}
+                hint="Leave blank to use business name">
+                <input className="input-glass" value={form.display_name || ''}
+                  onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))}
+                  placeholder={form.company_name || 'e.g. Jay Mehta or Mindshare Consulting Inc'} />
+              </Field>
+            </div>
             <div className="sm:col-span-2">
               <Field label="Street Address" filled={autoFilled.has('street_address')}>
                 <input className="input-glass" value={form.street_address} onChange={e => { setFE('street_address')(e); setAutoFilled(s => { const n = new Set(s); n.delete('street_address'); return n }) }} placeholder="123 Main Street" />
