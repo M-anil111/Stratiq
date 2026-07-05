@@ -1,9 +1,10 @@
 'use client'
 import Link from 'next/link'
-import { BarChart3, TrendingUp, Target, Layers, Sliders, Clock } from 'lucide-react'
+import { BarChart3, TrendingUp, Target, Layers, Sliders, Clock, LineChart } from 'lucide-react'
 
 const reportSections = [
   { href: '/reports/marketing', label: 'Marketing Reports', icon: BarChart3, description: 'Per-client unified monthly reports' },
+  { href: '/reports/ads', label: 'Ads Analysis', icon: LineChart, description: 'Cross-client Meta & Google ads performance and ROI' },
   { href: '/reports/google-ads', label: 'Google Ads', icon: TrendingUp, description: 'Campaign performance from Google Ads' },
   { href: '/reports/meta-ads', label: 'Meta Ads', icon: Target, description: 'Facebook & Instagram ad performance' },
   { href: '/reports/comparison', label: 'Comparison Reports', icon: Layers, description: 'Client vs client, month over month' },
