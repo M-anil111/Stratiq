@@ -68,6 +68,18 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Previous month's report for month-over-month deltas
+  const prevMonth = month === 1 ? 12 : month - 1
+  const prevYear = month === 1 ? year - 1 : year
+  const { data: prevRows } = await supabase
+    .from('marketing_reports')
+    .select('*')
+    .eq('client_id', params.id)
+    .eq('organization_id', userData.organization_id)
+    .eq('year', prevYear)
+    .eq('month', prevMonth)
+  const prev = flattenReport(prevRows?.[0] ?? null)
+
   // Auto-calculate SEO counts from submission tables for this month
   const periodStart = `${year}-${String(month).padStart(2, '0')}-01`
   const nextMonth = month === 12 ? 1 : month + 1
@@ -111,9 +123,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
   const flattened = (data || []).map(flattenReport)
   if (flattened.length === 0) {
-    return NextResponse.json([{ ...seoData }])
+    return NextResponse.json([{ ...seoData, prev }])
   }
-  return NextResponse.json(flattened.map(r => ({ ...r, ...seoData })))
+  return NextResponse.json(flattened.map(r => ({ ...r, ...seoData, prev })))
 }
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {

@@ -3,6 +3,7 @@
     { "path": "/api/cron/weekly-targets", "schedule": "0 8 * * 1" },
     { "path": "/api/cron/friday-reminder", "schedule": "0 16 * * 5" },
     { "path": "/api/cron/missed-target", "schedule": "0 9 * * 1" },
-    { "path": "/api/cron/monthly-report", "schedule": "0 9 1 * *" }
+    { "path": "/api/cron/monthly-report", "schedule": "0 9 1 * *" },
+    { "path": "/api/cron/ads-sync", "schedule": "0 6 * * *" }
   ]
 }

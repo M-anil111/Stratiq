@@ -28,6 +28,24 @@ interface Report {
   seo_blog_count: number | null
   seo_onpage_count: number | null
   notes: string | null
+  prev?: Record<string, any> | null
+}
+
+// Metrics where a decrease is a good thing (cost-type metrics)
+const DOWN_IS_GOOD = new Set(['google_spend', 'meta_spend'])
+
+function DeltaBadge({ field, current, prev }: { field: string; current: any; prev: any }) {
+  if (current == null || prev == null || typeof current !== 'number' || typeof prev !== 'number' || prev === 0) return null
+  const pct = ((current - prev) / Math.abs(prev)) * 100
+  if (!isFinite(pct) || pct === 0) return null
+  const up = pct > 0
+  const good = DOWN_IS_GOOD.has(field) ? !up : up
+  return (
+    <span className={`ml-1.5 text-[10px] font-semibold ${good ? 'text-emerald-400' : 'text-red-400'}`}
+      title="vs previous month">
+      {up ? '▲' : '▼'} {Math.abs(pct).toFixed(1)}%
+    </span>
+  )
 }
 
 const selectClass = "bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
@@ -231,7 +249,12 @@ export default function MarketingReportsPage() {
                   { label: 'Period End', field: 'google_period_end' as keyof Report, type: 'date' },
                 ].map(item => (
                   <div key={item.label}>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">{item.label}</label>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">
+                      {item.label}
+                      {item.field !== undefined && item.type === 'number' && report?.prev && (
+                        <DeltaBadge field={item.field} current={(form as any)[item.field]} prev={(report.prev as any)[item.field]} />
+                      )}
+                    </label>
                     {item.computed !== undefined
                       ? <div className="px-3 py-2 bg-white/[0.05] rounded-lg text-sm font-medium text-slate-300">{item.computed}</div>
                       : <input className="input-glass" type={item.type || 'number'} value={(form as any)[item.field!] ?? ''} onChange={set(item.field!)} placeholder={item.type === 'date' ? '' : '0'} />
@@ -266,7 +289,12 @@ export default function MarketingReportsPage() {
                   { label: 'Period End', field: 'meta_period_end' as keyof Report, type: 'date' },
                 ].map(item => (
                   <div key={item.label}>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">{item.label}</label>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">
+                      {item.label}
+                      {item.field !== undefined && item.type === 'number' && report?.prev && (
+                        <DeltaBadge field={item.field} current={(form as any)[item.field]} prev={(report.prev as any)[item.field]} />
+                      )}
+                    </label>
                     {item.computed !== undefined
                       ? <div className="px-3 py-2 bg-white/[0.05] rounded-lg text-sm font-medium text-slate-300">{item.computed}</div>
                       : <input className="input-glass" type={item.type || 'number'} value={(form as any)[item.field!] ?? ''} onChange={set(item.field!)} placeholder={item.type === 'date' ? '' : '0'} />
