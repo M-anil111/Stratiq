@@ -30,6 +30,16 @@ interface LineItem {
   qb_item_id?: string
 }
 interface QbItem { id: string; name: string; description: string; unit_price: number }
+interface QbInvoicePreview {
+  qb_id: string
+  doc_number: string | null
+  customer_name: string | null
+  txn_date: string | null
+  due_date: string | null
+  total_amt: number
+  balance: number
+  currency: string | null
+}
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-slate-500/20 text-slate-300',
@@ -64,6 +74,13 @@ export default function InvoicesPage() {
   const [pushMsg, setPushMsg] = useState<Record<string, string>>({})
   const [sendingEmail, setSendingEmail] = useState<string | null>(null)
   const [sendMsg, setSendMsg] = useState<Record<string, string>>({})
+  const [showImport, setShowImport] = useState(false)
+  const [importLoading, setImportLoading] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
+  const [qbPreview, setQbPreview] = useState<QbInvoicePreview[]>([])
+  const [importSelected, setImportSelected] = useState<Record<string, boolean>>({})
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; linked: number } | null>(null)
   const [newInvoice, setNewInvoice] = useState({
     client_id: '',
     issue_date: new Date().toISOString().slice(0, 10),
@@ -234,6 +251,61 @@ export default function InvoicesPage() {
     })))
   }
 
+  const openImport = () => {
+    setShowImport(true)
+    setImportError(null)
+    setImportResult(null)
+    setQbPreview([])
+    setImportSelected({})
+    setImportLoading(true)
+    fetch('/api/integrations/quickbooks/invoices')
+      .then(async r => {
+        const d = await r.json()
+        if (!r.ok) throw new Error(d.error || 'Failed to load QuickBooks invoices')
+        return d
+      })
+      .then(d => {
+        const list: QbInvoicePreview[] = d.invoices || []
+        setQbPreview(list)
+        // Select all by default
+        const sel: Record<string, boolean> = {}
+        list.forEach(inv => { sel[inv.qb_id] = true })
+        setImportSelected(sel)
+      })
+      .catch(err => setImportError(err.message || 'Failed to load QuickBooks invoices'))
+      .finally(() => setImportLoading(false))
+  }
+
+  const allSelected = qbPreview.length > 0 && qbPreview.every(inv => importSelected[inv.qb_id])
+  const toggleSelectAll = () => {
+    const next = !allSelected
+    const sel: Record<string, boolean> = {}
+    qbPreview.forEach(inv => { sel[inv.qb_id] = next })
+    setImportSelected(sel)
+  }
+
+  const runImport = async () => {
+    const ids = qbPreview.filter(inv => importSelected[inv.qb_id]).map(inv => inv.qb_id)
+    if (ids.length === 0) return
+    setImporting(true)
+    setImportError(null)
+    try {
+      const res = await fetch('/api/integrations/quickbooks/invoices/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qb_ids: ids }),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Import failed')
+      setImportResult({ imported: d.imported || 0, skipped: d.skipped || 0, linked: d.linked || 0 })
+      loadInvoices()
+    } catch (err: any) {
+      setImportError(err.message || 'Import failed')
+    } finally {
+      setImporting(false)
+    }
+  }
+
   return (
     <div className="p-4 lg:p-8">
       {/* Header */}
@@ -245,6 +317,9 @@ export default function InvoicesPage() {
         <div className="flex gap-2 flex-wrap items-center">
           <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all whitespace-nowrap">
             <Download className="h-4 w-4" /> Export CSV
+          </button>
+          <button onClick={openImport} className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all whitespace-nowrap">
+            <Download className="h-4 w-4" /> Import from QuickBooks
           </button>
           <button onClick={() => setShowForm(v => !v)} className="btn-brand flex items-center gap-1.5 px-4 py-2.5 text-sm">
             <Plus className="h-4 w-4" /> New Invoice
@@ -519,6 +594,109 @@ export default function InvoicesPage() {
           </div>
         )}
       </div>
+
+      {/* Import from QuickBooks modal */}
+      {showImport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => !importing && setShowImport(false)}>
+          <div className="glass-card w-full max-w-3xl max-h-[85vh] flex flex-col p-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="font-semibold text-white">Import Invoices from QuickBooks</h2>
+                <p className="text-slate-400 text-xs mt-0.5">Pull recent QuickBooks invoices into Stratiq. Already-imported invoices are skipped.</p>
+              </div>
+              <button onClick={() => !importing && setShowImport(false)} className="text-slate-500 hover:text-white transition-colors text-lg leading-none">✕</button>
+            </div>
+
+            {importLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="h-10 rounded-lg bg-white/[0.04] animate-pulse" />
+                ))}
+              </div>
+            ) : importError ? (
+              <div className="py-8 text-center">
+                <AlertCircle className="h-8 w-8 text-amber-400 mx-auto mb-3" />
+                <p className="text-slate-300 text-sm mb-1">{importError}</p>
+                {importError.toLowerCase().includes('not connected') && (
+                  <Link href="/settings/integrations" className="text-sky-400 hover:text-sky-300 text-sm underline">
+                    Connect QuickBooks in Settings → Integrations
+                  </Link>
+                )}
+              </div>
+            ) : importResult ? (
+              <div className="py-8 text-center">
+                <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto mb-3" />
+                <p className="text-white text-sm font-medium mb-2">Import complete</p>
+                <p className="text-slate-400 text-sm">
+                  {importResult.imported} imported · {importResult.skipped} skipped · {importResult.linked} linked to clients
+                </p>
+                <button onClick={() => setShowImport(false)} className="btn-brand px-5 py-2.5 text-sm mt-5">Done</button>
+              </div>
+            ) : qbPreview.length === 0 ? (
+              <div className="py-10 text-center">
+                <FileText className="h-8 w-8 text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-400 text-sm">No invoices found in QuickBooks</p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-y-auto flex-1 -mx-1 px-1">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-[#0f1e35]">
+                      <tr className="border-b border-white/[0.06]">
+                        <th className="px-3 py-2 text-left w-8">
+                          <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="accent-sky-500" />
+                        </th>
+                        {['Invoice #', 'Customer', 'Date', 'Due', 'Total', 'Balance'].map(h => (
+                          <th key={h} className="px-3 py-2 text-left text-xs font-medium text-slate-400 whitespace-nowrap">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.04]">
+                      {qbPreview.map(inv => (
+                        <tr key={inv.qb_id} className="hover:bg-white/[0.02]">
+                          <td className="px-3 py-2">
+                            <input
+                              type="checkbox"
+                              checked={!!importSelected[inv.qb_id]}
+                              onChange={() => setImportSelected(prev => ({ ...prev, [inv.qb_id]: !prev[inv.qb_id] }))}
+                              className="accent-sky-500"
+                            />
+                          </td>
+                          <td className="px-3 py-2 text-sky-400 font-medium whitespace-nowrap">{inv.doc_number || inv.qb_id}</td>
+                          <td className="px-3 py-2 text-slate-300">{inv.customer_name || '—'}</td>
+                          <td className="px-3 py-2 text-slate-400 tabular-nums whitespace-nowrap">{inv.txn_date || '—'}</td>
+                          <td className="px-3 py-2 text-slate-400 tabular-nums whitespace-nowrap">{inv.due_date || '—'}</td>
+                          <td className="px-3 py-2 text-white tabular-nums whitespace-nowrap">{fmt(inv.total_amt)}</td>
+                          <td className="px-3 py-2 tabular-nums whitespace-nowrap">
+                            <span className={inv.balance > 0 ? 'text-amber-400' : 'text-emerald-400'}>{fmt(inv.balance)}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-white/[0.06]">
+                  <span className="text-xs text-slate-500">
+                    {qbPreview.filter(i => importSelected[i.qb_id]).length} of {qbPreview.length} selected
+                  </span>
+                  <div className="flex gap-2">
+                    <button onClick={() => setShowImport(false)} disabled={importing} className="px-4 py-2.5 text-sm border border-white/[0.10] text-slate-400 hover:text-white rounded-xl transition-colors disabled:opacity-50">
+                      Cancel
+                    </button>
+                    <button
+                      onClick={runImport}
+                      disabled={importing || qbPreview.filter(i => importSelected[i.qb_id]).length === 0}
+                      className="btn-brand px-5 py-2.5 text-sm disabled:opacity-50"
+                    >
+                      {importing ? <><Loader2 className="h-4 w-4 animate-spin inline mr-1" />Importing…</> : 'Import selected'}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
