@@ -3,12 +3,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Users, BarChart3, Target, UserCog, Settings,
-  FolderKanban, Sparkles, FileText, BookUser, CheckSquare,
+  FolderKanban, Sparkles, FileText, BookUser, CheckSquare, Magnet,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/leads', label: 'Leads', icon: Magnet },
   { href: '/clients', label: 'Clients', icon: Users },
   { href: '/contacts', label: 'Contacts', icon: BookUser },
   { href: '/projects', label: 'Projects', icon: FolderKanban },
