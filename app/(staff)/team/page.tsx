@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Edit2, UserX, Shield, Loader2, X, Check, Mail, Upload, Copy, Send, Trash2, Users } from 'lucide-react'
+import { Edit2, UserX, Shield, Loader2, X, Check, Mail, Upload, Copy, Send, Trash2, Users, FolderKey, Briefcase, UserCircle } from 'lucide-react'
+import AddButton from '@/components/ui/AddButton'
 
 const tabs = ['Employees', 'Invitations', 'Roles & Permissions', 'Client Accounts']
 
@@ -65,6 +66,7 @@ const CSV_CAP = 100
 type Chip = { email: string; valid: boolean }
 type CsvRow = { email: string; role: string; selected: boolean; valid: boolean }
 type Invite = { id: string; email: string; role: string; token: string; created_at: string; expires_at: string | null }
+type ProjectOption = { id: string; label: string; sublabel?: string }
 type SendResult = {
   sent: { email: string }[]
   skipped: { email: string; reason?: string }[]
@@ -138,6 +140,24 @@ export default function TeamPage() {
   const [csvNote, setCsvNote] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // SE Ranking-style account type + project access scope (add-users modal)
+  const [accountType, setAccountType] = useState<'user' | 'client'>('user')
+  const [projectAccess, setProjectAccess] = useState<'all' | 'specific'>('all')
+  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([])
+
+  // Projects list for the multi-select (shared by add + manage-access modals)
+  const [projects, setProjects] = useState<ProjectOption[]>([])
+  const [projectsLoaded, setProjectsLoaded] = useState(false)
+  const [projectsLoading, setProjectsLoading] = useState(false)
+
+  // Manage project access modal (per existing member)
+  const [accessMember, setAccessMember] = useState<any>(null)
+  const [accessScope, setAccessScope] = useState<'all' | 'specific'>('all')
+  const [accessProjectIds, setAccessProjectIds] = useState<string[]>([])
+  const [accessLoading, setAccessLoading] = useState(false)
+  const [accessSaving, setAccessSaving] = useState(false)
+  const [accessError, setAccessError] = useState('')
+
   // Pending invites
   const [invites, setInvites] = useState<Invite[]>([])
   const [invitesLoading, setInvitesLoading] = useState(true)
@@ -183,6 +203,47 @@ export default function TeamPage() {
       .then(data => setInvites(Array.isArray(data) ? data : []))
       .catch(() => setInvites([]))
       .finally(() => setInvitesLoading(false))
+  }
+
+  // Load projects for the multi-select. Prefer /api/projects; degrade to
+  // deriving projects from /api/clients when that endpoint is unavailable.
+  async function loadProjects() {
+    if (projectsLoaded || projectsLoading) return
+    setProjectsLoading(true)
+    try {
+      const res = await fetch('/api/projects')
+      if (res.ok) {
+        const d = await res.json()
+        const list: ProjectOption[] = (Array.isArray(d?.projects) ? d.projects : []).map((p: any) => ({
+          id: p.id,
+          label: p.name || p.domain || p.client?.company_name || 'Untitled project',
+          sublabel: p.client?.company_name || p.domain || '',
+        }))
+        setProjects(list)
+        setProjectsLoaded(true)
+        setProjectsLoading(false)
+        return
+      }
+    } catch {
+      // fall through to clients-derived projects
+    }
+    try {
+      const res = await fetch('/api/clients?limit=100')
+      const d = await res.json()
+      const clientsArr = Array.isArray(d) ? d : (Array.isArray(d?.clients) ? d.clients : [])
+      const list: ProjectOption[] = []
+      for (const c of clientsArr) {
+        for (const p of (c.projects || [])) {
+          list.push({ id: p.id, label: p.name || c.company_name || 'Project', sublabel: c.company_name || '' })
+        }
+      }
+      setProjects(list)
+    } catch {
+      setProjects([])
+    } finally {
+      setProjectsLoaded(true)
+      setProjectsLoading(false)
+    }
   }
 
   const filtered = members.filter(m =>
@@ -257,12 +318,27 @@ export default function TeamPage() {
     setClientMode(asClient)
     setChips([])
     setEmailInput('')
+    setAccountType(asClient ? 'client' : 'user')
     setAddRole(asClient ? 'client' : 'team_member')
+    setProjectAccess('all')
+    setSelectedProjectIds([])
     setAddError('')
     setSendResult(null)
     setCsvRows(null)
     setCsvNote('')
     setShowAdd(true)
+    loadProjects()
+  }
+
+  // Account type toggle keeps role in sync with the SE Ranking-style choice.
+  function chooseAccountType(type: 'user' | 'client') {
+    setAccountType(type)
+    if (type === 'client') setAddRole('client')
+    else if (addRole === 'client') setAddRole('team_member')
+  }
+
+  function toggleSelectedProject(id: string) {
+    setSelectedProjectIds(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id])
   }
 
   function closeAdd() {
@@ -378,7 +454,13 @@ export default function TeamPage() {
         const res = await fetch('/api/team/invite', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ emails, role }),
+          body: JSON.stringify({
+            emails,
+            role,
+            account_type: accountType,
+            project_access: projectAccess,
+            project_ids: projectAccess === 'specific' ? selectedProjectIds : [],
+          }),
         })
         const d = await res.json()
         if (!res.ok) {
@@ -482,6 +564,63 @@ export default function TeamPage() {
   const assignTemplate = ROLE_DESCRIPTIONS.find(r => r.role === assignRoleKey)
   const assignCandidates = assignRoleKey === 'client' ? members : staffMembers
 
+  // ---- Manage project access (per member) ----
+  async function openAccess(member: any) {
+    setAccessMember(member)
+    setAccessError('')
+    setAccessScope('all')
+    setAccessProjectIds([])
+    setAccessLoading(true)
+    loadProjects()
+    try {
+      const res = await fetch(`/api/team/${member.id}/access`)
+      const d = await res.json()
+      if (res.ok) {
+        setAccessScope(d.project_access === 'specific' ? 'specific' : 'all')
+        setAccessProjectIds(Array.isArray(d.project_ids) ? d.project_ids : [])
+      } else {
+        setAccessError(d.error || 'Failed to load access settings')
+      }
+    } catch {
+      setAccessError('Network error. Please try again.')
+    } finally {
+      setAccessLoading(false)
+    }
+  }
+
+  function closeAccess() {
+    setAccessMember(null)
+    setAccessError('')
+  }
+
+  function toggleAccessProject(id: string) {
+    setAccessProjectIds(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id])
+  }
+
+  async function handleAccessSave() {
+    if (!accessMember) return
+    setAccessSaving(true)
+    setAccessError('')
+    try {
+      const res = await fetch(`/api/team/${accessMember.id}/access`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_access: accessScope,
+          project_ids: accessScope === 'specific' ? accessProjectIds : [],
+        }),
+      })
+      const d = await res.json()
+      if (!res.ok) { setAccessError(d.error || 'Failed to update access'); return }
+      setMembers(prev => prev.map(m => m.id === accessMember.id ? { ...m, project_access: d.project_access } : m))
+      closeAccess()
+    } catch {
+      setAccessError('Network error. Please try again.')
+    } finally {
+      setAccessSaving(false)
+    }
+  }
+
   return (
     <div className="p-4 lg:p-8">
       <div className="flex items-center justify-between mb-6">
@@ -489,9 +628,7 @@ export default function TeamPage() {
           <h1 className="text-2xl font-bold text-white">Team</h1>
           <p className="text-slate-400 text-sm">Manage users, roles, and permissions</p>
         </div>
-        <button className="btn-brand flex items-center gap-2" onClick={() => openAdd(false)}>
-          <Plus className="h-4 w-4" /> Add Users
-        </button>
+        <AddButton label="Add Users" onClick={() => openAdd(false)} />
       </div>
 
       <div className="flex border-b border-white/[0.08] mb-6 overflow-x-auto">
@@ -556,6 +693,7 @@ export default function TeamPage() {
                       {ROLES[user.role]?.label || user.role}
                     </span>
                     <div className="flex gap-1">
+                      <button onClick={() => openAccess(user)} title="Manage project access" className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06]"><FolderKey className="h-4 w-4" /></button>
                       <button onClick={() => openEdit(user)} className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06]"><Edit2 className="h-4 w-4" /></button>
                       <button onClick={() => openRemove(user)} className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-white/[0.06]"><UserX className="h-4 w-4" /></button>
                     </div>
@@ -573,9 +711,7 @@ export default function TeamPage() {
             <p className="text-slate-400 text-sm">
               {invites.length} pending invitation{invites.length !== 1 ? 's' : ''}
             </p>
-            <button className="btn-brand flex items-center gap-2" onClick={() => openAdd(false)}>
-              <Plus className="h-4 w-4" /> Add Users
-            </button>
+            <AddButton label="Add Users" onClick={() => openAdd(false)} />
           </div>
           {inviteActionError && <p className="text-sm text-red-400 mb-3">{inviteActionError}</p>}
           <div className="glass-card">
@@ -700,9 +836,7 @@ export default function TeamPage() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <p className="text-slate-400 text-sm">{clients.length} client account{clients.length !== 1 ? 's' : ''}</p>
-            <button className="btn-brand flex items-center gap-2" onClick={() => openAdd(true)}>
-              <Plus className="h-4 w-4" /> Invite Client
-            </button>
+            <AddButton label="Invite Client" onClick={() => openAdd(true)} icon={<UserCircle className="h-4 w-4 shrink-0" />} />
           </div>
           <div className="glass-card">
             <div className="divide-y divide-white/[0.06]">
@@ -743,6 +877,7 @@ export default function TeamPage() {
                     <div className="flex items-center gap-3">
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-300">Client</span>
                       <div className="flex gap-1">
+                        <button onClick={() => openAccess(user)} title="Manage project access" className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06]"><FolderKey className="h-4 w-4" /></button>
                         <button onClick={() => openRemove(user)} className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-white/[0.06]"><UserX className="h-4 w-4" /></button>
                       </div>
                     </div>
@@ -914,6 +1049,34 @@ export default function TeamPage() {
             ) : (
               <div>
                 <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Account type</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => chooseAccountType('user')}
+                      className={`text-left rounded-xl border p-3 transition-colors ${accountType === 'user' ? 'border-sky-500/60 bg-sky-500/10' : 'border-white/[0.12] hover:bg-white/[0.04]'}`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <Briefcase className={`h-4 w-4 ${accountType === 'user' ? 'text-sky-400' : 'text-slate-400'}`} />
+                        <span className="text-sm font-medium text-white">Team member / Manager</span>
+                      </div>
+                      <p className="text-xs text-slate-400">Internal staff. Managers can create &amp; edit; pick the seat below.</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => chooseAccountType('client')}
+                      className={`text-left rounded-xl border p-3 transition-colors ${accountType === 'client' ? 'border-green-500/60 bg-green-500/10' : 'border-white/[0.12] hover:bg-white/[0.04]'}`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <UserCircle className={`h-4 w-4 ${accountType === 'client' ? 'text-green-400' : 'text-slate-400'}`} />
+                        <span className="text-sm font-medium text-white">Client</span>
+                      </div>
+                      <p className="text-xs text-slate-400">Portal-only, view access to their assigned projects.</p>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-4">
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-sm font-medium text-slate-300">Email addresses</label>
                     <button
@@ -958,13 +1121,44 @@ export default function TeamPage() {
                   </p>
                 </div>
 
+                {accountType === 'user' && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Role (seat)</label>
+                    <select value={addRole} onChange={e => setAddRole(e.target.value)} className="input-glass">
+                      {STAFF_ROLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                )}
+
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Role (seat)</label>
-                  <select value={addRole} onChange={e => setAddRole(e.target.value)} className="input-glass" disabled={clientMode}>
-                    {clientMode
-                      ? <option value="client">Client</option>
-                      : STAFF_ROLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Access to projects</label>
+                  <div className="space-y-2">
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input type="radio" name="add-project-access" checked={projectAccess === 'all'} onChange={() => setProjectAccess('all')} className="accent-sky-500 mt-0.5" />
+                      <span>
+                        <span className="block text-sm text-white">All projects</span>
+                        <span className="block text-xs text-slate-400">Access to every project in the organization, including ones added later.</span>
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input type="radio" name="add-project-access" checked={projectAccess === 'specific'} onChange={() => setProjectAccess('specific')} className="accent-sky-500 mt-0.5" />
+                      <span>
+                        <span className="block text-sm text-white">Specific projects</span>
+                        <span className="block text-xs text-slate-400">Choose exactly which projects this {accountType === 'client' ? 'client' : 'user'} can access.</span>
+                      </span>
+                    </label>
+                  </div>
+                  {projectAccess === 'specific' && (
+                    <div className="mt-3">
+                      <ProjectMultiSelect
+                        projects={projects}
+                        loading={projectsLoading}
+                        loaded={projectsLoaded}
+                        selected={selectedProjectIds}
+                        onToggle={toggleSelectedProject}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {summaryRole && (
@@ -1052,6 +1246,111 @@ export default function TeamPage() {
           </div>
         </div>
       )}
+
+      {/* Manage Project Access Modal */}
+      {accessMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="glass w-full max-w-lg rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2"><FolderKey className="h-5 w-5 text-sky-400" /> Manage project access</h2>
+              <button onClick={closeAccess} className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.06]"><X className="h-4 w-4" /></button>
+            </div>
+            <p className="text-sm text-slate-400 mb-4">{accessMember.full_name || accessMember.email} &mdash; {accessMember.email}</p>
+            {accessLoading ? (
+              <div className="flex items-center justify-center py-10 text-slate-400"><Loader2 className="h-5 w-5 animate-spin" /></div>
+            ) : (
+              <>
+                <div className="space-y-2 mb-3">
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input type="radio" name="manage-access" checked={accessScope === 'all'} onChange={() => setAccessScope('all')} className="accent-sky-500 mt-0.5" />
+                    <span>
+                      <span className="block text-sm text-white">All projects</span>
+                      <span className="block text-xs text-slate-400">Access to every project, including ones added later.</span>
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input type="radio" name="manage-access" checked={accessScope === 'specific'} onChange={() => setAccessScope('specific')} className="accent-sky-500 mt-0.5" />
+                    <span>
+                      <span className="block text-sm text-white">Specific projects</span>
+                      <span className="block text-xs text-slate-400">Only the projects selected below.</span>
+                    </span>
+                  </label>
+                </div>
+                {accessScope === 'specific' && (
+                  <div className="mb-4">
+                    <ProjectMultiSelect
+                      projects={projects}
+                      loading={projectsLoading}
+                      loaded={projectsLoaded}
+                      selected={accessProjectIds}
+                      onToggle={toggleAccessProject}
+                    />
+                  </div>
+                )}
+                {accessError && <p className="text-sm text-red-400 mb-3">{accessError}</p>}
+                <div className="flex gap-3">
+                  <button type="button" onClick={closeAccess} className="flex-1 px-4 py-2.5 rounded-xl border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors text-sm font-medium">Cancel</button>
+                  <button onClick={handleAccessSave} disabled={accessSaving} className="btn-brand flex-1 flex items-center justify-center gap-2 disabled:opacity-60">
+                    {accessSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {accessSaving ? 'Saving…' : 'Save access'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ProjectMultiSelect({
+  projects,
+  loading,
+  loaded,
+  selected,
+  onToggle,
+}: {
+  projects: ProjectOption[]
+  loading: boolean
+  loaded: boolean
+  selected: string[]
+  onToggle: (id: string) => void
+}) {
+  const [filter, setFilter] = useState('')
+  const list = filter
+    ? projects.filter(p => p.label.toLowerCase().includes(filter.toLowerCase()) || (p.sublabel || '').toLowerCase().includes(filter.toLowerCase()))
+    : projects
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <input
+          type="text"
+          value={filter}
+          onChange={e => setFilter(e.target.value)}
+          placeholder="Search projects…"
+          className="input-glass flex-1"
+        />
+        <span className="ml-3 text-xs text-slate-400 shrink-0">{selected.length} selected</span>
+      </div>
+      <div className="glass-card max-h-56 overflow-y-auto divide-y divide-white/[0.06]">
+        {loading || !loaded ? (
+          <div className="flex items-center justify-center py-6 text-slate-400"><Loader2 className="h-4 w-4 animate-spin" /></div>
+        ) : list.length === 0 ? (
+          <div className="px-4 py-6 text-center text-slate-400 text-sm">{projects.length === 0 ? 'No projects available' : 'No projects match your search'}</div>
+        ) : (
+          list.map(p => (
+            <label key={p.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-white/[0.03]">
+              <input type="checkbox" checked={selected.includes(p.id)} onChange={() => onToggle(p.id)} className="accent-sky-500" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-white truncate">{p.label}</p>
+                {p.sublabel && <p className="text-xs text-slate-400 truncate">{p.sublabel}</p>}
+              </div>
+            </label>
+          ))
+        )}
+      </div>
     </div>
   )
 }

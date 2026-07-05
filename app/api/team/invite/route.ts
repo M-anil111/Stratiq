@@ -27,14 +27,32 @@ export async function POST(request: NextRequest) {
   const authz = await requireRole(supabase, user.id, ADMIN_ROLES)
   if (!authz.ok) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
 
-  let body: { email?: string; emails?: string[]; full_name?: string; role?: string }
+  let body: {
+    email?: string
+    emails?: string[]
+    full_name?: string
+    role?: string
+    account_type?: string
+    project_access?: string
+    project_ids?: string[]
+  }
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const role = body.role && VALID_INVITE_ROLES.includes(body.role) ? body.role : 'team_member'
+  // SE Ranking-style account type: 'client' forces the client role, 'user' keeps the chosen seat.
+  const accountType = body.account_type === 'client' ? 'client' : 'user'
+  let role = body.role && VALID_INVITE_ROLES.includes(body.role) ? body.role : 'team_member'
+  if (accountType === 'client') role = 'client'
+
+  // Access scope: 'all' projects or only 'specific' ones.
+  const projectAccess = body.project_access === 'specific' ? 'specific' : 'all'
+  const projectIds =
+    projectAccess === 'specific' && Array.isArray(body.project_ids)
+      ? Array.from(new Set(body.project_ids.filter((p): p is string => typeof p === 'string' && !!p)))
+      : []
   const rawEmails: string[] = Array.isArray(body.emails)
     ? body.emails
     : body.email
@@ -85,7 +103,9 @@ export async function POST(request: NextRequest) {
     }
 
     const token = crypto.randomBytes(32).toString('hex')
-    const { error: insertError } = await supabase.from('team_invites').insert({
+    // Missing-column-tolerant insert: strip account_type/project_access/project_ids
+    // if migration 029 hasn't been applied yet.
+    const inviteRow: Record<string, any> = {
       organization_id: orgId,
       email,
       role,
@@ -93,12 +113,27 @@ export async function POST(request: NextRequest) {
       token,
       status: 'pending',
       expires_at: inviteExpiry(),
-    })
+      account_type: accountType,
+      project_access: projectAccess,
+      project_ids: projectIds.length ? projectIds : null,
+    }
+    let insertError: any = null
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const res = await supabase.from('team_invites').insert(inviteRow)
+      insertError = res.error
+      if (!insertError) break
+      const missing = insertError.message?.match(/Could not find the '([^']+)' column/)?.[1]
+      if (missing && missing in inviteRow) {
+        delete inviteRow[missing]
+        continue
+      }
+      break
+    }
 
     if (insertError) {
       if (insertError.code === '42P01') {
         // team_invites table not deployed yet — fall back to the legacy single-invite flow
-        const legacy = await legacyInvite(supabase, orgId, email, body.full_name || '', role)
+        const legacy = await legacyInvite(supabase, orgId, email, body.full_name || '', role, projectAccess, projectIds)
         if (legacy.ok) sent.push({ email })
         else errors.push({ email, reason: legacy.error })
         continue
@@ -146,7 +181,9 @@ async function legacyInvite(
   organizationId: string,
   email: string,
   fullName: string,
-  role: string
+  role: string,
+  projectAccess: string = 'all',
+  projectIds: string[] = []
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const adminClient = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -165,19 +202,48 @@ async function legacyInvite(
     return { ok: false, error: inviteError.message }
   }
 
-  const record = {
+  const record: Record<string, any> = {
     email,
     full_name: fullName,
     role,
     organization_id: organizationId,
     status: 'invited',
+    project_access: projectAccess,
     created_at: new Date().toISOString(),
   }
 
-  const { error: upsertError } = await supabase.from('users').upsert(record, { onConflict: 'email' })
-  if (upsertError) {
+  // Missing-column-tolerant upsert: drop project_access if migration 029 isn't applied.
+  let upserted = false
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { error: upsertError } = await supabase.from('users').upsert(record, { onConflict: 'email' })
+    if (!upsertError) { upserted = true; break }
+    const missing = upsertError.message?.match(/Could not find the '([^']+)' column/)?.[1]
+    if (missing && missing in record) { delete record[missing]; continue }
+    break
+  }
+  if (!upserted) {
     const { error: insertError } = await supabase.from('users').insert(record)
     if (insertError) return { ok: false, error: insertError.message }
+  }
+
+  // If the user was created immediately with specific-project scope, wire up the
+  // user_project_access rows now. Wrapped so a missing table/column never fails the invite.
+  if (projectAccess === 'specific' && projectIds.length > 0) {
+    try {
+      const { data: created } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .eq('organization_id', organizationId)
+        .single()
+      if (created?.id) {
+        await supabase.from('user_project_access').insert(
+          projectIds.map(pid => ({ organization_id: organizationId, user_id: created.id, project_id: pid }))
+        )
+      }
+    } catch {
+      // migration 029 not applied yet — ignore
+    }
   }
   return { ok: true }
 }
