@@ -5,6 +5,29 @@ All notable changes to Stratiq are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-07-05 — Helcim payments, projects & account scoping
+
+### Added
+- Top-level Projects module with financials and invoice linking
+- User and client account types with per-project access scoping
+- Per-client Google Analytics and Search Console tabs
+- HubSpot-style settings redesign with search and Data Sets tabs
+- Directory-sites CSV import with inline add during submissions
+- Record merge for clients and contacts, multi-dashboards, leads pipeline, ads analysis, and an upgraded global search
+
+### Changed
+- Helcim payments replace Stripe: hosted Pay Now links on invoices and emails, with a signed webhook that auto-marks invoices paid
+
+### Removed
+- Removed the Tasks feature to streamline project workflows
+
+### Security
+- Email one-time-code re-verification on login after a period of inactivity
+
+### Fixed
+- Google OAuth fix and a Team page fix
+- Resilience fixes so client create and read work before all migrations are applied
+
 ## [1.4.0] - 2026-06-28 — HubSpot-style CRM & analytics
 
 ### Added

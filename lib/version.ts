@@ -1,4 +1,4 @@
-export const APP_VERSION = '1.4.0'
+export const APP_VERSION = '1.5.0'
 
 export type ChangelogTag = 'feature' | 'fix' | 'security'
 
@@ -11,6 +11,24 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.5.0',
+    date: '2026-07-05',
+    title: 'Helcim payments, projects & account scoping',
+    tag: 'feature',
+    changes: [
+      'Helcim payments replace Stripe: hosted Pay Now links on invoices and emails, with a signed webhook that auto-marks invoices paid',
+      'Email one-time-code re-verification on login after a period of inactivity',
+      'Top-level Projects module with financials and invoice linking',
+      'User and client account types with per-project access scoping',
+      'Per-client Google Analytics and Search Console tabs, plus a Google OAuth fix',
+      'HubSpot-style settings redesign with search, Data Sets tabs, and a Team page fix',
+      'Directory-sites CSV import with inline add during submissions',
+      'Record merge for clients and contacts, multi-dashboards, leads pipeline, ads analysis, and an upgraded global search',
+      'Removed the Tasks feature to streamline project workflows',
+      'Resilience fixes so client create and read work before all migrations are applied',
+    ],
+  },
   {
     version: '1.4.0',
     date: '2026-06-28',
@@ -31,7 +49,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: 'Billing, tasks & pipeline',
     tag: 'feature',
     changes: [
-      'Invoice actions: mark paid, void, and send, with Stripe pay links',
+      'Invoice actions: mark paid, void, and send, with Helcim pay links',
       'Downloadable PDF invoices with company branding',
       'My Tasks view aggregating assignments across every project',
       'Lead pipeline with drag-and-drop stages and conversion tracking',
