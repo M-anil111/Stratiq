@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       google_drive_folder_url: body.google_drive_folder_url,
       proposal_url: body.proposal_url || null,
       google_place_id: body.google_place_id || null,
-      proposal_status: 'approved',
+      proposal_status: 'pending',
     })
     .select()
     .single()
