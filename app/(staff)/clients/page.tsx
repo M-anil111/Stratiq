@@ -248,9 +248,21 @@ export default function ClientsPage() {
           {loading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-slate-500" /></div>
           ) : clients.length === 0 ? (
-            <div className="px-4 py-8 text-center text-slate-500 text-sm">
-              {search ? 'No clients match' : 'No clients yet'}
-            </div>
+            search ? (
+              <div className="px-4 py-8 text-center text-slate-500 text-sm">No clients match</div>
+            ) : (
+              <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+                <div className="w-14 h-14 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mb-4">
+                  <Users className="h-7 w-7 text-slate-600" />
+                </div>
+                <h3 className="text-sm font-semibold text-white mb-1">No clients yet</h3>
+                <p className="text-xs text-slate-500 mb-4 leading-relaxed">Add your first client to get started</p>
+                <Link href="/clients/new"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-sm font-semibold transition-colors">
+                  <Plus className="h-4 w-4" /> Add Client
+                </Link>
+              </div>
+            )
           ) : grouped.map(group => {
             const isMulti = group.clients.length > 1
             return (

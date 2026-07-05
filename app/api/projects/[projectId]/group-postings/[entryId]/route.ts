@@ -20,7 +20,10 @@ export async function PUT(request: NextRequest, { params }: { params: { projectI
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json({ error: 'Table not found' }, { status: 503 })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   const { password_encrypted, ...safe } = data as any
   return NextResponse.json(safe)
 }
@@ -38,6 +41,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { proje
     .eq('project_id', params.projectId)
     .eq('organization_id', userData?.organization_id)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json({ ok: true })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json({ ok: true })
 }

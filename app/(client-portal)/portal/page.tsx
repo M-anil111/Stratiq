@@ -40,10 +40,22 @@ export default function PortalHomePage() {
   const [statsError, setStatsError] = useState(false)
   const [loading, setLoading] = useState(true)
   const [upsellVisible, setUpsellVisible] = useState(false)
+  const [topRec, setTopRec] = useState<UpsellRecommendation | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !localStorage.getItem('portal_upsell_dismissed')) {
       setUpsellVisible(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('portal_upsell_dismissed')) {
+      fetch('/api/portal/upsell')
+        .then(r => r.ok ? r.json() : null)
+        .then((data: UpsellRecommendation[] | null) => {
+          if (data && data.length > 0) setTopRec(data[0])
+        })
+        .catch(() => {})
     }
   }, [])
 

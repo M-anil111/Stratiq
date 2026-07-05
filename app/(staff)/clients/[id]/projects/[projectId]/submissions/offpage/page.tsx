@@ -24,6 +24,7 @@ function today() {
 const emptyForm = () => ({
   submission_date: today(),
   website_url: '',
+  directory_site_id: '',
   type: '',
   status: 'live',
   live_url: '',
@@ -33,17 +34,30 @@ const emptyForm = () => ({
   comment: '',
 })
 
+interface DirectorySite {
+  id: string
+  url: string
+  domain: string
+  category: string
+  da_score: number | null
+}
+
 export default function OffPagePage({ params }: { params: { id: string; projectId: string } }) {
   const [entries, setEntries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [directorySites, setDirectorySites] = useState<DirectorySite[]>([])
 
   useEffect(() => {
     fetch(`/api/projects/${params.projectId}/offpage`)
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setEntries(data) })
       .finally(() => setLoading(false))
+    fetch('/api/settings/directory-sites')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setDirectorySites(data) })
   }, [params.projectId])
+
   const [editEntry, setEditEntry] = useState<any | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -60,6 +74,7 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
     setForm({
       submission_date: entry.submission_date || today(),
       website_url: entry.website_url || '',
+      directory_site_id: entry.directory_site_id || '',
       type: entry.type || '',
       status: entry.status || 'live',
       live_url: entry.live_url || '',
@@ -76,7 +91,17 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
     e.preventDefault()
     setSaving(true)
     try {
-      const payload = { ...form, status: form.status.toLowerCase().replace(' ', '_') }
+      // Resolve website_url from directory site if selected
+      let resolvedUrl = form.website_url
+      if (form.directory_site_id) {
+        const site = directorySites.find(s => s.id === form.directory_site_id)
+        if (site) resolvedUrl = site.url
+      }
+      const payload = {
+        ...form,
+        website_url: resolvedUrl,
+        status: form.status.toLowerCase().replace(' ', '_'),
+      }
       if (editEntry) {
         const res = await fetch(`/api/projects/${params.projectId}/offpage/${editEntry.id}`, {
           method: 'PUT',
@@ -145,7 +170,11 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
           </button>
         </div>
 
-        {entries.length === 0 ? (
+        {loading ? (
+          <div className="p-8 text-center text-slate-400">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 opacity-40" />
+          </div>
+        ) : entries.length === 0 ? (
           <div className="p-12 text-center text-slate-400">
             <p className="font-medium">No submissions yet</p>
             <p className="text-sm mt-1">Click "Add Submission" to log your first off-page entry</p>
@@ -155,50 +184,62 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  {['#', 'Website URL', 'Type', 'Status', 'Live URL', 'Date', 'Comment', 'Actions'].map(h => (
+                  {['#', 'Directory / Website', 'Type', 'Status', 'Live URL', 'Date', 'Comment', 'Actions'].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.06]">
-                {entries.map((entry, i) => (
-                  <tr key={entry.id} className="hover:bg-white/[0.03]">
-                    <td className="px-4 py-3 text-slate-500">{i + 1}</td>
-                    <td className="px-4 py-3 font-medium text-white max-w-[160px] truncate">{entry.website_url}</td>
-                    <td className="px-4 py-3 text-slate-300">{entry.type}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[entry.status] || ''}`}>
-                        {entry.status.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {entry.live_url && (
-                        <a href={entry.live_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sky-400 hover:text-sky-300">
-                          <ExternalLink className="h-3 w-3" />
-                          View
-                        </a>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-slate-400">{entry.submission_date}</td>
-                    <td className="px-4 py-3 text-slate-400 max-w-[120px] truncate">{entry.comment}</td>
-                    <td className="px-4 py-3">
-                      {deleteId === entry.id ? (
-                        <div className="flex items-center gap-1.5 text-xs bg-red-500/10 border border-red-500/20 rounded-xl px-2 py-1">
-                          <span className="text-red-400">Delete?</span>
-                          <button onClick={() => setDeleteId(null)} className="px-2 py-0.5 border border-white/[0.10] rounded text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all">Cancel</button>
-                          <button onClick={handleDelete} disabled={deleting} className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded disabled:opacity-60">
-                            {deleting ? '...' : 'Delete'}
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-1">
-                          <button onClick={() => openEdit(entry)} className="p-1 text-slate-400 hover:text-sky-400"><Edit2 className="h-4 w-4" /></button>
-                          <button onClick={() => setDeleteId(entry.id)} className="p-1 text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {entries.map((entry, i) => {
+                  const site = directorySites.find(s => s.id === entry.directory_site_id)
+                  return (
+                    <tr key={entry.id} className="hover:bg-white/[0.03]">
+                      <td className="px-4 py-3 text-slate-500">{i + 1}</td>
+                      <td className="px-4 py-3 max-w-[180px]">
+                        {site ? (
+                          <div>
+                            <div className="font-medium text-white truncate">{site.domain}</div>
+                            <div className="text-xs text-slate-500 truncate">{entry.website_url || site.url}</div>
+                          </div>
+                        ) : (
+                          <span className="font-medium text-white truncate block">{entry.website_url}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-slate-300">{entry.type}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[entry.status] || ''}`}>
+                          {(entry.status || '').replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {entry.live_url && (
+                          <a href={entry.live_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sky-400 hover:text-sky-300">
+                            <ExternalLink className="h-3 w-3" />
+                            View
+                          </a>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-slate-400">{entry.submission_date}</td>
+                      <td className="px-4 py-3 text-slate-400 max-w-[120px] truncate">{entry.comment}</td>
+                      <td className="px-4 py-3">
+                        {deleteId === entry.id ? (
+                          <div className="flex items-center gap-1.5 text-xs bg-red-500/10 border border-red-500/20 rounded-xl px-2 py-1">
+                            <span className="text-red-400">Delete?</span>
+                            <button onClick={() => setDeleteId(null)} className="px-2 py-0.5 border border-white/[0.10] rounded text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all">Cancel</button>
+                            <button onClick={handleDelete} disabled={deleting} className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded disabled:opacity-60">
+                              {deleting ? '...' : 'Delete'}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-1">
+                            <button onClick={() => openEdit(entry)} className="p-1 text-slate-400 hover:text-sky-400"><Edit2 className="h-4 w-4" /></button>
+                            <button onClick={() => setDeleteId(entry.id)} className="p-1 text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -227,10 +268,44 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
                 <label className="block text-sm font-medium text-slate-300 mb-1">Submission Date <span className="text-red-400">*</span></label>
                 <input className="input-glass" type="date" value={form.submission_date} onChange={set('submission_date')} required />
               </div>
+
+              {/* Directory site dropdown */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Directory Site</label>
+                <select
+                  className={selectClass}
+                  value={form.directory_site_id}
+                  onChange={e => {
+                    const siteId = e.target.value
+                    const site = directorySites.find(s => s.id === siteId)
+                    setForm(f => ({
+                      ...f,
+                      directory_site_id: siteId,
+                      website_url: site ? site.url : f.website_url,
+                    }))
+                  }}
+                >
+                  <option value="">— Select from directory or enter manually —</option>
+                  {directorySites.map(site => (
+                    <option key={site.id} value={site.id}>
+                      {site.domain} ({site.category}){site.da_score != null ? ` — DA ${site.da_score}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">Website URL <span className="text-red-400">*</span></label>
-                <input className="input-glass" type="url" value={form.website_url} onChange={set('website_url')} placeholder="https://example.com" required />
+                <input
+                  className="input-glass"
+                  type="url"
+                  value={form.website_url}
+                  onChange={set('website_url')}
+                  placeholder="https://example.com"
+                  required={!form.directory_site_id}
+                />
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">Type <span className="text-red-400">*</span></label>
