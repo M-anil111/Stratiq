@@ -18,7 +18,7 @@ const TYPE_LABELS: Record<string, string> = {
   invoice: 'Invoices',
 }
 
-const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   client: Users,
   project: FolderKanban,
   invoice: FileText,

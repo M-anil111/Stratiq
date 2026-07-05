@@ -28,36 +28,36 @@ export async function GET(req: NextRequest) {
       .eq('organization_id', orgId)
       .ilike('name', pattern)
       .limit(5),
-    supabase
-      .from('invoices')
-      .select('id, invoice_number, amount, status, client_id, clients(company_name)')
-      .eq('organization_id', orgId)
-      .or(`invoice_number.ilike.${pattern},status.ilike.${pattern}`)
-      .limit(5)
-      .then(r => r)
-      .catch(() => ({ data: [] })),
+    Promise.resolve(
+      supabase
+        .from('invoices')
+        .select('id, invoice_number, amount, status, client_id, clients(company_name)')
+        .eq('organization_id', orgId)
+        .or(`invoice_number.ilike.${pattern},status.ilike.${pattern}`)
+        .limit(5)
+    ).catch(() => ({ data: [] as { id: string; invoice_number: string; amount: number; status: string; client_id: string; clients: { company_name: string }[] }[] })),
   ])
 
   const results = [
-    ...(clientsRes.data || []).map(c => ({
+    ...(clientsRes.data || []).map((c: { id: string; company_name: string; project_status: string }) => ({
       type: 'client',
       id: c.id,
       title: c.company_name,
       subtitle: c.project_status,
       url: `/clients/${c.id}`,
     })),
-    ...(projectsRes.data || []).map(p => ({
+    ...(projectsRes.data || []).map((p: { id: string; name: string; client_id: string; clients: unknown }) => ({
       type: 'project',
       id: p.id,
       title: p.name,
-      subtitle: (p.clients as any)?.company_name,
+      subtitle: (p.clients as { company_name?: string } | null)?.company_name,
       url: `/clients/${p.client_id}`,
     })),
-    ...(invoicesRes.data || []).map(i => ({
+    ...(invoicesRes.data || []).map((i: { id: string; invoice_number: string; amount: number; status: string; client_id: string; clients: unknown }) => ({
       type: 'invoice',
       id: i.id,
       title: i.invoice_number || `Invoice #${i.id.slice(0, 8)}`,
-      subtitle: (i.clients as any)?.company_name,
+      subtitle: (i.clients as { company_name?: string } | null)?.company_name,
       url: `/invoices`,
     })),
   ]
