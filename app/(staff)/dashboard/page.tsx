@@ -82,6 +82,17 @@ function loadOrder(): string[] {
   return SECTION_IDS
 }
 
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [activity, setActivity] = useState<ActivityItem[]>([])
@@ -89,6 +100,7 @@ export default function DashboardPage() {
   const [sectionOrder, setSectionOrder] = useState<string[]>(SECTION_IDS)
   const [search, setSearch] = useState('')
   const [searchFocus, setSearchFocus] = useState(false)
+  const [userName, setUserName] = useState<string | null>(null)
 
   useEffect(() => {
     setSectionOrder(loadOrder())
@@ -97,6 +109,14 @@ export default function DashboardPage() {
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setActivity(data) })
       .finally(() => setActivityLoading(false))
+    fetch('/api/me')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.full_name) {
+          setUserName(data.full_name.split(' ')[0])
+        }
+      })
+      .catch(() => {})
   }, [])
 
   const sensors = useSensors(
@@ -310,9 +330,11 @@ export default function DashboardPage() {
             <Sparkles className="h-4 w-4 text-sky-400" />
             <span className="text-xs font-medium text-sky-400 uppercase tracking-widest">Agency Dashboard</span>
           </div>
-          <h1 className="text-2xl font-bold text-white">Welcome back</h1>
+          <h1 className="text-2xl font-bold text-white">
+            {getGreeting()}{userName ? `, ${userName}!` : '!'}
+          </h1>
           <p className="text-slate-500 text-sm mt-0.5">
-            Drag the <GripVertical className="h-3 w-3 inline text-slate-600" /> handles to rearrange sections
+            {formatDate(new Date())} · Drag the <GripVertical className="h-3 w-3 inline text-slate-600" /> handles to rearrange sections
           </p>
         </div>
         <Link href="/clients/new" className="btn-brand flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm">

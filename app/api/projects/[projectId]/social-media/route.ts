@@ -9,12 +9,21 @@ export async function GET(request: NextRequest, { params }: { params: { projectI
 
   const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
 
-  const { data, error } = await supabase
+  const { searchParams } = new URL(request.url)
+  const platformFilter = searchParams.get('platform')
+  const statusFilter = searchParams.get('status')
+
+  let query = supabase
     .from('social_media_postings')
     .select('*')
     .eq('project_id', params.projectId)
     .eq('organization_id', userData?.organization_id)
     .order('submission_date', { ascending: false })
+
+  if (platformFilter) query = query.eq('platform', platformFilter)
+  if (statusFilter) query = query.eq('status', statusFilter)
+
+  const { data, error } = await query
 
   if (error) {
     if (error.code === '42P01') return NextResponse.json([])
