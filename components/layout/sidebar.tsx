@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboards', label: 'Dashboards', icon: LayoutDashboard },
   { href: '/leads', label: 'Leads', icon: Magnet },
   { href: '/clients', label: 'Clients', icon: Users },
   { href: '/contacts', label: 'Contacts', icon: BookUser },
