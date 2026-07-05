@@ -1,20 +1,7 @@
-import { History } from 'lucide-react'
+import { redirect } from 'next/navigation'
 
+// The full changelog lives at /changelog (rich timeline from lib/version.ts).
+// This settings entry just forwards there so there's a single source of truth.
 export default function SettingsChangelogPage() {
-  return (
-    <div className="p-4 lg:p-8 max-w-3xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <History className="h-6 w-6 text-sky-400" /> Changelog
-        </h1>
-        <p className="text-slate-400 text-sm">What&apos;s new and recently shipped in Stratiq</p>
-      </div>
-
-      <div className="glass-card rounded-2xl p-8 text-center">
-        <p className="text-slate-400 text-sm">
-          Release notes will appear here as new features ship.
-        </p>
-      </div>
-    </div>
-  )
+  redirect('/changelog')
 }

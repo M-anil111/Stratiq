@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/layout/sidebar'
 import { MobileNav } from '@/components/layout/mobile-nav'
 import { GlobalSearch } from '@/components/GlobalSearch'
 import { NotificationBell } from '@/components/NotificationBell'
+import ChangelogButton from '@/components/ChangelogButton'
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -26,7 +27,8 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
           <div className="flex-1 lg:flex lg:justify-end">
             <GlobalSearch />
           </div>
-          <div className="ml-2 shrink-0">
+          <div className="ml-2 shrink-0 flex items-center gap-1">
+            <ChangelogButton />
             <NotificationBell />
           </div>
         </header>
