@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { Plus, ExternalLink, Edit2, Trash2, X, Loader2 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, ExternalLink, Edit2, Trash2, X, Loader2, Search, Check } from 'lucide-react'
 
 const STATUSES = ['pending', 'live', 'rejected']
 
@@ -39,6 +39,77 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(emptyForm())
 
+  // Directory combobox state
+  const [dirQuery, setDirQuery] = useState('')
+  const [dirOpen, setDirOpen] = useState(false)
+  const [addingInline, setAddingInline] = useState(false)
+  const [inlineName, setInlineName] = useState('')
+  const [inlineUrl, setInlineUrl] = useState('')
+  const [creatingSite, setCreatingSite] = useState(false)
+  const [comboError, setComboError] = useState('')
+  const comboRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (comboRef.current && !comboRef.current.contains(e.target as Node)) setDirOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
+
+  const refreshDirectorySites = async () => {
+    const res = await fetch('/api/settings/directory-sites')
+    const data = await res.json()
+    if (Array.isArray(data)) setDirectorySites(data)
+    return Array.isArray(data) ? data : []
+  }
+
+  const selectedSiteLabel = () => {
+    if (form.directory_name) return form.directory_name
+    const site = directorySites.find((s: any) => s.id === form.directory_site_id)
+    return site ? (site.domain || site.url) : ''
+  }
+
+  const selectSite = (site: any) => {
+    setForm(f => ({ ...f, directory_site_id: site.id, directory_name: site.domain || site.url }))
+    setDirOpen(false)
+    setDirQuery('')
+    setAddingInline(false)
+  }
+
+  const filteredSites = () => {
+    const q = dirQuery.trim().toLowerCase()
+    if (!q) return directorySites
+    return directorySites.filter((s: any) =>
+      (s.domain || '').toLowerCase().includes(q) ||
+      (s.url || '').toLowerCase().includes(q) ||
+      (s.category || '').toLowerCase().includes(q)
+    )
+  }
+
+  const openInlineAdd = () => {
+    setInlineName(dirQuery.trim())
+    setInlineUrl(dirQuery.trim())
+    setComboError('')
+    setAddingInline(true)
+  }
+
+  const createInlineSite = async () => {
+    if (!inlineUrl.trim()) { setComboError('URL is required'); return }
+    setCreatingSite(true); setComboError('')
+    const res = await fetch('/api/settings/directory-sites', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: inlineUrl.trim(), category: 'Directory' }),
+    })
+    setCreatingSite(false)
+    if (!res.ok) { const d = await res.json().catch(() => ({})); setComboError(d.error || 'Failed to add site'); return }
+    const site = await res.json()
+    const list = await refreshDirectorySites()
+    const fresh = list.find((s: any) => s.id === site.id) || site
+    selectSite(fresh)
+  }
+
   useEffect(() => {
     fetch(`/api/projects/${params.projectId}/offpage`)
       .then(r => r.json())
@@ -53,13 +124,9 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }))
 
-  const handleDirectoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value
-    const site = directorySites.find(s => s.id === val)
-    setForm(f => ({ ...f, directory_site_id: val, directory_name: site ? (site.domain || site.url) : '' }))
-  }
+  const resetCombo = () => { setDirQuery(''); setDirOpen(false); setAddingInline(false); setComboError('') }
 
-  const openAdd = () => { setEditEntry(null); setForm(emptyForm()); setShowForm(true) }
+  const openAdd = () => { setEditEntry(null); setForm(emptyForm()); resetCombo(); setShowForm(true) }
   const openEdit = (entry: any) => {
     setEditEntry(entry)
     setForm({
@@ -70,9 +137,10 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
       submission_date: entry.submission_date || today(),
       comment: entry.comment || '',
     })
+    resetCombo()
     setShowForm(true)
   }
-  const closeModal = () => { setShowForm(false); setEditEntry(null) }
+  const closeModal = () => { setShowForm(false); setEditEntry(null); resetCombo() }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -211,16 +279,66 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">Directory <span className="text-red-400">*</span></label>
-                {directorySites.length > 0 ? (
-                  <select className={selectClass} value={form.directory_site_id} onChange={handleDirectoryChange} required>
-                    <option value="">Select directory...</option>
-                    {directorySites.map((site: any) => (
-                      <option key={site.id} value={site.id}>{site.domain || site.url}{site.category ? ` — ${site.category}` : ''}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input className="input-glass" value={form.directory_name} onChange={set('directory_name')} placeholder="Directory name" required />
-                )}
+                <div className="relative" ref={comboRef}>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+                    <input
+                      type="text"
+                      className={selectClass + ' pl-9'}
+                      placeholder="Search directory sites..."
+                      value={dirOpen ? dirQuery : selectedSiteLabel() || dirQuery}
+                      onChange={e => { setDirQuery(e.target.value); setDirOpen(true); setForm(f => ({ ...f, directory_site_id: '', directory_name: '' })) }}
+                      onFocus={() => { setDirOpen(true); if (selectedSiteLabel()) setDirQuery('') }}
+                    />
+                  </div>
+                  {dirOpen && (
+                    <div className="absolute z-10 mt-1 w-full rounded-xl border border-white/[0.12] bg-[#0f1729] shadow-xl max-h-64 overflow-y-auto">
+                      {addingInline ? (
+                        <div className="p-3 space-y-2">
+                          <p className="text-xs text-slate-400">Add a new directory site</p>
+                          <input className="input-glass text-sm" placeholder="Name" value={inlineName} onChange={e => setInlineName(e.target.value)} />
+                          <input className="input-glass text-sm" placeholder="https://example.com" value={inlineUrl} onChange={e => setInlineUrl(e.target.value)} />
+                          {comboError && <p className="text-xs text-red-400">{comboError}</p>}
+                          <div className="flex gap-2">
+                            <button type="button" onClick={() => setAddingInline(false)} className="flex-1 px-3 py-1.5 rounded-lg border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] text-xs">Cancel</button>
+                            <button type="button" onClick={createInlineSite} disabled={creatingSite} className="flex-1 btn-brand py-1.5 text-xs disabled:opacity-60 flex items-center justify-center gap-1">
+                              {creatingSite ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                              {creatingSite ? 'Adding...' : 'Add & select'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {filteredSites().map((site: any) => (
+                            <button
+                              type="button"
+                              key={site.id}
+                              onClick={() => selectSite(site)}
+                              className="w-full text-left px-3 py-2 text-sm text-white hover:bg-white/[0.06] flex items-center justify-between gap-2"
+                            >
+                              <span className="truncate">{site.domain || site.url}</span>
+                              {site.category && <span className="text-xs text-slate-500 flex-shrink-0">{site.category}</span>}
+                            </button>
+                          ))}
+                          {filteredSites().length === 0 && !dirQuery.trim() && (
+                            <div className="px-3 py-2 text-sm text-slate-500">No directory sites yet</div>
+                          )}
+                          {dirQuery.trim() && (
+                            <button
+                              type="button"
+                              onClick={openInlineAdd}
+                              className="w-full text-left px-3 py-2 text-sm text-sky-400 hover:bg-sky-500/10 border-t border-white/[0.06] flex items-center gap-2"
+                            >
+                              <Plus className="h-4 w-4" /> Add &quot;{dirQuery.trim()}&quot; as a new directory site
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {/* keep directory_name in payload for entries without a site id */}
+                <input type="hidden" value={form.directory_name} readOnly />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">URL Submitted To <span className="text-red-400">*</span></label>
