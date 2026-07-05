@@ -19,18 +19,12 @@ test('login page renders email, password and submit button', async ({ page }) =>
   await expect(page.getByRole('link', { name: /forgot password/i })).toBeVisible()
 })
 
-test('forgot-password route responds without a server error', async ({ page }) => {
+test('forgot-password page is public and renders the reset form', async ({ page }) => {
   const response = await page.goto('/forgot-password')
   expect(response).not.toBeNull()
-  expect(response!.status()).toBeLessThan(500)
-  // Middleware treats /forgot-password as protected today, so anonymous
-  // visitors land on /login; if it is later made public, the reset form
-  // renders instead. Accept either non-error outcome.
-  const path = new URL(page.url()).pathname
-  expect(['/forgot-password', '/login']).toContain(path)
-  if (path === '/forgot-password') {
-    await expect(page.getByRole('heading', { name: /reset|forgot/i })).toBeVisible()
-  } else {
-    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
-  }
+  expect(response!.status()).toBeLessThan(400)
+  // Middleware treats /forgot-password as a public route, so anonymous
+  // visitors get the reset form directly (no redirect to /login).
+  expect(new URL(page.url()).pathname).toBe('/forgot-password')
+  await expect(page.getByRole('heading', { name: /forgot password/i })).toBeVisible()
 })
