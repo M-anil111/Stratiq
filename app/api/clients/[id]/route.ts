@@ -15,14 +15,34 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   const userData = await getOrgClient(supabase, user.id)
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
 
-  const { data, error } = await supabase
-    .from('clients')
-    .select('*, sales_manager:users!sales_manager_id(id,full_name,email), dm_manager:users!dm_manager_id(id,full_name,email), marketing_manager:users!marketing_manager_id(id,full_name,email), projects(id,domain,status,services,start_date,created_at)')
-    .eq('id', params.id)
-    .eq('organization_id', userData.organization_id)
-    .single()
+  // The manager joins (migration 007) and projects.start_date (migration 028)
+  // may not exist on the live DB. Fall back to progressively simpler selects so
+  // a client that genuinely exists is never reported as "not found".
+  const selects = [
+    '*, sales_manager:users!sales_manager_id(id,full_name,email), dm_manager:users!dm_manager_id(id,full_name,email), marketing_manager:users!marketing_manager_id(id,full_name,email), projects(id,domain,status,services,start_date,created_at)',
+    '*, sales_manager:users!sales_manager_id(id,full_name,email), dm_manager:users!dm_manager_id(id,full_name,email), projects(id,domain,status,services,created_at)',
+    '*, projects(id,domain,status,services,created_at)',
+    '*',
+  ]
 
-  if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  let data: any = null
+  let error: any = null
+  for (const sel of selects) {
+    const res = await supabase
+      .from('clients')
+      .select(sel)
+      .eq('id', params.id)
+      .eq('organization_id', userData.organization_id)
+      .single()
+    data = res.data
+    error = res.error
+    if (!error && data) break
+    // Only retry with a simpler select when it's a schema/relationship problem;
+    // a genuine no-row (PGRST116) should fall through to the 404.
+    if (error && !/Could not find|does not exist|schema cache|relationship/i.test(error.message || '')) break
+  }
+
+  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(data)
 }
 
