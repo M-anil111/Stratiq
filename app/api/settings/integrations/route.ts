@@ -27,7 +27,7 @@ export async function GET() {
   }
   // Derive connected flags from token presence when explicit flag missing
   const hasGoogle = settings.google_connected === 'true' || !!data?.find(r => r.key === 'google_access_token' && r.value)
-  const hasQb = settings.qb_connected === 'true'
+  const hasQb = settings.qb_connected === 'true' || !!data?.find(r => r.key === 'qb_access_token' && r.value)
   const hasMeta = settings.meta_connected === 'true'
 
   return NextResponse.json({
