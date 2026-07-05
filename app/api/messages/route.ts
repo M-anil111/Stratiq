@@ -10,13 +10,17 @@ export async function GET(request: NextRequest) {
   const clientId = request.nextUrl.searchParams.get('clientId')
   if (!clientId) return NextResponse.json({ error: 'clientId required' }, { status: 400 })
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('messages')
     .select('*')
     .eq('client_id', clientId)
     .eq('organization_id', userData?.organization_id)
     .order('created_at', { ascending: true })
 
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json({ __unavailable: true })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json(data || [])
 }
 

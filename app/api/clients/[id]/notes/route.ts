@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     .order('created_at', { ascending: false })
 
   if (error) {
-    if (error.code === '42P01') return NextResponse.json([])
+    if (error.code === '42P01') return NextResponse.json({ __unavailable: true })
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
   return NextResponse.json(data)

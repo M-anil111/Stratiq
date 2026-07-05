@@ -47,13 +47,16 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   // Tasks
   const [tasks, setTasks] = useState<any[]>([])
   const [tasksLoading, setTasksLoading] = useState(false)
+  const [tasksUnavailable, setTasksUnavailable] = useState(false)
   const [showAddTask, setShowAddTask] = useState(false)
-  const [newTask, setNewTask] = useState({ title: '', priority: 'medium', due_date: '', description: '' })
+  const [newTask, setNewTask] = useState({ title: '', priority: 'medium', due_date: '', description: '', assigned_to: '' })
   const [savingTask, setSavingTask] = useState(false)
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
 
   // Notes
   const [notes, setNotes] = useState<any[]>([])
   const [notesLoading, setNotesLoading] = useState(false)
+  const [notesUnavailable, setNotesUnavailable] = useState(false)
   const [noteInput, setNoteInput] = useState('')
   const [noteType, setNoteType] = useState('note')
   const [savingNote, setSavingNote] = useState(false)
@@ -62,6 +65,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [messages, setMessages] = useState<any[]>([])
   const [msgInput, setMsgInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [msgsUnavailable, setMsgsUnavailable] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   // Reports
@@ -141,16 +145,30 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     }
     if (activeTab === 1) {
       setTasksLoading(true)
+      setTasksUnavailable(false)
       fetch(`/api/clients/${params.id}/tasks`)
         .then(r => r.json())
-        .then(d => { setTasks(Array.isArray(d) ? d : []); setTasksLoading(false) })
+        .then(d => {
+          if (d?.__unavailable) { setTasksUnavailable(true); setTasks([]) }
+          else { setTasks(Array.isArray(d) ? d : []) }
+          setTasksLoading(false)
+        })
         .catch(() => setTasksLoading(false))
+      // Load team members for assigned_to dropdown
+      if (teamMembers.length === 0) {
+        fetch('/api/users').then(r => r.json()).then(d => { if (Array.isArray(d)) setTeamMembers(d) })
+      }
     }
     if (activeTab === 2) {
       setNotesLoading(true)
+      setNotesUnavailable(false)
       fetch(`/api/clients/${params.id}/notes`)
         .then(r => r.json())
-        .then(d => { setNotes(Array.isArray(d) ? d : []); setNotesLoading(false) })
+        .then(d => {
+          if (d?.__unavailable) { setNotesUnavailable(true); setNotes([]) }
+          else { setNotes(Array.isArray(d) ? d : []) }
+          setNotesLoading(false)
+        })
         .catch(() => setNotesLoading(false))
     }
     if (activeTab === 3) {
@@ -161,7 +179,11 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         .catch(() => setReportsLoading(false))
     }
     if (activeTab === 4) {
-      fetch(`/api/messages?clientId=${params.id}`).then(r => r.json()).then(d => setMessages(d || []))
+      setMsgsUnavailable(false)
+      fetch(`/api/messages?clientId=${params.id}`).then(r => r.json()).then(d => {
+        if (d?.__unavailable) { setMsgsUnavailable(true); setMessages([]) }
+        else { setMessages(Array.isArray(d) ? d : []) }
+      })
     }
     if (activeTab === 5) {
       loadDrive(null)
@@ -282,8 +304,9 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       body: JSON.stringify({ name: newFolderName.trim(), parent_folder_id: currentFolderId }),
     })
     setNewFolderName(''); setShowNewFolder(false); setCreatingFolder(false)
-    if (currentFolderId) {
-      await loadDrive(currentFolderId)
+    const lastCrumb = breadcrumb[breadcrumb.length - 1]
+    if (currentFolderId && currentFolderId !== driveRootId && lastCrumb) {
+      await navigateFolder(currentFolderId, lastCrumb.name)
     } else {
       await loadDrive(null)
     }
@@ -310,7 +333,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     if (res.ok) {
       const t = await res.json()
       setTasks(prev => [t, ...prev])
-      setNewTask({ title: '', priority: 'medium', due_date: '', description: '' })
+      setNewTask({ title: '', priority: 'medium', due_date: '', description: '', assigned_to: '' })
       setShowAddTask(false)
     }
     setSavingTask(false)
@@ -694,6 +717,11 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                 <input type="date" className="flex-1 bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
                   value={newTask.due_date} onChange={e => setNewTask(t => ({ ...t, due_date: e.target.value }))} />
               </div>
+              <select className="w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+                value={newTask.assigned_to} onChange={e => setNewTask(t => ({ ...t, assigned_to: e.target.value }))}>
+                <option value="">Assign to… (optional)</option>
+                {teamMembers.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
+              </select>
               <div className="flex gap-2 justify-end">
                 <button onClick={() => setShowAddTask(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white border border-white/[0.08] rounded-lg">Cancel</button>
                 <button onClick={addTask} disabled={!newTask.title.trim() || savingTask}
@@ -706,6 +734,12 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
           {tasksLoading ? (
             <div className="space-y-2">{[0,1,2].map(i => <div key={i} className="h-14 skeleton rounded-xl" />)}</div>
+          ) : tasksUnavailable ? (
+            <div className="glass-card p-12 text-center">
+              <AlertCircle className="h-10 w-10 text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-400 text-sm font-medium">Tasks feature coming soon</p>
+              <p className="text-slate-500 text-xs mt-1">This feature is not yet available for your account.</p>
+            </div>
           ) : tasks.length === 0 ? (
             <div className="glass-card p-12 text-center">
               <CheckSquare className="h-10 w-10 text-slate-600 mx-auto mb-3" />
@@ -782,6 +816,12 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
           {notesLoading ? (
             <div className="space-y-2">{[0,1,2].map(i => <div key={i} className="h-20 skeleton rounded-xl" />)}</div>
+          ) : notesUnavailable ? (
+            <div className="glass-card p-10 text-center">
+              <AlertCircle className="h-8 w-8 text-slate-600 mx-auto mb-2" />
+              <p className="text-slate-400 text-sm font-medium">Notes feature coming soon</p>
+              <p className="text-slate-500 text-xs mt-1">This feature is not yet available for your account.</p>
+            </div>
           ) : notes.length === 0 ? (
             <div className="glass-card p-10 text-center">
               <MessageSquare className="h-8 w-8 text-slate-600 mx-auto mb-2" />
@@ -892,7 +932,12 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       {activeTab === 4 && (
         <div className="flex flex-col h-[500px] glass-card overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {messages.length === 0 ? (
+            {msgsUnavailable ? (
+              <div className="flex flex-col items-center justify-center h-full gap-2">
+                <AlertCircle className="h-8 w-8 text-slate-600" />
+                <p className="text-slate-400 text-sm font-medium">Messages feature coming soon</p>
+              </div>
+            ) : messages.length === 0 ? (
               <div className="flex items-center justify-center h-full text-slate-400 text-sm">No messages yet</div>
             ) : messages.map(msg => {
               const isStaff = msg.sender_type === 'staff'
@@ -901,9 +946,16 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${isStaff ? 'bg-sky-500/20 text-sky-400' : 'bg-white/[0.08] text-slate-400'}`}>
                     {(msg.sender_name || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                   </div>
-                  <div className={`max-w-[70%] px-3 py-2 rounded-2xl text-sm ${isStaff ? 'bg-sky-500 text-white rounded-br-sm' : 'bg-white/[0.08] text-slate-300 rounded-bl-sm'}`}>
-                    {!isStaff && <p className="text-xs font-medium mb-0.5 text-slate-400">{msg.sender_name}</p>}
-                    <p>{msg.content}</p>
+                  <div className={`max-w-[70%] space-y-0.5`}>
+                    <div className={`px-3 py-2 rounded-2xl text-sm ${isStaff ? 'bg-sky-500 text-white rounded-br-sm' : 'bg-white/[0.08] text-slate-300 rounded-bl-sm'}`}>
+                      {!isStaff && <p className="text-xs font-medium mb-0.5 text-slate-400">{msg.sender_name}</p>}
+                      <p>{msg.content}</p>
+                    </div>
+                    {msg.created_at && (
+                      <p className={`text-[10px] text-slate-600 px-1 ${isStaff ? 'text-right' : ''}`}>
+                        {new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      </p>
+                    )}
                   </div>
                 </div>
               )
