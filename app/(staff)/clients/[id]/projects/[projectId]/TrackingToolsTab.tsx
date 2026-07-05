@@ -4,16 +4,26 @@ import { useState, useEffect, useCallback } from 'react'
 import { Plus, Pencil, Trash2, X, Save, Loader2, BarChart2 } from 'lucide-react'
 
 const TOOL_OPTIONS = [
-  'Google Analytics',
-  'Google Tag Manager',
+  'Google Analytics 4',
+  'Google Analytics (UA)',
   'Google Search Console',
+  'Google Tag Manager',
   'Google Ads',
   'Google Business Profile',
   'Facebook Pixel',
   'Facebook Business Manager',
+  'Hotjar',
+  'Semrush',
+  'Ahrefs',
+  'Moz',
   'HubSpot',
+  'Mailchimp',
+  'ActiveCampaign',
+  'Klaviyo',
   'Other',
 ]
+
+const ACCESS_TYPES = ['view only', 'editor', 'owner'] as const
 
 const selectClass =
   'w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
@@ -23,6 +33,9 @@ interface TrackingTool {
   tool_name: string
   profile_id: string | null
   account_email: string | null
+  access_type: string | null
+  notes: string | null
+  url: string | null
   created_at: string
 }
 
@@ -30,9 +43,19 @@ interface ToolForm {
   tool_name: string
   profile_id: string
   account_email: string
+  access_type: string
+  notes: string
+  url: string
 }
 
-const EMPTY_FORM: ToolForm = { tool_name: TOOL_OPTIONS[0], profile_id: '', account_email: '' }
+const EMPTY_FORM: ToolForm = {
+  tool_name: TOOL_OPTIONS[0],
+  profile_id: '',
+  account_email: '',
+  access_type: '',
+  notes: '',
+  url: '',
+}
 
 export default function TrackingToolsTab({ projectId }: { projectId: string }) {
   const [tools, setTools] = useState<TrackingTool[]>([])
@@ -73,6 +96,9 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
       tool_name: tool.tool_name,
       profile_id: tool.profile_id ?? '',
       account_email: tool.account_email ?? '',
+      access_type: tool.access_type ?? '',
+      notes: tool.notes ?? '',
+      url: tool.url ?? '',
     })
     setShowModal(true)
     setError(null)
@@ -132,7 +158,7 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-5">
-        <h3 className="text-sm font-medium text-slate-300">Tracking Tools</h3>
+        <h3 className="text-sm font-medium text-slate-300">Tracking &amp; Analytics Tools</h3>
         <button onClick={openAdd} className="btn-brand flex items-center gap-2 text-sm">
           <Plus className="h-4 w-4" />
           Add Tool
@@ -154,16 +180,19 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
         <div className="text-center py-16 text-slate-500">
           <BarChart2 className="h-8 w-8 mx-auto mb-3 opacity-40" />
           <p className="font-medium">No tracking tools yet</p>
-          <p className="text-sm mt-1">Click "Add Tool" to link a tracking or analytics tool to this project.</p>
+          <p className="text-sm mt-1">Click &ldquo;Add Tool&rdquo; to link a tracking or analytics tool to this project.</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/[0.06]">
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Tool Name</th>
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Profile / Property ID</th>
+                <th className="text-left px-3 py-2 text-slate-400 font-medium">Tool</th>
+                <th className="text-left px-3 py-2 text-slate-400 font-medium">Property / Profile ID</th>
                 <th className="text-left px-3 py-2 text-slate-400 font-medium">Account Email</th>
+                <th className="text-left px-3 py-2 text-slate-400 font-medium">Access</th>
+                <th className="text-left px-3 py-2 text-slate-400 font-medium">Notes / URL</th>
+                <th className="text-left px-3 py-2 text-slate-400 font-medium">Date Added</th>
                 <th className="text-right px-3 py-2 text-slate-400 font-medium">Actions</th>
               </tr>
             </thead>
@@ -173,6 +202,19 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
                   <td className="px-3 py-3 text-white font-medium">{tool.tool_name}</td>
                   <td className="px-3 py-3 text-slate-300 font-mono text-xs">{tool.profile_id || <span className="text-slate-600 italic">—</span>}</td>
                   <td className="px-3 py-3 text-slate-300 text-xs">{tool.account_email || <span className="text-slate-600 italic">—</span>}</td>
+                  <td className="px-3 py-3 text-xs capitalize text-slate-300">{tool.access_type || <span className="text-slate-600 italic">—</span>}</td>
+                  <td className="px-3 py-3 text-xs max-w-[180px]">
+                    {tool.url ? (
+                      <a href={tool.url} target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline block truncate">{tool.url}</a>
+                    ) : tool.notes ? (
+                      <span className="text-slate-400 truncate block">{tool.notes}</span>
+                    ) : (
+                      <span className="text-slate-600 italic">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-3 text-xs text-slate-500 whitespace-nowrap">
+                    {new Date(tool.created_at).toLocaleDateString('en-AU', { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </td>
                   <td className="px-3 py-3">
                     <div className="flex items-center justify-end gap-1">
                       {confirmDeleteId === tool.id ? (
@@ -240,7 +282,7 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                  Tool Name <span className="text-red-400">*</span>
+                  Tool <span className="text-red-400">*</span>
                 </label>
                 <select
                   className={selectClass}
@@ -253,10 +295,10 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Profile / Property ID</label>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Property / Profile ID</label>
                 <input
                   className="input-glass w-full"
-                  placeholder="e.g. UA-123456789 or G-XXXXXXXXXX"
+                  placeholder="e.g. G-XXXXXXXXXX or UA-123456789"
                   value={form.profile_id}
                   onChange={e => setForm(f => ({ ...f, profile_id: e.target.value }))}
                 />
@@ -269,6 +311,39 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
                   placeholder="account@example.com"
                   value={form.account_email}
                   onChange={e => setForm(f => ({ ...f, account_email: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Access Type</label>
+                <select
+                  className={selectClass}
+                  value={form.access_type}
+                  onChange={e => setForm(f => ({ ...f, access_type: e.target.value }))}
+                >
+                  <option value="">— not set —</option>
+                  {ACCESS_TYPES.map(a => (
+                    <option key={a} value={a} className="capitalize">{a.charAt(0).toUpperCase() + a.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">URL</label>
+                <input
+                  className="input-glass w-full"
+                  type="url"
+                  placeholder="https://..."
+                  value={form.url}
+                  onChange={e => setForm(f => ({ ...f, url: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Notes</label>
+                <textarea
+                  className="input-glass w-full resize-none"
+                  rows={2}
+                  placeholder="Any additional notes…"
+                  value={form.notes}
+                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                 />
               </div>
             </div>

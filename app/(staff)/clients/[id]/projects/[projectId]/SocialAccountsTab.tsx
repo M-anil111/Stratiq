@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Eye, EyeOff, Pencil, Lock, X, Save, Loader2, Share2 } from 'lucide-react'
+import { Eye, EyeOff, Pencil, Lock, X, Save, Loader2 } from 'lucide-react'
 
 const PLATFORMS = [
-  'Facebook',
+  'Facebook Page',
   'Instagram',
   'Twitter / X',
   'LinkedIn',
@@ -18,21 +18,43 @@ const PLATFORMS = [
   'Threads',
 ]
 
+const ACCESS_LEVELS = ['owner', 'editor', 'analyst'] as const
+const STATUSES = ['active', 'needs renewal', 'revoked'] as const
+
+const statusColors: Record<string, string> = {
+  active: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+  'needs renewal': 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
+  revoked: 'bg-red-500/10 text-red-400 border border-red-500/20',
+}
+
+const selectClass =
+  'w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
+
 interface SocialAccount {
   id: string | null
   platform: string
   username: string | null
   password: string | null
   profile_url: string | null
+  access_level: string | null
+  status: string | null
 }
 
 interface EditForm {
   username: string
   password: string
   profile_url: string
+  access_level: string
+  status: string
 }
 
-const EMPTY_EDIT: EditForm = { username: '', password: '', profile_url: '' }
+const EMPTY_EDIT: EditForm = {
+  username: '',
+  password: '',
+  profile_url: '',
+  access_level: '',
+  status: 'active',
+}
 
 export default function SocialAccountsTab({ projectId }: { projectId: string }) {
   const [accounts, setAccounts] = useState<SocialAccount[]>([])
@@ -54,7 +76,15 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
       const map = new Map(data.map(a => [a.platform, a]))
       setAccounts(
         PLATFORMS.map(p =>
-          map.get(p) ?? { id: null, platform: p, username: null, password: null, profile_url: null }
+          map.get(p) ?? {
+            id: null,
+            platform: p,
+            username: null,
+            password: null,
+            profile_url: null,
+            access_level: null,
+            status: null,
+          }
         )
       )
     } catch (e: any) {
@@ -72,6 +102,8 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
       username: account.username ?? '',
       password: account.password ?? '',
       profile_url: account.profile_url ?? '',
+      access_level: account.access_level ?? '',
+      status: account.status ?? 'active',
     })
     setShowFormPassword(false)
     setError(null)
@@ -115,8 +147,6 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
     })
   }
 
-  const editingAccount = accounts.find(a => a.platform === editingPlatform) ?? null
-
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-5">
@@ -145,8 +175,10 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
             <thead>
               <tr className="border-b border-white/[0.06]">
                 <th className="text-left px-3 py-2 text-slate-400 font-medium">Platform</th>
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Username</th>
+                <th className="text-left px-3 py-2 text-slate-400 font-medium">Handle</th>
                 <th className="text-left px-3 py-2 text-slate-400 font-medium">Password</th>
+                <th className="text-left px-3 py-2 text-slate-400 font-medium">Access Level</th>
+                <th className="text-left px-3 py-2 text-slate-400 font-medium">Status</th>
                 <th className="text-left px-3 py-2 text-slate-400 font-medium">Profile URL</th>
                 <th className="text-right px-3 py-2 text-slate-400 font-medium">Actions</th>
               </tr>
@@ -176,7 +208,19 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
                       <span className="text-slate-600 text-xs italic">not set</span>
                     )}
                   </td>
-                  <td className="px-3 py-3 text-xs max-w-[180px] truncate">
+                  <td className="px-3 py-3 text-xs capitalize text-slate-300">
+                    {account.access_level || <span className="text-slate-600 italic">—</span>}
+                  </td>
+                  <td className="px-3 py-3">
+                    {account.status ? (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusColors[account.status] ?? 'bg-white/[0.06] text-slate-400'}`}>
+                        {account.status}
+                      </span>
+                    ) : (
+                      <span className="text-slate-600 text-xs italic">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-3 text-xs max-w-[160px] truncate">
                     {account.profile_url ? (
                       <a href={account.profile_url} target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline truncate block">
                         {account.profile_url}
@@ -234,12 +278,12 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Password</label>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Password / Token</label>
                 <div className="relative">
                   <input
                     className="input-glass w-full pr-10"
                     type={showFormPassword ? 'text' : 'password'}
-                    placeholder="Enter password"
+                    placeholder="Enter password or access token"
                     value={form.password}
                     onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   />
@@ -256,8 +300,35 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
                   <span className="text-xs text-emerald-400/70">Stored with AES-256-GCM encryption</span>
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">Access Level</label>
+                  <select
+                    className={selectClass}
+                    value={form.access_level}
+                    onChange={e => setForm(f => ({ ...f, access_level: e.target.value }))}
+                  >
+                    <option value="">— not set —</option>
+                    {ACCESS_LEVELS.map(l => (
+                      <option key={l} value={l} className="capitalize">{l.charAt(0).toUpperCase() + l.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">Status</label>
+                  <select
+                    className={selectClass}
+                    value={form.status}
+                    onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                  >
+                    {STATUSES.map(s => (
+                      <option key={s} value={s} className="capitalize">{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Profile URL</label>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Account URL</label>
                 <input
                   className="input-glass w-full"
                   type="url"
