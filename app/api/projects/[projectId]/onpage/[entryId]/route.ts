@@ -8,11 +8,11 @@ export async function PUT(request: NextRequest, { params }: { params: { projectI
 
   const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
   const body = await request.json()
-  const { url, page_title, meta_description, h1, primary_keywords, secondary_keywords, status, comment } = body
+  const { url, h1, meta_title, meta_description, primary_keywords, secondary_keywords, rankings, submission_date, status, comment, notes } = body
 
   const { data, error } = await supabase
     .from('onpage_details')
-    .update({ url, page_title, meta_description, h1, primary_keywords, secondary_keywords, status, comment, updated_at: new Date().toISOString() })
+    .update({ url, h1, meta_title, meta_description, primary_keywords, secondary_keywords, rankings, submission_date, status, comment, notes, updated_at: new Date().toISOString() })
     .eq('id', params.entryId)
     .eq('project_id', params.projectId)
     .eq('organization_id', userData?.organization_id)

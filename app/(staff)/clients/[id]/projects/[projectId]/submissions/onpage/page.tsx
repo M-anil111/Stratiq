@@ -1,6 +1,9 @@
 'use client'
 import { useState, useEffect, KeyboardEvent } from 'react'
-import { Plus, Edit2, Trash2, X, Loader2, Send } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Loader2, Send, FileText } from 'lucide-react'
+
+type Status = 'pending' | 'in-progress' | 'completed'
+type FilterTab = 'all' | Status
 
 function today() { return new Date().toISOString().split('T')[0] }
 
@@ -13,8 +16,21 @@ const emptyForm = () => ({
   secondary_keywords: [] as string[],
   rankings: '',
   submission_date: today(),
+  status: 'pending' as Status,
   comment: '',
+  notes: '',
 })
+
+const STATUS_CONFIG: Record<Status, { label: string; cls: string }> = {
+  pending: { label: 'Pending', cls: 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/25' },
+  'in-progress': { label: 'In Progress', cls: 'bg-blue-500/15 text-blue-400 border border-blue-500/25' },
+  completed: { label: 'Completed', cls: 'bg-green-500/15 text-green-400 border border-green-500/25' },
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const cfg = STATUS_CONFIG[status as Status] ?? { label: status, cls: 'bg-slate-500/15 text-slate-400 border border-slate-500/25' }
+  return <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${cfg.cls}`}>{cfg.label}</span>
+}
 
 function TagInput({ label, tags, onChange }: { label: string; tags: string[]; onChange: (t: string[]) => void }) {
   const [input, setInput] = useState('')
@@ -52,9 +68,40 @@ function TagInput({ label, tags, onChange }: { label: string; tags: string[]; on
   )
 }
 
+const TABS: { key: FilterTab; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'pending', label: 'Pending' },
+  { key: 'in-progress', label: 'In Progress' },
+  { key: 'completed', label: 'Completed' },
+]
+
+function SkeletonRows() {
+  return (
+    <>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <tr key={i} className="animate-pulse">
+          <td className="px-4 py-3"><div className="h-3 w-4 bg-white/[0.08] rounded" /></td>
+          <td className="px-4 py-3"><div className="h-3 w-36 bg-white/[0.08] rounded" /></td>
+          <td className="px-4 py-3"><div className="h-3 w-28 bg-white/[0.08] rounded" /></td>
+          <td className="px-4 py-3"><div className="h-3 w-32 bg-white/[0.08] rounded" /></td>
+          <td className="px-4 py-3"><div className="h-5 w-16 bg-white/[0.08] rounded-full" /></td>
+          <td className="px-4 py-3"><div className="h-3 w-20 bg-white/[0.08] rounded" /></td>
+          <td className="px-4 py-3"><div className="h-3 w-24 bg-white/[0.08] rounded" /></td>
+          <td className="px-4 py-3"><div className="h-3 w-16 bg-white/[0.08] rounded" /></td>
+          <td className="px-4 py-3 flex gap-1">
+            <div className="h-6 w-6 bg-white/[0.08] rounded" />
+            <div className="h-6 w-6 bg-white/[0.08] rounded" />
+          </td>
+        </tr>
+      ))}
+    </>
+  )
+}
+
 export default function OnPagePage({ params }: { params: { id: string; projectId: string } }) {
   const [entries, setEntries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<FilterTab>('all')
 
   useEffect(() => {
     fetch(`/api/projects/${params.projectId}/onpage`)
@@ -62,14 +109,13 @@ export default function OnPagePage({ params }: { params: { id: string; projectId
       .then(data => { if (Array.isArray(data)) setEntries(data) })
       .finally(() => setLoading(false))
   }, [params.projectId])
+
   const [showForm, setShowForm] = useState(false)
   const [editEntry, setEditEntry] = useState<any | null>(null)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [deleting, setDeleting] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(emptyForm())
 
-  const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+  const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }))
 
   const openAdd = () => { setEditEntry(null); setForm(emptyForm()); setShowForm(true) }
@@ -84,11 +130,19 @@ export default function OnPagePage({ params }: { params: { id: string; projectId
       secondary_keywords: entry.secondary_keywords || [],
       rankings: entry.rankings || '',
       submission_date: entry.submission_date || today(),
+      status: entry.status || 'pending',
       comment: entry.comment || '',
+      notes: entry.notes || '',
     })
     setShowForm(true)
   }
   const closeModal = () => { setShowForm(false); setEditEntry(null) }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this entry? This cannot be undone.')) return
+    const res = await fetch(`/api/projects/${params.projectId}/onpage/${id}`, { method: 'DELETE' })
+    if (res.ok) setEntries(p => p.filter(x => x.id !== id))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -122,19 +176,9 @@ export default function OnPagePage({ params }: { params: { id: string; projectId
     }
   }
 
-  const handleDelete = async () => {
-    if (!deleteId) return
-    setDeleting(true)
-    try {
-      const res = await fetch(`/api/projects/${params.projectId}/onpage/${deleteId}`, { method: 'DELETE' })
-      if (res.ok) {
-        setEntries(p => p.filter(x => x.id !== deleteId))
-        setDeleteId(null)
-      }
-    } finally {
-      setDeleting(false)
-    }
-  }
+  const filtered = activeTab === 'all' ? entries : entries.filter(e => e.status === activeTab)
+
+  const tabCount = (key: FilterTab) => key === 'all' ? entries.length : entries.filter(e => e.status === key).length
 
   return (
     <div>
@@ -150,28 +194,81 @@ export default function OnPagePage({ params }: { params: { id: string; projectId
           </button>
         </div>
 
-        {entries.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">
-            <p className="font-medium">No OnPage details yet</p>
-            <p className="text-sm mt-1">Click "Add OnPage Detail" to log your first entry</p>
+        {/* Filter Tabs */}
+        <div className="flex gap-1 px-4 pt-3 border-b border-white/[0.06] pb-0">
+          {TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-3 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-all ${
+                activeTab === tab.key
+                  ? 'border-sky-500 text-sky-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              {tab.label}
+              <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                activeTab === tab.key ? 'bg-sky-500/20 text-sky-300' : 'bg-white/[0.06] text-slate-500'
+              }`}>
+                {tabCount(tab.key)}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  {['#', 'URL', 'H1', 'Meta Title', 'Status', 'Primary KWs', 'Rankings', 'Date', 'Actions'].map(h => (
+                    <th key={h} className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.06]">
+                <SkeletonRows />
+              </tbody>
+            </table>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-16 text-center flex flex-col items-center gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-white/[0.06] flex items-center justify-center">
+              <FileText className="h-7 w-7 text-slate-500" />
+            </div>
+            <div>
+              <p className="font-medium text-white">No onpage entries yet</p>
+              <p className="text-sm text-slate-400 mt-1">
+                {activeTab !== 'all' ? `No entries with status "${STATUS_CONFIG[activeTab as Status]?.label ?? activeTab}"` : 'Get started by adding your first onpage SEO entry'}
+              </p>
+            </div>
+            {activeTab === 'all' && (
+              <button onClick={openAdd} className="btn-brand flex items-center gap-2 px-4 py-2 text-sm font-medium mt-1">
+                <Plus className="h-4 w-4" />
+                Add First Entry
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  {['#', 'URL', 'H1', 'Meta Title', 'Primary KWs', 'Rankings', 'Date', 'Actions'].map(h => (
+                  {['#', 'URL', 'H1', 'Meta Title', 'Status', 'Primary KWs', 'Rankings', 'Date', 'Actions'].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.06]">
-                {entries.map((entry, i) => (
+                {filtered.map((entry, i) => (
                   <tr key={entry.id} className="hover:bg-white/[0.03]">
                     <td className="px-4 py-3 text-slate-500">{i + 1}</td>
                     <td className="px-4 py-3 font-medium text-white max-w-[160px] truncate">{entry.url}</td>
                     <td className="px-4 py-3 max-w-[140px] truncate text-slate-300">{entry.h1}</td>
                     <td className="px-4 py-3 max-w-[160px] truncate text-slate-300">{entry.meta_title}</td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={entry.status || 'pending'} />
+                    </td>
                     <td className="px-4 py-3 max-w-[140px]">
                       <div className="flex flex-wrap gap-1">
                         {(entry.primary_keywords || []).slice(0, 2).map((kw: string) => (
@@ -185,20 +282,14 @@ export default function OnPagePage({ params }: { params: { id: string; projectId
                     <td className="px-4 py-3 text-slate-400 max-w-[120px] truncate">{entry.rankings}</td>
                     <td className="px-4 py-3 text-slate-400">{entry.submission_date}</td>
                     <td className="px-4 py-3">
-                      {deleteId === entry.id ? (
-                        <div className="flex items-center gap-1.5 text-xs bg-red-500/10 border border-red-500/20 rounded-xl px-2 py-1">
-                          <span className="text-red-400">Delete?</span>
-                          <button onClick={() => setDeleteId(null)} className="px-2 py-0.5 border border-white/[0.10] rounded text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all">Cancel</button>
-                          <button onClick={handleDelete} disabled={deleting} className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded disabled:opacity-60">
-                            {deleting ? '...' : 'Delete'}
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-1">
-                          <button onClick={() => openEdit(entry)} className="p-1 text-slate-400 hover:text-sky-400"><Edit2 className="h-4 w-4" /></button>
-                          <button onClick={() => setDeleteId(entry.id)} className="p-1 text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
-                        </div>
-                      )}
+                      <div className="flex gap-1">
+                        <button onClick={() => openEdit(entry)} className="p-1 text-slate-400 hover:text-sky-400 transition-colors" title="Edit">
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => handleDelete(entry.id)} className="p-1 text-slate-400 hover:text-red-400 transition-colors" title="Delete">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -267,12 +358,24 @@ export default function OnPagePage({ params }: { params: { id: string; projectId
                 <input className="input-glass" value={form.rankings} onChange={set('rankings')} placeholder="e.g. #3 for keyword X" />
               </div>
               <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Status</label>
+                <select className="input-glass" value={form.status} onChange={set('status')}>
+                  <option value="pending">Pending</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">Submission Date</label>
                 <input className="input-glass" type="date" value={form.submission_date} onChange={set('submission_date')} />
               </div>
               <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
+                <textarea className="input-glass resize-none h-16" value={form.notes} onChange={set('notes')} placeholder="Internal notes..." />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">Comment</label>
-                <textarea className="input-glass resize-none h-16" value={form.comment} onChange={set('comment')} placeholder="Optional notes..." />
+                <textarea className="input-glass resize-none h-16" value={form.comment} onChange={set('comment')} placeholder="Optional comment..." />
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={closeModal} className="flex-1 py-2.5 rounded-lg border border-white/[0.10] text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Cancel</button>
