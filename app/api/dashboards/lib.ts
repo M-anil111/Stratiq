@@ -13,7 +13,6 @@ export const WIDGET_TYPES = [
   'stats_tile',
   'activity_feed',
   'top_clients',
-  'tasks_due',
   'leads_pipeline',
   'invoice_status',
 ] as const
@@ -80,7 +79,6 @@ export function templateWidgets(template: string): DashboardWidget[] {
       ]
     case 'service':
       return [
-        makeWidget('tasks_due', 'Overdue Tasks'),
         makeWidget('activity_feed', 'Recent Activity'),
         makeWidget('top_clients', 'Top Clients by MRR'),
       ]

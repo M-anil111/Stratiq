@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, Plus, X, GripVertical, Pencil, Check, Users, DollarSign,
-  AlertCircle, CheckCircle, Activity, FileText, Magnet, CheckSquare,
+  AlertCircle, CheckCircle, Activity, FileText, Magnet,
   BarChart2, LayoutDashboard, Lock, Eye, AlertTriangle, Clock,
 } from 'lucide-react'
 import {
@@ -41,7 +41,6 @@ const WIDGET_LIBRARY: { type: string; label: string; description: string; icon: 
   { type: 'stats_tile', label: 'Stat tile', description: 'A single key metric (MRR, clients, invoices)', icon: BarChart2, defaultConfig: { metric: 'total_mrr' } },
   { type: 'activity_feed', label: 'Activity feed', description: 'Latest activity across the workspace', icon: Activity },
   { type: 'top_clients', label: 'Top clients', description: 'Clients ranked by MRR', icon: Users },
-  { type: 'tasks_due', label: 'Overdue tasks', description: 'Tasks past their due date', icon: CheckSquare },
   { type: 'leads_pipeline', label: 'Leads pipeline', description: 'Lead counts per pipeline stage', icon: Magnet },
   { type: 'invoice_status', label: 'Invoice status', description: 'Invoice counts grouped by status', icon: FileText },
 ]
@@ -166,33 +165,6 @@ function TopClientsWidget() {
   )
 }
 
-function TasksDueWidget() {
-  const [tasks, setTasks] = useState<any[] | null>(null)
-  useEffect(() => {
-    fetch('/api/tasks?overdue=1')
-      .then(r => r.json())
-      .then(d => setTasks(Array.isArray(d) ? d : []))
-      .catch(() => setTasks([]))
-  }, [])
-  if (tasks === null) return <WidgetSkeleton />
-  if (tasks.length === 0) return <WidgetEmpty label="No overdue tasks — nice work" />
-  return (
-    <div className="space-y-1">
-      {tasks.slice(0, 6).map((t: any) => (
-        <div key={t.id} className="flex items-center gap-3 py-2 px-2 rounded-xl hover:bg-white/[0.04] transition-colors">
-          <AlertCircle className="h-3.5 w-3.5 text-rose-400 shrink-0" />
-          <span className="text-sm text-slate-300 flex-1 truncate">{t.title}</span>
-          {t.client?.company_name && <span className="text-xs text-slate-600 hidden sm:block truncate max-w-[120px]">{t.client.company_name}</span>}
-          {t.due_date && <span className="text-xs text-rose-400/80 shrink-0">{t.due_date}</span>}
-        </div>
-      ))}
-      {tasks.length > 6 && (
-        <Link href="/tasks" className="block text-xs text-sky-400 hover:text-sky-300 pt-2 px-2">+{tasks.length - 6} more →</Link>
-      )}
-    </div>
-  )
-}
-
 function LeadsPipelineWidget() {
   const [leads, setLeads] = useState<any[] | null>(null)
   useEffect(() => {
@@ -269,7 +241,6 @@ function WidgetBody({ widget }: { widget: Widget }) {
     case 'stats_tile': return <StatsTileWidget config={widget.config} />
     case 'activity_feed': return <ActivityFeedWidget />
     case 'top_clients': return <TopClientsWidget />
-    case 'tasks_due': return <TasksDueWidget />
     case 'leads_pipeline': return <LeadsPipelineWidget />
     case 'invoice_status': return <InvoiceStatusWidget />
     default: return <WidgetEmpty label={`Unknown widget type "${widget.type}"`} />

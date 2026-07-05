@@ -49,9 +49,8 @@ const TEMPLATES: { id: string; name: string; description: string; widgets: { typ
     ],
   },
   {
-    id: 'service', name: 'Service', description: 'Overdue tasks, activity and top clients',
+    id: 'service', name: 'Service', description: 'Activity and top clients',
     widgets: [
-      { type: 'tasks_due', label: 'Overdue tasks' },
       { type: 'activity_feed', label: 'Recent activity feed' },
       { type: 'top_clients', label: 'Top clients by MRR' },
     ],

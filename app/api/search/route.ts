@@ -6,10 +6,10 @@ export type SearchResultItem = {
   title: string
   subtitle?: string
   url: string
-  type: 'client' | 'contact' | 'project' | 'invoice' | 'lead' | 'task'
+  type: 'client' | 'contact' | 'project' | 'invoice' | 'lead'
 }
 
-const ALL_TYPES = ['clients', 'contacts', 'projects', 'invoices', 'leads', 'tasks'] as const
+const ALL_TYPES = ['clients', 'contacts', 'projects', 'invoices', 'leads'] as const
 type Category = (typeof ALL_TYPES)[number]
 
 // Escape characters that would break PostgREST .or() filter syntax
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const [clients, contacts, projects, invoices, leads, tasks] = await Promise.all([
+  const [clients, contacts, projects, invoices, leads] = await Promise.all([
     types.includes('clients')
       ? safeQuery<{ id: string; company_name: string; email: string | null; phone: string | null; project_status: string | null }>(() =>
           supabase
@@ -105,16 +105,6 @@ export async function GET(req: NextRequest) {
             .limit(limit)
         )
       : Promise.resolve([]),
-    types.includes('tasks')
-      ? safeQuery<{ id: string; title: string; status: string | null; due_date: string | null; clients: { company_name?: string } | { company_name?: string }[] | null }>(() =>
-          supabase
-            .from('client_tasks')
-            .select('id, title, status, due_date, clients(company_name)')
-            .eq('organization_id', orgId)
-            .ilike('title', pattern)
-            .limit(limit)
-        )
-      : Promise.resolve([]),
   ])
 
   function joinedName(rel: { company_name?: string } | { company_name?: string }[] | null): string | undefined {
@@ -159,13 +149,6 @@ export async function GET(req: NextRequest) {
       subtitle: [l.contact_name, l.email, l.stage].filter(Boolean).join(' · ') || undefined,
       url: `/leads`,
     })),
-    ...tasks.map(t => ({
-      type: 'task' as const,
-      id: t.id,
-      title: t.title,
-      subtitle: [joinedName(t.clients), t.due_date ? `Due ${t.due_date}` : null, t.status].filter(Boolean).join(' · ') || undefined,
-      url: `/tasks`,
-    })),
   ]
 
   // Per-category counts so the client can decide whether "See more" applies
@@ -175,7 +158,6 @@ export async function GET(req: NextRequest) {
     projects: projects.length,
     invoices: invoices.length,
     leads: leads.length,
-    tasks: tasks.length,
   }
 
   return NextResponse.json({ results, counts, limit })

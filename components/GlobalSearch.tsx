@@ -2,13 +2,13 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Search, Users, FolderKanban, FileText, Contact, Target, CheckSquare,
+  Search, Users, FolderKanban, FileText, Contact, Target,
   MessageSquare, Eye, Printer, ChevronDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface SearchResult {
-  type: 'client' | 'contact' | 'project' | 'invoice' | 'lead' | 'task'
+  type: 'client' | 'contact' | 'project' | 'invoice' | 'lead'
   id: string
   title: string
   subtitle?: string
@@ -16,7 +16,7 @@ interface SearchResult {
 }
 
 // Category keys as used by the API's ?types= param
-const CATEGORIES = ['clients', 'contacts', 'projects', 'invoices', 'leads', 'tasks'] as const
+const CATEGORIES = ['clients', 'contacts', 'projects', 'invoices', 'leads'] as const
 type Category = (typeof CATEGORIES)[number]
 
 // result.type (singular) -> category key (plural)
@@ -26,7 +26,6 @@ const TYPE_TO_CATEGORY: Record<SearchResult['type'], Category> = {
   project: 'projects',
   invoice: 'invoices',
   lead: 'leads',
-  task: 'tasks',
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -35,7 +34,6 @@ const TYPE_LABELS: Record<string, string> = {
   project: 'Projects',
   invoice: 'Invoices',
   lead: 'Leads',
-  task: 'Tasks',
 }
 
 const CHIP_LABELS: Record<Category, string> = {
@@ -44,7 +42,6 @@ const CHIP_LABELS: Record<Category, string> = {
   projects: 'Projects',
   invoices: 'Invoices',
   leads: 'Leads',
-  tasks: 'Tasks',
 }
 
 const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
@@ -53,10 +50,9 @@ const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string; style
   project: FolderKanban,
   invoice: FileText,
   lead: Target,
-  task: CheckSquare,
 }
 
-const GROUP_ORDER: SearchResult['type'][] = ['client', 'contact', 'project', 'invoice', 'lead', 'task']
+const GROUP_ORDER: SearchResult['type'][] = ['client', 'contact', 'project', 'invoice', 'lead']
 
 const FILTERS_KEY = 'search_recent_filters'
 const CLICKS_KEY = 'search_click_history'
@@ -315,20 +311,6 @@ export function GlobalSearch() {
     }
   }
 
-  async function completeTask(task: SearchResult) {
-    // Optimistic: remove the row, then PATCH
-    setResults(prev => prev.filter(r => !(r.type === 'task' && r.id === task.id)))
-    try {
-      await fetch('/api/tasks', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: task.id, completed: true }),
-      })
-    } catch {
-      // ignore — row already removed; next search refetches truth
-    }
-  }
-
   function quickActions(result: SearchResult): React.ReactNode {
     if (result.type === 'client') {
       return (
@@ -361,18 +343,6 @@ export function GlobalSearch() {
           className="p-1 rounded-md text-slate-400 hover:text-sky-300 hover:bg-white/[0.08] transition-colors"
         >
           <Printer style={{ width: '0.85rem', height: '0.85rem' }} />
-        </button>
-      )
-    }
-    if (result.type === 'task') {
-      return (
-        <button
-          title="Mark complete"
-          aria-label={`Complete task ${result.title}`}
-          onMouseDown={e => { e.preventDefault(); e.stopPropagation(); completeTask(result) }}
-          className="p-1 rounded-md text-slate-400 hover:text-emerald-300 hover:bg-white/[0.08] transition-colors"
-        >
-          <CheckSquare style={{ width: '0.85rem', height: '0.85rem' }} />
         </button>
       )
     }
