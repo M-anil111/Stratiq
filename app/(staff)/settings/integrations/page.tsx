@@ -458,7 +458,7 @@ export default function IntegrationsPage() {
                     {[
                       'Set HELCIM_API_TOKEN (Payment API token) in your environment',
                       'Set HELCIM_PAYMENT_PAGE_URL to your Hosted Payment Page base URL',
-                      'Set HELCIM_WEBHOOK_VERIFIER_TOKEN and point Helcim webhooks at /api/webhooks/helcim',
+                      'Set HELCIM_WEBHOOK_VERIFIER_TOKEN and point Helcim webhooks at /api/webhooks/payments',
                     ].map((step, i) => (
                       <li key={i} className="text-xs text-slate-400 flex gap-1.5">
                         <span className="font-medium text-slate-300">{i + 1}.</span>
