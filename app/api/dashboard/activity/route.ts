@@ -10,7 +10,7 @@ type ActivityItem = {
   url: string
 }
 
-async function safeSelect<T>(fn: () => Promise<{ data: T[] | null; error: any }>): Promise<T[]> {
+async function safeSelect<T>(fn: () => PromiseLike<{ data: T[] | null; error: any }>): Promise<T[]> {
   try {
     const { data, error } = await fn()
     if (error?.code === '42P01') return []

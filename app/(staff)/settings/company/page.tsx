@@ -32,8 +32,8 @@ export default function CompanySettingsPage() {
 
   useEffect(() => {
     fetch('/api/settings/company')
-      .then(r => (r.ok ? r.json() : {}))
-      .then(d => { if (d && !d.error) setForm(f => ({ ...f, ...d })) })
+      .then(r => (r.ok ? r.json() : ({} as Record<string, unknown>)))
+      .then((d: Record<string, unknown>) => { if (d && !d.error) setForm(f => ({ ...f, ...(d as typeof INITIAL_FORM) })) })
       .catch(() => {})
   }, [])
 

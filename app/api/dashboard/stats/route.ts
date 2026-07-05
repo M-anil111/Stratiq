@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-async function safeQuery<T>(fn: () => Promise<{ data?: T | null; count?: number | null; error: any }>): Promise<{ data: T | null; count: number }> {
+async function safeQuery<T>(fn: () => PromiseLike<{ data?: T | null; count?: number | null; error: any }>): Promise<{ data: T | null; count: number }> {
   try {
     const res = await fn()
     if (res.error?.code === '42P01') return { data: null, count: 0 }
