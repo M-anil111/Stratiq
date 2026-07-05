@@ -10,6 +10,7 @@ const INITIAL_FORM = {
   billing_email: '',
   timezone: 'America/New_York',
   logo_url: '',
+  brand_color: '',
   website: '',
   phone: '',
   address: '',
@@ -90,6 +91,26 @@ export default function CompanySettingsPage() {
             <label className={labelClass}>Logo URL</label>
             <input className="input-glass" value={form.logo_url} onChange={set('logo_url')} placeholder="https://..." />
             <p className="text-xs text-slate-400 mt-1">Paste a direct image URL or a Google Drive image link</p>
+          </div>
+          <div>
+            <label className={labelClass}>Brand Color</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={/^#[0-9a-fA-F]{6}$/.test(form.brand_color) ? form.brand_color : '#0ea5e9'}
+                onChange={set('brand_color')}
+                className="h-10 w-14 rounded-lg border border-white/[0.12] bg-transparent cursor-pointer p-1"
+                aria-label="Pick brand color"
+              />
+              <input
+                className="input-glass flex-1"
+                value={form.brand_color}
+                onChange={set('brand_color')}
+                placeholder="#0ea5e9"
+                pattern="^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"
+              />
+            </div>
+            <p className="text-xs text-slate-400 mt-1">Used as the accent color in your client portal. Leave blank for the default.</p>
           </div>
           <div>
             <label className={labelClass}>Timezone</label>

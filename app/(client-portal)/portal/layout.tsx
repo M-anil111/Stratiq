@@ -20,15 +20,40 @@ interface AccountData {
   email: string
 }
 
+interface BrandingData {
+  company_name: string
+  logo_url: string | null
+  brand_color: string | null
+}
+
+const DEFAULT_BRANDING: BrandingData = { company_name: 'Stratiq', logo_url: null, brand_color: null }
+
+function BrandMark({ branding, textClass = 'text-lg' }: { branding: BrandingData; textClass?: string }) {
+  return (
+    <span className="flex items-center gap-2.5 min-w-0">
+      {branding.logo_url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={branding.logo_url}
+          alt={`${branding.company_name} logo`}
+          className="h-8 w-auto rounded object-contain flex-shrink-0"
+        />
+      )}
+      <span className={`font-bold text-white truncate ${textClass}`}>{branding.company_name}</span>
+    </span>
+  )
+}
+
 interface NavLinksProps {
   pathname: string
   unreadCount: number
   onLinkClick?: () => void
   onLogout: () => void
   account: AccountData | null
+  brandColor: string | null
 }
 
-function NavLinks({ pathname, unreadCount, onLinkClick, onLogout, account }: NavLinksProps) {
+function NavLinks({ pathname, unreadCount, onLinkClick, onLogout, account, brandColor }: NavLinksProps) {
   function isActive(item: typeof navItems[0]) {
     if (item.exact) return pathname === item.href
     return pathname.startsWith(item.href)
@@ -38,8 +63,8 @@ function NavLinks({ pathname, unreadCount, onLinkClick, onLogout, account }: Nav
     <>
       {/* User info */}
       <div className="px-4 py-4 border-b border-white/[0.06]">
-        <p className="text-sm font-semibold text-white truncate">{account?.full_name || ' '}</p>
-        <p className="text-xs text-slate-500 truncate mt-0.5">{account?.email || ' '}</p>
+        <p className="text-sm font-semibold text-white truncate">{account?.full_name || ' '}</p>
+        <p className="text-xs text-slate-500 truncate mt-0.5">{account?.email || ' '}</p>
       </div>
 
       {/* Nav links */}
@@ -53,14 +78,24 @@ function NavLinks({ pathname, unreadCount, onLinkClick, onLogout, account }: Nav
               onClick={onLinkClick}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
                 active
-                  ? 'bg-sky-500/15 text-sky-400 font-medium'
+                  ? brandColor
+                    ? 'font-medium'
+                    : 'bg-sky-500/15 text-sky-400 font-medium'
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
               }`}
+              style={
+                active && brandColor
+                  ? { color: 'var(--brand)', backgroundColor: 'color-mix(in srgb, var(--brand) 15%, transparent)' }
+                  : undefined
+              }
             >
               <item.icon className="h-4 w-4 flex-shrink-0" />
               <span className="flex-1">{item.label}</span>
               {item.href === '/portal/messages' && unreadCount > 0 && (
-                <span className="bg-sky-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none">
+                <span
+                  className={`text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none ${brandColor ? '' : 'bg-sky-500'}`}
+                  style={brandColor ? { backgroundColor: 'var(--brand)' } : undefined}
+                >
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
@@ -86,6 +121,7 @@ function NavLinks({ pathname, unreadCount, onLinkClick, onLogout, account }: Nav
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [account, setAccount] = useState<AccountData | null>(null)
+  const [branding, setBranding] = useState<BrandingData>(DEFAULT_BRANDING)
   const [unreadCount, setUnreadCount] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -93,6 +129,21 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     fetch('/api/portal/account')
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setAccount(data) })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/portal/branding')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && data.company_name) {
+          setBranding({
+            company_name: data.company_name,
+            logo_url: data.logo_url || null,
+            brand_color: data.brand_color || null,
+          })
+        }
+      })
       .catch(() => {})
   }, [])
 
@@ -121,10 +172,14 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     return pathname.startsWith(item.href)
   }
 
+  const brandColor = branding.brand_color
   const sidebarBg = { background: 'rgba(6,10,18,0.96)', backdropFilter: 'blur(36px)' }
 
   return (
-    <div className="min-h-screen bg-mesh flex">
+    <div
+      className="min-h-screen bg-mesh flex"
+      style={brandColor ? ({ ['--brand' as string]: brandColor } as React.CSSProperties) : undefined}
+    >
       {/* Desktop sidebar */}
       <aside
         className="hidden md:flex md:flex-col w-56 lg:w-60 shrink-0 border-r border-white/[0.08] sticky top-0 h-screen z-10"
@@ -132,13 +187,14 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       >
         {/* Logo */}
         <div className="px-5 h-14 flex items-center border-b border-white/[0.06]">
-          <span className="font-bold text-white text-lg">Stratiq</span>
+          <BrandMark branding={branding} />
         </div>
         <NavLinks
           pathname={pathname}
           unreadCount={unreadCount}
           onLogout={handleLogout}
           account={account}
+          brandColor={brandColor}
         />
       </aside>
 
@@ -157,7 +213,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           >
             {/* Drawer header */}
             <div className="px-5 h-14 flex items-center justify-between border-b border-white/[0.06]">
-              <span className="font-bold text-white text-lg">Stratiq</span>
+              <BrandMark branding={branding} />
               <button
                 onClick={() => setDrawerOpen(false)}
                 className="text-slate-400 hover:text-white transition-colors p-1 -mr-1"
@@ -172,6 +228,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               onLinkClick={() => setDrawerOpen(false)}
               onLogout={handleLogout}
               account={account}
+              brandColor={brandColor}
             />
           </aside>
         </div>
@@ -191,7 +248,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="font-bold text-white">Stratiq</span>
+          <BrandMark branding={branding} textClass="text-base" />
         </header>
 
         {/* Page content */}
@@ -211,13 +268,19 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 key={item.href}
                 href={item.href}
                 className={`relative flex flex-col items-center gap-0.5 py-1 px-2 text-xs transition-colors ${
-                  active ? 'text-sky-400' : 'text-slate-400 hover:text-white'
+                  active
+                    ? brandColor ? '' : 'text-sky-400'
+                    : 'text-slate-400 hover:text-white'
                 }`}
+                style={active && brandColor ? { color: 'var(--brand)' } : undefined}
               >
                 <item.icon className="h-5 w-5" />
                 <span className="leading-none">{item.label}</span>
                 {item.href === '/portal/messages' && unreadCount > 0 && (
-                  <span className="absolute top-0 right-1 bg-sky-500 text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5 leading-none">
+                  <span
+                    className={`absolute top-0 right-1 text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5 leading-none ${brandColor ? '' : 'bg-sky-500'}`}
+                    style={brandColor ? { backgroundColor: 'var(--brand)' } : undefined}
+                  >
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
