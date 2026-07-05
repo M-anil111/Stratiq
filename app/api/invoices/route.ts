@@ -9,7 +9,9 @@ export async function GET(req: NextRequest) {
   const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
 
-  const clientId = req.nextUrl.searchParams.get('clientId')
+  const { searchParams } = req.nextUrl
+  const clientId = searchParams.get('clientId') || searchParams.get('client_id')
+  const status = searchParams.get('status')
   let query = supabase
     .from('invoices')
     .select('*, client:clients(company_name)')
@@ -17,6 +19,7 @@ export async function GET(req: NextRequest) {
     .order('issue_date', { ascending: false })
 
   if (clientId) query = query.eq('client_id', clientId)
+  if (status) query = query.eq('status', status)
 
   const { data, error } = await query
   if (error) {
