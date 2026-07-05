@@ -6,8 +6,10 @@ import {
   Plus, Folder, RefreshCw, CheckCircle, FolderPlus, ChevronRight,
   CheckSquare, Square, Circle, MessageSquare, PhoneCall, Users, Calendar,
   Loader2, X, ChevronDown, AlertCircle, ClipboardList, BarChart2, FolderOpen,
+  GitMerge, MoreHorizontal,
 } from 'lucide-react'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
+import MergeModal from '@/components/MergeModal'
 
 const MSG_MAX_CHARS = 2000
 const MSG_WARN_CHARS = 1800
@@ -170,6 +172,11 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   // New+ dropdown
   const [showNewMenu, setShowNewMenu] = useState(false)
   const newMenuRef = useRef<HTMLDivElement>(null)
+
+  // Actions dropdown + merge
+  const [showActionsMenu, setShowActionsMenu] = useState(false)
+  const actionsMenuRef = useRef<HTMLDivElement>(null)
+  const [showMergeModal, setShowMergeModal] = useState(false)
 
   const fetchClientMessages = useCallback(async () => {
     try {
@@ -370,6 +377,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (newMenuRef.current && !newMenuRef.current.contains(e.target as Node)) setShowNewMenu(false)
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) setShowActionsMenu(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -560,8 +568,42 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             className="flex items-center gap-2 px-3 py-2 border border-white/[0.08] text-slate-300 text-sm font-medium rounded-lg hover:bg-white/[0.06]">
             <Edit2 className="h-4 w-4" /> Edit
           </a>
+          {/* Actions dropdown */}
+          <div ref={actionsMenuRef} className="relative">
+            <button onClick={() => setShowActionsMenu(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-2 border border-white/[0.08] text-slate-300 text-sm font-medium rounded-lg hover:bg-white/[0.06]"
+              title="Actions">
+              <MoreHorizontal className="h-4 w-4" /> Actions
+            </button>
+            {showActionsMenu && (
+              <div className="absolute right-0 top-full mt-1.5 z-50 w-44 rounded-xl border border-white/[0.12] bg-[#0f1929] shadow-2xl overflow-hidden">
+                <button type="button"
+                  onClick={() => { setShowActionsMenu(false); setShowMergeModal(true) }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-white/[0.06] transition-colors">
+                  <GitMerge className="h-4 w-4 text-slate-500" /> Merge
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {showMergeModal && client && (
+        <MergeModal
+          objectType="client"
+          primary={client}
+          onClose={() => setShowMergeModal(false)}
+          onMerged={() => {
+            // Stay on the primary (surviving) record and refresh its data
+            setShowMergeModal(false)
+            fetch(`/api/clients/${params.id}`)
+              .then(r => r.json())
+              .then(d => setClient(d))
+              .catch(() => {})
+            router.refresh()
+          }}
+        />
+      )}
 
       {/* Client Header Card */}
       <div className="glass-card mb-6 overflow-hidden">
@@ -628,6 +670,16 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       {/* ── OVERVIEW ── */}
       {activeTab === 0 && (
         <div className="space-y-6">
+          {/* Merged record ids (HubSpot's "Merged IDs" property equivalent) */}
+          {Array.isArray(client.merged_client_ids) && client.merged_client_ids.length > 0 && (
+            <p
+              className="flex items-center gap-1.5 text-xs text-slate-500"
+              title={`Merged record IDs: ${client.merged_client_ids.join(', ')}`}
+            >
+              <GitMerge className="h-3 w-3" />
+              Merged records: {client.merged_client_ids.length}
+            </p>
+          )}
           {/* Active Projects */}
           <div className="glass-card overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08]">

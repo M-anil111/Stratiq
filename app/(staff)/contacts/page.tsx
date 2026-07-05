@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Search, X, Plus, Users, Building2, DollarSign } from 'lucide-react'
+import { Search, X, Plus, Users, Building2, DollarSign, GitMerge } from 'lucide-react'
 import Link from 'next/link'
+import MergeModal from '@/components/MergeModal'
 
 const STATUS_COLORS: Record<string, string> = {
   active: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
@@ -72,6 +73,9 @@ export default function ContactsPage() {
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const searchRef = useRef<ReturnType<typeof setTimeout>>()
+  // Contacts on this page are groupings of client records, so merging a
+  // contact merges its underlying client (business) record with another.
+  const [mergePrimary, setMergePrimary] = useState<Business | null>(null)
 
   const fetchContacts = useCallback((q: string) => {
     setLoading(true)
@@ -199,6 +203,17 @@ export default function ContactsPage() {
                       <span className="text-xs font-semibold">{totalMrr.toLocaleString()}</span>
                     </div>
                   )}
+                  {contact.businesses.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setMergePrimary(contact.businesses[0])}
+                      title="Merge with another record"
+                      aria-label={`Merge ${fullName || 'contact'}`}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-sky-400 hover:bg-white/[0.06] transition-colors shrink-0"
+                    >
+                      <GitMerge className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
 
                 {/* Business list */}
@@ -233,6 +248,18 @@ export default function ContactsPage() {
             )
           })}
         </div>
+      )}
+
+      {mergePrimary && (
+        <MergeModal
+          objectType="client"
+          primary={mergePrimary}
+          onClose={() => setMergePrimary(null)}
+          onMerged={() => {
+            setMergePrimary(null)
+            fetchContacts(search)
+          }}
+        />
       )}
     </div>
   )
