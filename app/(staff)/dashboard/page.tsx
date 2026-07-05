@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {
   Users, FolderOpen, Activity, TrendingUp, Plus, ArrowRight,
   Sparkles, GripVertical, Search, X, DollarSign, AlertCircle,
+  CheckCircle, FileText, BarChart2, Clock,
 } from 'lucide-react'
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
@@ -17,6 +18,10 @@ import { CSS } from '@dnd-kit/utilities'
 
 interface Stats {
   total_clients: number
+  active_clients: number
+  total_mrr: number
+  invoices_outstanding: number
+  invoices_paid_this_month: number
   active_projects: number
   activities_this_month: number
   targets_hit_pct: number
@@ -31,12 +36,27 @@ interface ActivityItem {
   created_at: string
 }
 
+interface ClientItem {
+  id: string
+  company_name: string
+  service_packages?: { price?: number | string }[]
+  active_project_count?: number
+}
+
 const typeBadge: Record<string, { label: string; color: string }> = {
   social:  { label: 'Social',    color: 'rgba(14,165,233,0.15) border-[rgba(14,165,233,0.3)] text-sky-300' },
   offpage: { label: 'Off-Page',  color: 'rgba(16,185,129,0.15) border-[rgba(16,185,129,0.3)] text-emerald-300' },
   blog:    { label: 'Blog',      color: 'rgba(245,158,11,0.15) border-[rgba(245,158,11,0.3)] text-amber-300' },
   onpage:  { label: 'OnPage',    color: 'rgba(139,92,246,0.15) border-[rgba(139,92,246,0.3)] text-violet-300' },
   group:   { label: 'Group',     color: 'rgba(236,72,153,0.15) border-[rgba(236,72,153,0.3)] text-pink-300' },
+}
+
+const activityTypeIcon: Record<string, React.ElementType> = {
+  social: Activity,
+  offpage: FolderOpen,
+  blog: FileText,
+  onpage: TrendingUp,
+  group: Users,
 }
 
 function timeAgo(iso: string) {
@@ -47,6 +67,14 @@ function timeAgo(iso: string) {
   const h = Math.floor(m / 60)
   if (h < 24) return `${h}h ago`
   return `${Math.floor(h / 24)}d ago`
+}
+
+function fmtCurrency(val: number) {
+  return '$' + val.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+}
+
+function clientMrr(client: ClientItem): number {
+  return (client.service_packages || []).reduce((s, p) => s + (parseFloat(String(p.price || 0)) || 0), 0)
 }
 
 // --- Sortable section wrapper ---
@@ -65,7 +93,7 @@ function SortableSection({ id, children }: { id: string; children: (handleProps:
   )
 }
 
-const SECTION_IDS = ['kpi', 'quick-actions', 'activity']
+const SECTION_IDS = ['kpi', 'dashboard-stats', 'quick-actions', 'top-clients', 'activity']
 const SECTION_STORAGE_KEY = 'dashboard_section_order'
 
 function loadOrder(): string[] {
@@ -74,7 +102,6 @@ function loadOrder(): string[] {
     const saved = localStorage.getItem(SECTION_STORAGE_KEY)
     if (saved) {
       const parsed = JSON.parse(saved)
-      // Ensure all sections are present (handle new sections added later)
       const missing = SECTION_IDS.filter(id => !parsed.includes(id))
       return [...parsed.filter((id: string) => SECTION_IDS.includes(id)), ...missing]
     }
@@ -97,6 +124,8 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [activity, setActivity] = useState<ActivityItem[]>([])
   const [activityLoading, setActivityLoading] = useState(true)
+  const [clients, setClients] = useState<ClientItem[]>([])
+  const [clientsLoading, setClientsLoading] = useState(true)
   const [sectionOrder, setSectionOrder] = useState<string[]>(SECTION_IDS)
   const [search, setSearch] = useState('')
   const [searchFocus, setSearchFocus] = useState(false)
@@ -109,6 +138,10 @@ export default function DashboardPage() {
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setActivity(data) })
       .finally(() => setActivityLoading(false))
+    fetch('/api/clients?limit=100')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data?.clients)) setClients(data.clients) })
+      .finally(() => setClientsLoading(false))
     fetch('/api/me')
       .then(r => r.json())
       .then(data => {
@@ -156,15 +189,29 @@ export default function DashboardPage() {
       icon: TrendingUp, href: '/targets',
       gradient: 'from-violet-500/20 to-violet-600/10', iconColor: 'text-violet-400', iconBg: 'bg-violet-500/15 border-violet-500/20',
     },
+  ]
+
+  // The 4 required stats from /api/dashboard/stats
+  const dashboardStatCards = [
     {
-      label: 'Revenue This Month', value: stats?.invoice_revenue_this_month != null ? `$${stats.invoice_revenue_this_month.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : null,
+      label: 'Active Clients', value: stats ? String(stats.active_clients) : null,
+      icon: Users, href: '/clients',
+      gradient: 'from-sky-500/20 to-sky-600/10', iconColor: 'text-sky-400', iconBg: 'bg-sky-500/15 border-sky-500/20',
+    },
+    {
+      label: 'Total MRR', value: stats ? fmtCurrency(stats.total_mrr) : null,
       icon: DollarSign, href: '/invoices',
       gradient: 'from-emerald-500/20 to-teal-600/10', iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/15 border-emerald-500/20',
     },
     {
-      label: 'Outstanding', value: stats?.invoice_outstanding != null ? `$${stats.invoice_outstanding.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : null,
+      label: 'Invoices Outstanding', value: stats ? fmtCurrency(stats.invoices_outstanding) : null,
       icon: AlertCircle, href: '/invoices',
       gradient: 'from-amber-500/20 to-orange-600/10', iconColor: 'text-amber-400', iconBg: 'bg-amber-500/15 border-amber-500/20',
+    },
+    {
+      label: 'Paid This Month', value: stats ? fmtCurrency(stats.invoices_paid_this_month) : null,
+      icon: CheckCircle, href: '/invoices',
+      gradient: 'from-violet-500/20 to-purple-600/10', iconColor: 'text-violet-400', iconBg: 'bg-violet-500/15 border-violet-500/20',
     },
   ]
 
@@ -175,6 +222,10 @@ export default function DashboardPage() {
         a.type?.toLowerCase().includes(search.toLowerCase())
       )
     : activity
+
+  const topClients = [...clients]
+    .sort((a, b) => clientMrr(b) - clientMrr(a))
+    .slice(0, 5)
 
   const sections: Record<string, (handleProps: any) => React.ReactNode> = {
     kpi: (handle) => (
@@ -201,7 +252,42 @@ export default function DashboardPage() {
                   <ArrowRight className="h-3.5 w-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all duration-200" />
                 </div>
                 <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">{card.label}</p>
-                {card.value
+                {card.value != null
+                  ? <p className="text-2xl font-bold text-white">{card.value}</p>
+                  : <div className="skeleton h-8 w-16 mt-1" />
+                }
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    ),
+
+    'dashboard-stats': (handle) => (
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <button {...handle.listeners} {...handle.attributes}
+            className="cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 transition-colors touch-none p-1"
+            title="Drag to reorder">
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Billing &amp; Clients</span>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {dashboardStatCards.map((card, i) => (
+            <Link key={card.label} href={card.href}
+              className="glass-card p-5 group animate-float-up"
+              style={{ animationDelay: `${i * 75}ms` }}>
+              <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
+              <div className="relative">
+                <div className="flex items-start justify-between mb-3">
+                  <div className={`p-2 rounded-xl border ${card.iconBg}`}>
+                    <card.icon className={`h-4 w-4 ${card.iconColor}`} />
+                  </div>
+                  <ArrowRight className="h-3.5 w-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all duration-200" />
+                </div>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">{card.label}</p>
+                {card.value != null
                   ? <p className="text-2xl font-bold text-white">{card.value}</p>
                   : <div className="skeleton h-8 w-16 mt-1" />
                 }
@@ -222,22 +308,92 @@ export default function DashboardPage() {
           </button>
           <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Quick Actions</span>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            { href: '/clients/new', title: 'Add Client', sub: 'Onboard a new client' },
-            { href: '/reports', title: 'View Reports', sub: 'Marketing performance' },
-            { href: '/targets', title: 'Track Targets', sub: 'Team KPI dashboard' },
-          ].map(({ href, title, sub }) => (
-            <Link key={href} href={href}
-              className="glass-card p-4 flex items-center justify-between group">
-              <div>
-                <p className="font-semibold text-white text-sm">{title}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{sub}</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-slate-600 group-hover:text-sky-400 group-hover:translate-x-1 transition-all duration-200" />
-            </Link>
-          ))}
+        <div className="glass-card p-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { href: '/clients/new', title: 'New Client', sub: 'Onboard a new client', icon: Users, color: 'text-sky-400 bg-sky-500/10 border-sky-500/20' },
+              { href: '/invoices', title: 'New Invoice', sub: 'Create & send invoice', icon: FileText, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+              { href: '/clients', title: 'New Project', sub: 'Start a client project', icon: FolderOpen, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+              { href: '/reports/marketing', title: 'View Reports', sub: 'Marketing performance', icon: BarChart2, color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
+            ].map(({ href, title, sub, icon: Icon, color }) => (
+              <Link key={href} href={href}
+                className="flex flex-col items-start gap-3 p-4 rounded-xl border border-white/[0.07] bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/[0.12] transition-all duration-200 group">
+                <div className={`p-2 rounded-xl border ${color}`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="font-semibold text-white text-sm">{title}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{sub}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
+      </div>
+    ),
+
+    'top-clients': (handle) => (
+      <div className="glass-card p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <button {...handle.listeners} {...handle.attributes}
+            className="cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 transition-colors touch-none p-1"
+            title="Drag to reorder">
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <h2 className="font-semibold text-white flex-1">Top Clients by MRR</h2>
+          <Link href="/clients" className="text-xs text-sky-400 hover:text-sky-300 transition-colors shrink-0">View all →</Link>
+        </div>
+        {clientsLoading ? (
+          <div className="space-y-3">
+            {[1,2,3,4,5].map(i => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="skeleton h-4 w-6 shrink-0" />
+                <div className="skeleton h-4 flex-1" />
+                <div className="skeleton h-4 w-20" />
+                <div className="skeleton h-4 w-16" />
+              </div>
+            ))}
+          </div>
+        ) : topClients.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-slate-600">
+            <Users className="h-8 w-8 opacity-30 mb-2" />
+            <p className="text-sm">No clients yet</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/[0.06]">
+                  <th className="text-left text-xs font-semibold text-slate-600 uppercase tracking-wider pb-3 pr-4 w-8">#</th>
+                  <th className="text-left text-xs font-semibold text-slate-600 uppercase tracking-wider pb-3 pr-4">Client</th>
+                  <th className="text-right text-xs font-semibold text-slate-600 uppercase tracking-wider pb-3 pr-4">MRR</th>
+                  <th className="text-right text-xs font-semibold text-slate-600 uppercase tracking-wider pb-3">Active Projects</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.04]">
+                {topClients.map((client, i) => {
+                  const mrr = clientMrr(client)
+                  return (
+                    <tr key={client.id} className="group hover:bg-white/[0.03] transition-colors duration-150">
+                      <td className="py-3 pr-4 text-slate-600 font-medium">{i + 1}</td>
+                      <td className="py-3 pr-4">
+                        <Link href={`/clients/${client.id}`} className="text-white hover:text-sky-300 transition-colors font-medium">
+                          {client.company_name}
+                        </Link>
+                      </td>
+                      <td className="py-3 pr-4 text-right">
+                        <span className="text-emerald-400 font-semibold">{fmtCurrency(mrr)}</span>
+                      </td>
+                      <td className="py-3 text-right">
+                        <span className="text-slate-400">{client.active_project_count ?? 0}</span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     ),
 
@@ -282,7 +438,7 @@ export default function DashboardPage() {
           <div className="space-y-4">
             {[1,2,3,4,5].map(i => (
               <div key={i} className="flex items-center gap-3">
-                <div className="skeleton h-5 w-16" />
+                <div className="skeleton h-8 w-8 rounded-xl" />
                 <div className="skeleton h-4 flex-1" />
                 <div className="skeleton h-4 w-12" />
               </div>
@@ -298,11 +454,15 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="space-y-1">
-            {filteredActivity.map((item, i) => {
+            {filteredActivity.slice(0, 8).map((item, i) => {
               const badge = typeBadge[item.type]
+              const IconComp = activityTypeIcon[item.type] || Clock
               return (
                 <div key={i}
                   className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-white/[0.04] transition-colors duration-150 group">
+                  <div className="p-1.5 rounded-lg bg-white/[0.05] border border-white/[0.07] shrink-0">
+                    <IconComp className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border shrink-0"
                     style={{ background: badge ? badge.color.split(' ')[0] : 'rgba(100,100,100,0.15)' }}>
                     {badge?.label || item.type}
