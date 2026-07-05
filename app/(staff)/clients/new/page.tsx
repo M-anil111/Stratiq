@@ -568,11 +568,15 @@ export default function NewClientPage() {
         }
       }
 
+      // Strip contact_first_name / contact_last_name — these are UI-only fields
+      // used for the contact search flow; they are not columns on the clients table.
+      const { contact_first_name: _cfn, contact_last_name: _cln, ...formData } = form
+
       const res = await fetch('/api/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...form,
+          ...formData,
           proposal_url: proposalUrl,
           num_employees: form.num_employees ? parseInt(form.num_employees) : null,
           sales_manager_id: form.sales_manager_id || null,

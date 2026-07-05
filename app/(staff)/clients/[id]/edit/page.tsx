@@ -35,7 +35,31 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
     const res = await fetch(`/api/clients/${params.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        company_name: form.company_name,
+        website: form.website,
+        about_company: form.about_company,
+        industry: form.industry,
+        email: form.email,
+        phone: form.phone,
+        street_address: form.street_address,
+        city: form.city,
+        state: form.state,
+        country: form.country,
+        project_status: form.project_status,
+        services: form.services,
+        num_employees: form.num_employees,
+        google_drive_folder_url: form.google_drive_folder_url,
+        ndisk_link: form.ndisk_link,
+        hashtags: form.hashtags,
+        categories: form.categories,
+        goals: form.goals,
+        stakeholder_expectations: form.stakeholder_expectations,
+        target_audience: form.target_audience,
+        sales_manager_id: form.sales_manager_id,
+        dm_manager_id: form.dm_manager_id,
+        marketing_manager_id: form.marketing_manager_id,
+      }),
     })
     if (res.ok) router.push(`/clients/${params.id}`)
     else setSaving(false)
