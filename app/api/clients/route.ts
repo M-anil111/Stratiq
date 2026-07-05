@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClientFolder } from '@/lib/google-drive'
@@ -94,6 +95,41 @@ export async function POST(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Auto-create a project for each selected service package (non-fatal)
+  try {
+    const pkgs: any[] = body.service_packages || []
+    if (pkgs.length > 0) {
+      const projectRows = pkgs
+        .filter((p: any) => p?.service)
+        .map((p: any) => ({
+          client_id: data.id,
+          organization_id: userData.organization_id,
+          domain: body.website || body.company_name || 'unknown',
+          status: 'active',
+          industry: body.industry || null,
+          services: [p.service],
+          sales_manager_id: body.sales_manager_id || null,
+          dm_manager_id: body.dm_manager_id || null,
+        }))
+      if (projectRows.length > 0) {
+        const { error: projError } = await supabase.from('projects').insert(projectRows)
+        if (projError) console.error('Auto-create projects failed:', projError.message)
+      }
+    }
+  } catch { /* Project creation must never fail client creation */ }
+
+  // Generate a proposal approval token (non-fatal if the column doesn't exist yet — 42P01/42703)
+  let approvalToken: string | null = null
+  try {
+    const token = randomBytes(32).toString('hex')
+    const { error: tokenError } = await supabase
+      .from('clients')
+      .update({ approval_token: token })
+      .eq('id', data.id)
+      .eq('organization_id', userData.organization_id)
+    if (!tokenError) approvalToken = token
+  } catch { /* approval_token column missing — skip approval flow */ }
+
   // Auto-create Google Drive folder for new client (non-fatal)
   try {
     const folderId = await createClientFolder(supabase, body.company_name)
@@ -168,6 +204,11 @@ export async function POST(request: NextRequest) {
               </tfoot>
             </table>
 
+            ${approvalToken ? `
+            <div style="margin-bottom:16px">
+              <a href="${appUrl}/approve/${approvalToken}?action=approve" style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;margin-right:12px">✓ Approve</a>
+              <a href="${appUrl}/approve/${approvalToken}?action=reject" style="display:inline-block;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">✕ Reject</a>
+            </div>` : ''}
             <div style="display:flex;gap:12px;margin-bottom:32px">
               <a href="${appUrl}/clients/${data.id}" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">View Client in Stratiq →</a>
             </div>

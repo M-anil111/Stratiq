@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/email/index'
+import { isStripeConfigured, createPaymentLink } from '@/lib/stripe'
 
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -35,6 +36,32 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   const agencyName = orgMap.company_name || 'Your Agency'
   const lineItems: any[] = invoice.line_items || []
 
+  // Optional Stripe payment link (env-gated — skipped entirely if not configured)
+  let paymentLink: string | null = null
+  if (isStripeConfigured() && (invoice.total || 0) > 0) {
+    try {
+      paymentLink = await createPaymentLink({
+        amount: invoice.total,
+        currency: 'usd',
+        description: `Invoice #${invoice.invoice_number} — ${agencyName}`,
+        invoiceNumber: invoice.invoice_number,
+      })
+      // Persist the link; tolerate a missing payment_link column (migration not yet run)
+      try {
+        const { error: linkErr } = await supabase.from('invoices')
+          .update({ payment_link: paymentLink })
+          .eq('id', params.id)
+          .eq('organization_id', userData.organization_id)
+        if (linkErr) console.warn('Could not save payment_link (column may be missing):', linkErr.message)
+      } catch {
+        // column missing — non-fatal
+      }
+    } catch (err) {
+      console.error('Stripe payment link creation failed:', err)
+      paymentLink = null
+    }
+  }
+
   const lineItemRows = lineItems.map(li => `
     <tr>
       <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151;">${li.description || ''}</td>
@@ -66,6 +93,11 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
         ${invoice.tax_amount ? `<p style="color:#6b7280;margin:4px 0;">Tax: $${(invoice.tax_amount || 0).toFixed(2)}</p>` : ''}
         <p style="color:#111827;font-weight:600;font-size:18px;margin:8px 0;">Total: $${(invoice.total || 0).toFixed(2)}</p>
       </div>
+      ${paymentLink ? `
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${paymentLink}" style="display:inline-block;background:#0ea5e9;color:#ffffff;font-weight:600;font-size:16px;padding:14px 40px;border-radius:8px;text-decoration:none;">Pay Now</a>
+        <p style="color:#9ca3af;font-size:12px;margin-top:8px;">Pay securely online via Stripe</p>
+      </div>` : ''}
       ${invoice.due_date ? `<p style="color:#374151;"><strong>Due Date:</strong> ${invoice.due_date}</p>` : ''}
       ${invoice.notes ? `<p style="color:#374151;"><strong>Notes:</strong> ${invoice.notes}</p>` : ''}
       <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">

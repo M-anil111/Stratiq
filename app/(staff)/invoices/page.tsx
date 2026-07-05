@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Download, RefreshCw, Loader2, Search, ExternalLink, Send, CheckCircle2, AlertCircle, FileText, Ban, DollarSign } from 'lucide-react'
+import { Plus, Download, RefreshCw, Loader2, Search, ExternalLink, Send, CheckCircle2, AlertCircle, FileText, Ban, DollarSign, Printer } from 'lucide-react'
 import Link from 'next/link'
+import { downloadCsv } from '@/lib/csv'
 
 interface Client { id: string; company_name: string }
 interface Invoice {
@@ -17,6 +18,7 @@ interface Invoice {
   total: number
   amount_paid: number
   qb_invoice_id: string | null
+  paid_at?: string | null
   notes: string | null
   line_items: LineItem[]
 }
@@ -216,28 +218,20 @@ export default function InvoicesPage() {
   }
 
   const exportCsv = () => {
-    const rows = [
-      ['Invoice #', 'Client', 'Status', 'Issue Date', 'Due Date', 'Subtotal', 'Tax', 'Total', 'Paid', 'Balance Due', 'QB Synced'],
-      ...filtered.map(inv => [
-        inv.invoice_number,
-        inv.client?.company_name || '',
-        inv.status,
-        inv.issue_date,
-        inv.due_date || '',
-        inv.subtotal,
-        inv.tax_amount,
-        inv.total,
-        inv.amount_paid,
-        balanceDue(inv),
-        inv.qb_invoice_id ? 'Yes' : 'No',
-      ])
-    ]
-    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = 'invoices.csv'; a.click()
-    URL.revokeObjectURL(url)
+    downloadCsv('invoices.csv', filtered.map(inv => ({
+      'Invoice #': inv.invoice_number,
+      'Client': inv.client?.company_name || '',
+      'Status': inv.status,
+      'Issue Date': inv.issue_date,
+      'Due Date': inv.due_date || '',
+      'Paid Date': inv.paid_at ? inv.paid_at.slice(0, 10) : '',
+      'Subtotal': inv.subtotal,
+      'Tax': inv.tax_amount,
+      'Total': inv.total,
+      'Paid': inv.amount_paid,
+      'Balance Due': balanceDue(inv),
+      'QB Synced': inv.qb_invoice_id ? 'Yes' : 'No',
+    })))
   }
 
   return (
@@ -505,6 +499,14 @@ export default function InvoicesPage() {
                             <Ban className="h-3 w-3" /> Void
                           </button>
                         )}
+                        <Link
+                          href={`/invoices/${inv.id}/print`}
+                          target="_blank"
+                          title="Print / PDF"
+                          className="text-xs px-2 py-1.5 border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-lg transition-all whitespace-nowrap flex items-center"
+                        >
+                          <Printer className="h-3 w-3" />
+                        </Link>
                         <Link href={`/clients/${inv.client_id}?tab=invoices`} title="View in client" className="text-slate-500 hover:text-slate-300 transition-colors">
                           <ExternalLink className="h-3.5 w-3.5" />
                         </Link>

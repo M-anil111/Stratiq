@@ -22,7 +22,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
-  const isPublic = path.startsWith('/login') || path.startsWith('/api/auth') || path.startsWith('/api/cron')
+  const isPublic = path.startsWith('/login') || path.startsWith('/api/auth') || path.startsWith('/api/cron') || path.startsWith('/approve') || path.startsWith('/api/approve') || path.startsWith('/share') || path.startsWith('/api/share')
   if (isPublic) return response
 
   if (!user) {
