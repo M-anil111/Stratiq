@@ -4,7 +4,7 @@ import {
   Plus, Search, Users, Globe, Mail, Phone, MapPin, ExternalLink,
   ChevronRight, Edit2, FileText, Loader2, X, Star, TrendingUp,
   DollarSign, Briefcase, Calendar, Award, CreditCard, Wrench,
-  ChevronDown, ClipboardList, MessageSquare, CheckSquare, PhoneCall,
+  ChevronDown, ClipboardList, MessageSquare, PhoneCall,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -370,7 +370,6 @@ export default function ClientsPage() {
                     <div className="absolute right-0 top-full mt-1 z-50 w-48 rounded-xl border border-white/[0.12] bg-[#0d1829] shadow-2xl overflow-hidden">
                       {[
                         { icon: ClipboardList, label: 'Log Activity', href: `/targets?client=${client.id}` },
-                        { icon: CheckSquare, label: 'Add Task', href: `/clients/${client.id}?tab=tasks` },
                         { icon: FileText, label: 'Create Invoice', href: `/clients/${client.id}?tab=invoices` },
                         { icon: MessageSquare, label: 'Add Note', href: `/clients/${client.id}?tab=notes` },
                         { icon: PhoneCall, label: 'Schedule Call', href: `/clients/${client.id}?tab=activity` },

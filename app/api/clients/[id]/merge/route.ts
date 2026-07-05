@@ -65,7 +65,6 @@ const ASSOCIATION_TABLES = [
   'invoices',
   'messages',
   'marketing_reports',
-  'client_tasks',
   'notes',
   'contacts',
 ]
