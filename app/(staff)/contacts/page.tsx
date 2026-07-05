@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Search, X, Plus, Loader2, Users, Building2, DollarSign } from 'lucide-react'
+import { Search, X, Plus, Users, Building2, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -48,20 +48,40 @@ type Contact = {
   businesses: Business[]
 }
 
+function SkeletonCard() {
+  return (
+    <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-4 flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <div className="skeleton w-11 h-11 rounded-full shrink-0" />
+        <div className="flex-1 flex flex-col gap-2">
+          <div className="skeleton h-3.5 w-2/3 rounded" />
+          <div className="skeleton h-3 w-1/3 rounded" />
+        </div>
+      </div>
+      <div className="flex flex-col gap-2">
+        <div className="skeleton h-10 rounded-xl" />
+        <div className="skeleton h-10 rounded-xl" />
+      </div>
+    </div>
+  )
+}
+
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const searchRef = useRef<ReturnType<typeof setTimeout>>()
 
   const fetchContacts = useCallback((q: string) => {
     setLoading(true)
+    setError(null)
     const params = new URLSearchParams()
     if (q) params.set('q', q)
     fetch(`/api/contacts?${params}`)
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error('Failed to load contacts'); return r.json() })
       .then(d => { setContacts(Array.isArray(d) ? d : []); setLoading(false) })
-      .catch(() => setLoading(false))
+      .catch(e => { setError(e.message || 'Something went wrong'); setLoading(false) })
   }, [])
 
   useEffect(() => { fetchContacts('') }, [fetchContacts])
@@ -112,12 +132,29 @@ export default function ContactsPage() {
         )}
       </div>
 
-      {/* Content */}
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+      {/* Error */}
+      {error && !loading && (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
+            <Users className="h-8 w-8 text-red-400" />
+          </div>
+          <h2 className="text-base font-semibold text-white mb-1">Failed to load contacts</h2>
+          <p className="text-slate-500 text-sm max-w-xs mb-4">{error}</p>
+          <button
+            onClick={() => fetchContacts(search)}
+            className="px-4 py-2 bg-sky-500 hover:bg-sky-400 text-white text-sm font-semibold rounded-xl transition-colors"
+          >
+            Retry
+          </button>
         </div>
-      ) : contacts.length === 0 ? (
+      )}
+
+      {/* Content */}
+      {!error && loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : !error && contacts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-16 h-16 rounded-full bg-white/[0.04] flex items-center justify-center mb-4">
             <Users className="h-8 w-8 text-slate-600" />

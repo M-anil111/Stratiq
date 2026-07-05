@@ -66,6 +66,12 @@ export async function POST(_req: NextRequest) {
         .not('qb_id', 'in', `(${activeIds.join(',')})`)
     }
 
+    // Store last synced timestamp
+    await supabase.from('organization_settings').upsert(
+      { organization_id: userData.organization_id, key: 'qb_last_synced', value: new Date().toISOString(), updated_at: new Date().toISOString() },
+      { onConflict: 'organization_id,key' }
+    )
+
     return NextResponse.json({ synced: rows.length, items: rows })
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'QB not connected' }, { status: 400 })

@@ -16,6 +16,7 @@ export async function GET() {
     .in('key', [
       'google_connected', 'qb_connected', 'meta_connected',
       'google_access_token', 'qb_access_token', 'meta_access_token',
+      'qb_last_synced', 'meta_last_synced', 'google_ads_last_synced', 'google_drive_last_synced',
     ])
 
   const settings: Record<string, string> = {}
@@ -35,6 +36,10 @@ export async function GET() {
     google_connected: hasGoogle ? 'true' : 'false',
     qb_connected: hasQb ? 'true' : 'false',
     meta_connected: hasMeta ? 'true' : 'false',
+    qb_last_synced: settings.qb_last_synced || null,
+    meta_last_synced: settings.meta_last_synced || null,
+    google_ads_last_synced: settings.google_ads_last_synced || null,
+    google_drive_last_synced: settings.google_drive_last_synced || null,
   })
 }
 
