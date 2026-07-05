@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getGoogleToken } from '@/lib/google-oauth'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -13,36 +14,6 @@ function currentMonthPeriod() {
   const period_start = `${year}-${String(month).padStart(2, '0')}-01`
   const period_end = `${year}-${String(month).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   return { year, month, period_start, period_end }
-}
-
-async function getGoogleToken(supabase: any, orgId: string, settings: SettingsMap): Promise<string> {
-  if (settings.google_connected !== 'true' || !settings.google_access_token) {
-    throw new Error('Google not connected')
-  }
-
-  // Refresh if within 60s of expiry
-  if (Number(settings.google_token_expiry) < Date.now() + 60000) {
-    const res = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        client_id: process.env.GOOGLE_CLIENT_ID!,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-        refresh_token: settings.google_refresh_token,
-      }),
-    })
-    const tokens = await res.json()
-    if (tokens.access_token) {
-      await supabase.from('organization_settings').upsert([
-        { organization_id: orgId, key: 'google_access_token', value: tokens.access_token },
-        { organization_id: orgId, key: 'google_token_expiry', value: String(Date.now() + (tokens.expires_in || 3600) * 1000) },
-      ], { onConflict: 'organization_id,key' })
-      return tokens.access_token
-    }
-  }
-
-  return settings.google_access_token
 }
 
 async function syncMetaForClient(
@@ -267,7 +238,7 @@ export async function GET(request: NextRequest) {
       let googleToken: string | null = null
       if (googleConnected) {
         try {
-          googleToken = await getGoogleToken(supabase, orgId, settings)
+          googleToken = await getGoogleToken(supabase, orgId)
         } catch (err: any) {
           errors.push(`org ${orgId} google token: ${err.message}`)
         }
