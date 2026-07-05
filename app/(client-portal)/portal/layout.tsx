@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Home, FolderOpen, BarChart3, Files, MessageSquare, ShoppingBag, User, LogOut, Menu, X } from 'lucide-react'
+import { Home, FolderOpen, BarChart3, Files, MessageSquare, ShoppingBag, User, LogOut, Menu, X, FileText } from 'lucide-react'
 
 const navItems = [
   { href: '/portal', label: 'Dashboard', icon: Home, exact: true },
   { href: '/portal/projects', label: 'Projects', icon: FolderOpen },
   { href: '/portal/reports', label: 'Reports', icon: BarChart3 },
   { href: '/portal/files', label: 'Files', icon: Files },
+  { href: '/portal/invoices', label: 'Invoices', icon: FileText },
   { href: '/portal/messages', label: 'Messages', icon: MessageSquare },
   { href: '/portal/upgrade', label: 'Upgrade', icon: ShoppingBag },
   { href: '/portal/account', label: 'Account', icon: User },
@@ -261,7 +262,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/[0.08] flex items-center justify-around px-2 py-1"
           style={{ background: 'rgba(6,10,18,0.88)', backdropFilter: 'blur(28px)' }}
         >
-          {navItems.slice(0, 5).map(item => {
+          {navItems.slice(0, 6).map(item => {
             const active = isActive(item)
             return (
               <Link
