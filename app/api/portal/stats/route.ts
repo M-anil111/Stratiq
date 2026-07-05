@@ -18,7 +18,7 @@ export async function GET() {
 
   const clientId = portalAccess.client_id
 
-  const [projectsResult, filesResult, messagesResult] = await Promise.all([
+  const [projectsResult, filesResult, messagesResult, reportsResult] = await Promise.all([
     supabase
       .from('projects')
       .select('id', { count: 'exact', head: true })
@@ -34,11 +34,16 @@ export async function GET() {
       .eq('client_id', clientId)
       .eq('is_read', false)
       .neq('sender_type', 'client'),
+    supabase
+      .from('marketing_reports')
+      .select('id', { count: 'exact', head: true })
+      .eq('client_id', clientId),
   ])
 
   return NextResponse.json({
     active_projects: projectsResult.count ?? 0,
     files_count: filesResult.error?.code === '42P01' ? 0 : (filesResult.count ?? 0),
     unread_messages: messagesResult.count ?? 0,
+    reports_count: reportsResult.error?.code === '42P01' ? 0 : (reportsResult.count ?? 0),
   })
 }

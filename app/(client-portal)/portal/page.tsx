@@ -8,6 +8,7 @@ interface PortalStats {
   active_projects: number
   files_count: number
   unread_messages: number
+  reports_count: number
 }
 
 interface UpsellRecommendation {
@@ -81,15 +82,16 @@ export default function PortalHomePage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {loading ? (
           <>
             <StatSkeleton />
             <StatSkeleton />
             <StatSkeleton />
+            <StatSkeleton />
           </>
         ) : statsError ? (
-          <div className="col-span-3 glass-card p-4 text-center text-slate-400 text-sm">Unable to load stats. Please refresh the page.</div>
+          <div className="col-span-2 sm:col-span-4 glass-card p-4 text-center text-slate-400 text-sm">Unable to load stats. Please refresh the page.</div>
         ) : (
           <>
             <div className="glass-card p-4 text-center">
@@ -102,7 +104,11 @@ export default function PortalHomePage() {
             </div>
             <div className="glass-card p-4 text-center">
               <p className="text-2xl font-bold text-white">{stats?.unread_messages ?? 0}</p>
-              <p className="text-xs text-slate-400 mt-1">Messages</p>
+              <p className="text-xs text-slate-400 mt-1">Unread Messages</p>
+            </div>
+            <div className="glass-card p-4 text-center">
+              <p className="text-2xl font-bold text-white">{stats?.reports_count ?? 0}</p>
+              <p className="text-xs text-slate-400 mt-1">Reports</p>
             </div>
           </>
         )}
