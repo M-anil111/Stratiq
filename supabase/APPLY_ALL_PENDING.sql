@@ -525,3 +525,12 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS last_verified_at timestamptz;
 
 ALTER TABLE invoices ADD COLUMN IF NOT EXISTS qb_invoice_id text;
 CREATE INDEX IF NOT EXISTS idx_invoices_qb_invoice_id ON invoices(qb_invoice_id);
+
+
+
+-- >>>>>>>>>>>>>>>>>>>> supabase/migrations/033_looker_studio.sql <<<<<<<<<<<<<<<<<<<<
+-- Looker Studio (formerly Google Data Studio) integration.
+-- Stores the published/shared Looker Studio report URL used to embed a
+-- per-client dashboard via iframe. Tolerant/idempotent so it is safe to re-run.
+
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS looker_report_url text;

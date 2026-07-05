@@ -18,6 +18,7 @@ export async function GET() {
       'google_connected', 'qb_connected', 'meta_connected',
       'google_access_token', 'qb_access_token', 'meta_access_token',
       'qb_last_synced', 'meta_last_synced', 'google_ads_last_synced', 'google_drive_last_synced',
+      'looker_template_report_id',
     ])
 
   const settings: Record<string, string> = {}
@@ -44,6 +45,7 @@ export async function GET() {
     meta_last_synced: settings.meta_last_synced || null,
     google_ads_last_synced: settings.google_ads_last_synced || null,
     google_drive_last_synced: settings.google_drive_last_synced || null,
+    looker_template_report_id: settings.looker_template_report_id || null,
   })
 }
 
@@ -56,8 +58,9 @@ export async function PUT(request: NextRequest) {
   if (!userData || !['super_admin', 'admin'].includes(userData.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await request.json() as Record<string, string>
+  const ALLOWED_KEYS = new Set(['looker_template_report_id'])
   const upserts = Object.entries(body)
-    .filter(([key]) => key.startsWith('integration_'))
+    .filter(([key]) => key.startsWith('integration_') || ALLOWED_KEYS.has(key))
     .map(([key, value]) => ({
       organization_id: userData.organization_id,
       key,

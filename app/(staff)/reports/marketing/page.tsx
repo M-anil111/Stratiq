@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Download, Send, ChevronDown, ChevronRight, Link2, Printer } from 'lucide-react'
+import { Download, Send, ChevronDown, ChevronRight, Link2, Printer, BarChart3, ExternalLink } from 'lucide-react'
+import { buildLinkingUrl, toEmbedUrl } from '@/lib/looker'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const YEARS = [2026, 2025, 2024]
@@ -70,12 +71,37 @@ export default function MarketingReportsPage() {
   const [gadsOpen, setGadsOpen] = useState(true)
   const [metaOpen, setMetaOpen] = useState(true)
   const [form, setForm] = useState<Partial<Report>>({})
+  const [lookerOpen, setLookerOpen] = useState(false)
+  const [lookerUrl, setLookerUrl] = useState<string | null>(null)
+  const [lookerInput, setLookerInput] = useState('')
+  const [lookerGaProperty, setLookerGaProperty] = useState<string | null>(null)
+  const [lookerTemplateId, setLookerTemplateId] = useState<string | null>(null)
+  const [lookerSaving, setLookerSaving] = useState(false)
+  const [lookerError, setLookerError] = useState('')
 
   useEffect(() => {
     fetch('/api/clients').then(r => r.json()).then(data => {
       setClients(data?.clients || (Array.isArray(data) ? data : []))
     })
+    // Load the org-level Looker Studio template report ID (for Linking API).
+    fetch('/api/settings/integrations')
+      .then(r => r.json())
+      .then(d => setLookerTemplateId(d?.looker_template_report_id || null))
+      .catch(() => {})
   }, [])
+
+  // Load the selected client's Looker Studio config.
+  useEffect(() => {
+    if (!clientId) { setLookerUrl(null); setLookerInput(''); setLookerGaProperty(null); return }
+    fetch(`/api/clients/${clientId}/looker`)
+      .then(r => r.json())
+      .then(d => {
+        setLookerUrl(d?.looker_report_url || null)
+        setLookerInput(d?.looker_report_url || '')
+        setLookerGaProperty(d?.ga_property_id || null)
+      })
+      .catch(() => { setLookerUrl(null); setLookerInput(''); setLookerGaProperty(null) })
+  }, [clientId])
 
   useEffect(() => {
     if (!clientId) { setReport(null); setForm({}); return }
@@ -164,6 +190,39 @@ export default function MarketingReportsPage() {
       setSharing(false)
     }
   }
+
+  const handleLookerSave = async () => {
+    if (!clientId) return
+    setLookerSaving(true)
+    setLookerError('')
+    try {
+      const res = await fetch(`/api/clients/${clientId}/looker`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ looker_report_url: lookerInput.trim() }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setLookerUrl(d.looker_report_url || null)
+      } else {
+        setLookerError(d.error || 'Failed to save')
+        setTimeout(() => setLookerError(''), 4000)
+      }
+    } catch {
+      setLookerError('Failed to save')
+      setTimeout(() => setLookerError(''), 4000)
+    } finally {
+      setLookerSaving(false)
+    }
+  }
+
+  const client = clients.find(c => c.id === clientId)
+  const embedUrl = toEmbedUrl(lookerUrl)
+  const linkingUrl = buildLinkingUrl({
+    reportId: lookerTemplateId,
+    reportName: client ? `${client.company_name} — Marketing Dashboard` : 'Marketing Dashboard',
+    ga4PropertyId: lookerGaProperty,
+  })
 
   return (
     <div className="p-4 lg:p-8">
@@ -314,6 +373,78 @@ export default function MarketingReportsPage() {
               value={(form as any).notes ?? ''}
               onChange={set('notes')}
             />
+          </div>
+
+          {/* Looker Studio Dashboard */}
+          <div className="glass-card mb-4">
+            <button className="w-full flex items-center justify-between p-5 text-left" onClick={() => setLookerOpen(o => !o)}>
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-indigo-400" />
+                <div>
+                  <h2 className="font-semibold text-white">Looker Studio Dashboard</h2>
+                  <p className="text-sm text-slate-400">Embed a shareable Looker Studio (Google Data Studio) report</p>
+                </div>
+              </div>
+              {lookerOpen ? <ChevronDown className="h-5 w-5 text-slate-400" /> : <ChevronRight className="h-5 w-5 text-slate-400" />}
+            </button>
+            {lookerOpen && (
+              <div className="px-5 pb-5 border-t border-white/[0.06] pt-4 space-y-4">
+                {/* Create from template (Linking API) */}
+                {linkingUrl && lookerGaProperty && (
+                  <a
+                    href={linkingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-brand inline-flex items-center gap-2"
+                  >
+                    <ExternalLink className="h-4 w-4" /> Create dashboard from template
+                  </a>
+                )}
+
+                {/* Paste + save published report URL */}
+                <div className="flex gap-2 flex-wrap items-center">
+                  <input
+                    type="url"
+                    className="input-glass flex-1 min-w-[240px]"
+                    placeholder="https://lookerstudio.google.com/reporting/…"
+                    value={lookerInput}
+                    onChange={e => setLookerInput(e.target.value)}
+                  />
+                  <button onClick={handleLookerSave} disabled={lookerSaving}
+                    className="btn-brand disabled:opacity-60">
+                    {lookerSaving ? 'Saving…' : 'Save'}
+                  </button>
+                  {lookerError && <span className="text-red-400 text-sm">{lookerError}</span>}
+                </div>
+
+                {/* Embedded report */}
+                {embedUrl ? (
+                  <div className="space-y-2">
+                    <div className="relative w-full rounded-xl overflow-hidden border border-white/[0.08]" style={{ paddingTop: '56.25%' }}>
+                      <iframe
+                        src={embedUrl}
+                        className="absolute inset-0 w-full h-full"
+                        frameBorder={0}
+                        allowFullScreen
+                        sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                      />
+                    </div>
+                    {lookerUrl && (
+                      <a href={lookerUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm text-sky-400 hover:text-sky-300">
+                        <ExternalLink className="h-3.5 w-3.5" /> Open in Looker Studio
+                      </a>
+                    )}
+                  </div>
+                ) : !linkingUrl ? (
+                  <p className="text-sm text-slate-400">
+                    No Looker Studio dashboard configured. Paste a published report URL above, or set an org-wide template report ID in{' '}
+                    <a href="/settings/integrations" className="text-sky-400 hover:text-sky-300">Settings → Integrations</a>{' '}
+                    to generate one from a template.
+                  </p>
+                ) : null}
+              </div>
+            )}
           </div>
 
           {/* Actions */}

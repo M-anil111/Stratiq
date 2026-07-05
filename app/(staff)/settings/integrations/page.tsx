@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { CheckCircle, XCircle, RefreshCw, Loader2, Briefcase, CreditCard } from 'lucide-react'
+import { CheckCircle, XCircle, RefreshCw, Loader2, Briefcase, CreditCard, BarChart3 } from 'lucide-react'
 
 type IntegrationStatus = 'connected' | 'disconnected' | 'error' | 'loading'
 
@@ -55,6 +55,9 @@ export default function IntegrationsPage() {
     google_drive: string | null
   }>({ qb: null, meta: null, google_ads: null, google_drive: null })
 
+  const [lookerTemplateId, setLookerTemplateId] = useState('')
+  const [lookerSaving, setLookerSaving] = useState(false)
+
   const [banner, setBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const showBanner = useCallback((type: 'success' | 'error', message: string) => {
@@ -97,6 +100,7 @@ export default function IntegrationsPage() {
           google_ads: data.google_ads_last_synced || null,
           google_drive: data.google_drive_last_synced || null,
         })
+        setLookerTemplateId(data.looker_template_report_id || '')
 
         if (data.meta_connected === 'true') {
           setMetaStatus('connected')
@@ -209,6 +213,26 @@ export default function IntegrationsPage() {
       showBanner('error', 'QB sync failed.')
     }
     setQbSyncing(false)
+  }
+
+  const handleLookerSave = async () => {
+    setLookerSaving(true)
+    try {
+      const res = await fetch('/api/settings/integrations', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ looker_template_report_id: lookerTemplateId.trim() }),
+      })
+      if (res.ok) {
+        showBanner('success', 'Looker Studio template report ID saved.')
+      } else {
+        const d = await res.json().catch(() => ({}))
+        showBanner('error', d.error || 'Failed to save Looker Studio settings.')
+      }
+    } catch {
+      showBanner('error', 'Failed to save Looker Studio settings.')
+    }
+    setLookerSaving(false)
   }
 
   return (
@@ -529,6 +553,52 @@ export default function IntegrationsPage() {
             </div>
             <div className="shrink-0">
               <span className="text-xs text-slate-500">Via Google OAuth</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Looker Studio (Google Data Studio) */}
+        <div className="glass-card p-5">
+          <div className="flex items-start gap-4">
+            <div className="h-9 w-9 rounded-lg bg-indigo-500/20 flex items-center justify-center shrink-0">
+              <BarChart3 className="h-5 w-5 text-indigo-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="font-semibold text-white">Looker Studio (Google Data Studio)</h2>
+                {lookerTemplateId
+                  ? <StatusBadge status="connected" />
+                  : <StatusBadge status="disconnected" />}
+              </div>
+              <p className="text-sm text-slate-400 mt-1">Generate shareable report dashboards for clients. Set an org-wide template report ID here; each client can then create a dashboard from it (Linking API) or embed a published report.</p>
+              <ol className="mt-3 space-y-1">
+                {[
+                  'Create a Looker Studio report to use as a template.',
+                  'Share/publish it, then copy its report ID (the segment after /reporting/ in the report URL).',
+                  'Paste the report ID below. Each client can then generate or embed their dashboard from the Marketing Reports page.',
+                ].map((step, i) => (
+                  <li key={i} className="text-xs text-slate-400 flex gap-1.5">
+                    <span className="font-medium text-slate-300">{i + 1}.</span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+              <div className="mt-4 flex gap-2 flex-wrap items-center">
+                <input
+                  type="text"
+                  value={lookerTemplateId}
+                  onChange={e => setLookerTemplateId(e.target.value)}
+                  placeholder="Template report ID (e.g. 1a2b3c4d-…)"
+                  className="input-glass flex-1 min-w-[220px]"
+                />
+                <button
+                  onClick={handleLookerSave}
+                  disabled={lookerSaving}
+                  className="btn-brand disabled:opacity-60"
+                >
+                  {lookerSaving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
