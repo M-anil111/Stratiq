@@ -216,7 +216,7 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
     if (!selected.size) return
     setBulkLoading(true)
     try {
-      await Promise.all([...selected].map(id =>
+      await Promise.all(Array.from(selected).map(id =>
         fetch(`/api/projects/${params.projectId}/social-media/${id}`, { method: 'DELETE' })
       ))
       setPosts(p => p.filter(x => !selected.has(x.id)))
@@ -230,7 +230,7 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
     if (!selected.size || !bulkStatus) return
     setBulkLoading(true)
     try {
-      await Promise.all([...selected].map(id =>
+      await Promise.all(Array.from(selected).map(id =>
         fetch(`/api/projects/${params.projectId}/social-media`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
