@@ -1,7 +1,22 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/email'
-import { generateCode, hashCode, maskEmail, OTP_EXPIRY_MS } from '@/lib/otp'
+import { generateCode, hashCode, maskEmail, OTP_EXPIRY_MS, signVerifiedCookie, VERIFIED_COOKIE, REVERIFY_AFTER_MS } from '@/lib/otp'
+
+// When the OTP layer can't run (table missing before migration, email failure,
+// etc.) we must NOT trap the user: return unavailable AND set the verified
+// cookie so middleware lets them through instead of looping back to /verify.
+async function unavailableResponse() {
+  const res = NextResponse.json({ sent: false, unavailable: true })
+  res.cookies.set(VERIFIED_COOKIE, await signVerifiedCookie(Date.now() + REVERIFY_AFTER_MS), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: Math.floor(REVERIFY_AFTER_MS / 1000),
+  })
+  return res
+}
 
 export async function POST() {
   const supabase = await createClient()
@@ -32,15 +47,12 @@ export async function POST() {
     if (error) {
       // Table missing → don't hard-block login before migration is applied.
       if ((error as { code?: string }).code === '42P01') {
-        return NextResponse.json({ sent: false, unavailable: true })
+        return await unavailableResponse()
       }
       throw error
     }
-  } catch (err) {
-    if ((err as { code?: string })?.code === '42P01') {
-      return NextResponse.json({ sent: false, unavailable: true })
-    }
-    return NextResponse.json({ sent: false, unavailable: true })
+  } catch {
+    return await unavailableResponse()
   }
 
   try {
@@ -58,7 +70,7 @@ export async function POST() {
     })
   } catch {
     // Email delivery failed — fail open so the user isn't hard-blocked.
-    return NextResponse.json({ sent: false, unavailable: true })
+    return await unavailableResponse()
   }
 
   return NextResponse.json({ sent: true, email: maskEmail(email) })
