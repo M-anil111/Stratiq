@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Download, Send, ChevronDown, ChevronRight, Link2 } from 'lucide-react'
+import { Download, Send, ChevronDown, ChevronRight, Link2, Printer } from 'lucide-react'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const YEARS = [2026, 2025, 2024]
@@ -329,6 +329,15 @@ export default function MarketingReportsPage() {
             <button onClick={handleCopyShareLink} disabled={sharing || !clientId}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium">
               <Link2 className="h-4 w-4" /> {sharing ? 'Creating link…' : copied ? 'Copied!' : 'Copy Share Link'}
+            </button>
+            <button
+              onClick={() => {
+                const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`
+                window.open(`/reports/print/${clientId}?month=${monthStr}`, '_blank')
+              }}
+              disabled={!clientId}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium">
+              <Printer className="h-4 w-4" /> Download PDF
             </button>
             {sendError && <span className="text-red-400 text-sm">{sendError}</span>}
             {shareError && <span className="text-red-400 text-sm">{shareError}</span>}
