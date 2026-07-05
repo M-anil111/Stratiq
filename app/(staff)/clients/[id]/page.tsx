@@ -5,7 +5,7 @@ import {
   ArrowLeft, Edit2, Globe, Mail, Phone, MapPin, ExternalLink, Send, FileText,
   Plus, Folder, RefreshCw, CheckCircle, FolderPlus, ChevronRight,
   CheckSquare, Square, Circle, MessageSquare, PhoneCall, Users, Calendar,
-  Loader2, X, ChevronDown, AlertCircle, ClipboardList,
+  Loader2, X, ChevronDown, AlertCircle, ClipboardList, BarChart2, FolderOpen,
 } from 'lucide-react'
 
 const statusColors: Record<string, string> = {
@@ -34,7 +34,7 @@ const NOTE_ICONS: Record<string, any> = {
   activity: ClipboardList,
 }
 
-const TABS = ['Overview', 'Tasks', 'Notes', 'Reports', 'Messages', 'Files', 'Integrations', 'Invoices']
+const TABS = ['Overview', 'Tasks', 'Notes', 'Reports', 'Messages', 'Files', 'Integrations', 'Invoices', 'Activity']
 
 export default function ClientDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -117,6 +117,10 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [savingInvoice, setSavingInvoice] = useState(false)
   const [pushingQb, setPushingQb] = useState<string | null>(null)
   const [syncingQbInvoices, setSyncingQbInvoices] = useState(false)
+
+  // Activity
+  const [activityItems, setActivityItems] = useState<any[]>([])
+  const [activityLoading, setActivityLoading] = useState(false)
 
   // Drive
   const [driveFiles, setDriveFiles] = useState<any[]>([])
@@ -203,6 +207,13 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         .then(r => r.json())
         .then(d => { setInvoices(Array.isArray(d) ? d : []); setInvoicesLoading(false) })
         .catch(() => setInvoicesLoading(false))
+    }
+    if (activeTab === 8) {
+      setActivityLoading(true)
+      fetch(`/api/clients/${params.id}/activity`)
+        .then(r => r.json())
+        .then(d => { setActivityItems(Array.isArray(d) ? d : []); setActivityLoading(false) })
+        .catch(() => setActivityLoading(false))
     }
     if (activeTab === 6) {
       fetch(`/api/clients/${params.id}/integrations`).then(r => r.json()).then(d => {
@@ -1645,6 +1656,82 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                   </div>
                 )
               })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── ACTIVITY ── */}
+      {activeTab === 8 && (
+        <div className="space-y-4">
+          <h2 className="text-base font-semibold text-white">Activity Log</h2>
+          {activityLoading ? (
+            <div className="glass-card p-5 space-y-4">
+              {[0,1,2,3,4].map(i => (
+                <div key={i} className="flex gap-4 items-start">
+                  <div className="w-8 h-8 rounded-full skeleton shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 skeleton rounded w-48" />
+                    <div className="h-3 skeleton rounded w-32" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : activityItems.length === 0 ? (
+            <div className="glass-card p-12 text-center">
+              <ClipboardList className="h-10 w-10 text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-400 text-sm">No activity yet for this client</p>
+            </div>
+          ) : (
+            <div className="glass-card p-5">
+              <div className="relative">
+                {/* Vertical timeline line */}
+                <div className="absolute left-[15px] top-2 bottom-2 w-px bg-white/[0.08]" />
+                <div className="space-y-6">
+                  {activityItems.map((item, idx) => {
+                    const iconMap: Record<string, any> = {
+                      message: MessageSquare,
+                      invoice: FileText,
+                      report: BarChart2,
+                      project: FolderOpen,
+                    }
+                    const colorMap: Record<string, string> = {
+                      message: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+                      invoice: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+                      report: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
+                      project: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+                    }
+                    const Icon = iconMap[item.type] || ClipboardList
+                    const colorCls = colorMap[item.type] || 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+
+                    const now = new Date()
+                    const createdAt = new Date(item.created_at)
+                    const diffMs = now.getTime() - createdAt.getTime()
+                    const diffSec = Math.floor(diffMs / 1000)
+                    let relTime: string
+                    if (diffSec < 60) relTime = 'just now'
+                    else if (diffSec < 3600) relTime = `${Math.floor(diffSec / 60)} minutes ago`
+                    else if (diffSec < 86400) relTime = `${Math.floor(diffSec / 3600)} hours ago`
+                    else if (diffSec < 604800) relTime = `${Math.floor(diffSec / 86400)} days ago`
+                    else relTime = createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+                    const absTime = createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+                    return (
+                      <div key={idx} className="flex gap-4 items-start relative">
+                        <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${colorCls}`}>
+                          <Icon className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0 pt-0.5">
+                          <p className="text-sm font-medium text-white">{item.title}</p>
+                          {item.description && <p className="text-xs text-slate-500 mt-0.5 truncate">{item.description}</p>}
+                          <p className="text-xs text-slate-600 mt-1" title={absTime}>{relTime}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
           )}
         </div>
