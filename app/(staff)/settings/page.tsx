@@ -1,15 +1,18 @@
 import Link from 'next/link'
-import { Building2, Plug, Bell, Sliders, Shield, Globe, ShieldCheck, ListChecks } from 'lucide-react'
+import { Building2, Plug, Bell, Sliders, Shield, Globe, ShieldCheck, ListChecks, Mail, Users, CreditCard } from 'lucide-react'
 
 const settingsSections = [
   { href: '/settings/company', icon: Building2, label: 'Company Profile', description: 'Organization name, logo, and branding' },
   { href: '/settings/integrations', icon: Plug, label: 'Integrations', description: 'Connect Google Ads, Meta Ads, Drive, and more' },
   { href: '/settings/notifications', icon: Bell, label: 'Notifications', description: 'Email and push notification preferences' },
+  { href: '/settings/notification-recipients', icon: Mail, label: 'Notification Recipients', description: 'Email addresses for report and lead alert notifications' },
   { href: '/settings/custom-fields', icon: Sliders, label: 'Custom Fields', description: 'Add custom fields to clients and projects' },
   { href: '/settings/security', icon: Shield, label: 'Security & Sessions', description: 'Sessions, 2FA, and access controls' },
   { href: '/settings/directory-sites', icon: Globe, label: 'Directory Sites', description: 'Manage websites used in off-page submission dropdowns' },
   { href: '/settings/audit-log', icon: ShieldCheck, label: 'Audit Log', description: 'Track all actions taken across your organization' },
   { href: '/settings/masters', icon: ListChecks, label: 'Masters', description: 'Manage dropdown values: industries, goals, billing terms, and more' },
+  { href: '/settings/team', icon: Users, label: 'Team', description: 'Manage team members and their roles' },
+  { href: '/settings/billing', icon: CreditCard, label: 'Billing', description: 'Plan details and subscription management' },
 ]
 
 export default function SettingsPage() {
