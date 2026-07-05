@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MobileNav } from '@/components/layout/mobile-nav'
 import { GlobalSearch } from '@/components/GlobalSearch'
+import { NotificationBell } from '@/components/NotificationBell'
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -24,6 +25,9 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
         <header className="sticky top-0 z-20 flex items-center px-4 py-2 lg:px-6 glass-sidebar border-b border-white/[0.06]">
           <div className="flex-1 lg:flex lg:justify-end">
             <GlobalSearch />
+          </div>
+          <div className="ml-2 shrink-0">
+            <NotificationBell />
           </div>
         </header>
         <main className="flex-1">

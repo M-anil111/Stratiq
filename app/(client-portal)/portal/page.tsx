@@ -44,16 +44,13 @@ export default function PortalHomePage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !localStorage.getItem('portal_upsell_dismissed')) {
-      setUpsellVisible(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !localStorage.getItem('portal_upsell_dismissed')) {
       fetch('/api/portal/upsell')
         .then(r => r.ok ? r.json() : null)
         .then((data: UpsellRecommendation[] | null) => {
-          if (data && data.length > 0) setTopRec(data[0])
+          if (data && data.length > 0) {
+            setTopRec(data[0])
+            setUpsellVisible(true)
+          }
         })
         .catch(() => {})
     }
@@ -112,14 +109,14 @@ export default function PortalHomePage() {
       </div>
 
       {/* Upsell card */}
-      {upsellVisible && (
+      {upsellVisible && topRec && (
         <div className="mb-8 glass-card p-4 border-sky-500/20">
           <div className="flex items-start justify-between">
             <div>
-              <p className="font-semibold text-white">Grow 3x faster with Google Ads</p>
-              <p className="text-sm text-slate-400 mt-1">Get a free audit and see how paid search can triple your leads.</p>
-              <Link href="#" className="inline-block mt-3 px-4 py-1.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white text-sm rounded-lg hover:from-sky-400 hover:to-sky-500 transition-all">
-                Get Free Audit
+              <p className="font-semibold text-white">{topRec.title}</p>
+              <p className="text-sm text-slate-400 mt-1">{topRec.description}</p>
+              <Link href="/portal/upgrade" className="inline-block mt-3 px-4 py-1.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white text-sm rounded-lg hover:from-sky-400 hover:to-sky-500 transition-all">
+                Learn More &amp; Get Started
               </Link>
             </div>
             <button onClick={dismissUpsell} className="text-slate-500 hover:text-slate-300 text-sm ml-4 transition-colors">Dismiss</button>
