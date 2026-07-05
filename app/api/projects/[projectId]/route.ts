@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logAudit } from '@/lib/audit'
 
 export async function GET(request: NextRequest, { params }: { params: { projectId: string } }) {
   const supabase = await createClient()
@@ -37,6 +38,16 @@ export async function PUT(request: NextRequest, { params }: { params: { projectI
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logAudit(supabase, {
+    organizationId: userData?.organization_id,
+    userId: user.id,
+    action: 'project_updated',
+    entityType: 'project',
+    entityId: params.projectId,
+    detail: { status, domain },
+  })
+
   return NextResponse.json(data)
 }
 
@@ -55,5 +66,14 @@ export async function DELETE(request: NextRequest, { params }: { params: { proje
     .eq('organization_id', userData.organization_id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logAudit(supabase, {
+    organizationId: userData.organization_id,
+    userId: user.id,
+    action: 'project_deleted',
+    entityType: 'project',
+    entityId: params.projectId,
+  })
+
   return NextResponse.json({ ok: true })
 }

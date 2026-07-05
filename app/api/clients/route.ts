@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClientFolder } from '@/lib/google-drive'
 import { sendEmail } from '@/lib/email/index'
+import { logAudit } from '@/lib/audit'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -222,6 +223,15 @@ export async function POST(request: NextRequest) {
     })
     } // end for recipient loop
   } catch { /* Email may fail if Resend not configured — don't block */ }
+
+  await logAudit(supabase, {
+    organizationId: userData.organization_id,
+    userId: user.id,
+    action: 'client_created',
+    entityType: 'client',
+    entityId: data.id,
+    detail: { company_name: body.company_name },
+  })
 
   return NextResponse.json(data, { status: 201 })
 }

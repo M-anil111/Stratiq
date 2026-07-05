@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole, ADMIN_ROLES } from '@/lib/authz'
+import { logAudit } from '@/lib/audit'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -82,6 +83,14 @@ export async function POST(request: NextRequest) {
       imported = (inserted || []).length
     }
 
+    await logAudit(supabase, {
+      organizationId: authz.organizationId,
+      userId: user.id,
+      action: 'directory_sites_imported',
+      entityType: 'directory_site',
+      detail: { imported, skipped },
+    })
+
     return NextResponse.json({ imported, skipped }, { status: 201 })
   }
 
@@ -104,6 +113,15 @@ export async function POST(request: NextRequest) {
     if (error.code === '42P01') return NextResponse.json({ error: 'Table not found' }, { status: 500 })
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  await logAudit(supabase, {
+    organizationId: authz.organizationId,
+    userId: user.id,
+    action: 'directory_site_created',
+    entityType: 'directory_site',
+    entityId: data.id,
+    detail: { url, category },
+  })
 
   return NextResponse.json(data, { status: 201 })
 }

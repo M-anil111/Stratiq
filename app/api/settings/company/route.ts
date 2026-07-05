@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logAudit } from '@/lib/audit'
 
 const COMPANY_FIELDS = 'name, contact_email, billing_email, timezone, logo_url, website, address, city, state, postcode, country, phone'
 
@@ -82,6 +83,14 @@ export async function PUT(request: NextRequest) {
         { onConflict: 'organization_id,key' }
       )
   }
+
+  await logAudit(supabase, {
+    organizationId: userData.organization_id,
+    userId: user.id,
+    action: 'settings_company_updated',
+    entityType: 'organization',
+    entityId: userData.organization_id,
+  })
 
   return NextResponse.json(data)
 }

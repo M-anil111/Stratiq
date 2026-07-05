@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole, ADMIN_ROLES } from '@/lib/authz'
+import { logAudit } from '@/lib/audit'
 
 export async function POST() {
   const supabase = await createClient()
@@ -14,6 +15,15 @@ export async function POST() {
     .delete()
     .eq('organization_id', authz.organizationId)
     .in('key', ['google_access_token', 'google_refresh_token', 'google_token_expiry', 'google_connected'])
+
+  await logAudit(supabase, {
+    organizationId: authz.organizationId,
+    userId: user.id,
+    action: 'integration_disconnected',
+    entityType: 'integration',
+    entityId: 'google',
+    detail: { provider: 'google' },
+  })
 
   return NextResponse.json({ ok: true })
 }

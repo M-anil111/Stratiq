@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logAudit } from '@/lib/audit'
 
 export async function GET() {
   const supabase = await createClient()
@@ -68,5 +69,15 @@ export async function PUT(request: NextRequest) {
     .upsert(upserts, { onConflict: 'organization_id,key' })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logAudit(supabase, {
+    organizationId: userData.organization_id,
+    userId: user.id,
+    action: 'settings_integrations_updated',
+    entityType: 'organization',
+    entityId: userData.organization_id,
+    detail: { keys: upserts.map(u => u.key) },
+  })
+
   return NextResponse.json({ ok: true })
 }

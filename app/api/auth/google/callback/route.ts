@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { googleClientId, googleClientSecret, googleRedirectUri, appBaseUrl, encryptGoogleToken } from '@/lib/google-oauth'
+import { logAudit } from '@/lib/audit'
 
 export async function GET(request: NextRequest) {
   const origin = request.nextUrl.origin
@@ -61,6 +62,15 @@ export async function GET(request: NextRequest) {
   for (const entry of entries) {
     await supabase.from('organization_settings').upsert(entry, { onConflict: 'organization_id,key' })
   }
+
+  await logAudit(supabase, {
+    organizationId: org_id,
+    userId: user.id,
+    action: 'integration_connected',
+    entityType: 'integration',
+    entityId: 'google',
+    detail: { provider: 'google' },
+  })
 
   return NextResponse.redirect(`${settingsUrl}?connected=google`)
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logAudit } from '@/lib/audit'
 
 async function getOrgClient(supabase: any, userId: string) {
   const { data } = await supabase.from('users').select('organization_id, role').eq('id', userId).single()
@@ -81,6 +82,16 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logAudit(supabase, {
+    organizationId: userData.organization_id,
+    userId: user.id,
+    action: 'client_updated',
+    entityType: 'client',
+    entityId: params.id,
+    detail: { company_name: body.company_name },
+  })
+
   return NextResponse.json(data)
 }
 
@@ -102,5 +113,14 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     .eq('organization_id', userData.organization_id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logAudit(supabase, {
+    organizationId: userData.organization_id,
+    userId: user.id,
+    action: 'client_deleted',
+    entityType: 'client',
+    entityId: params.id,
+  })
+
   return NextResponse.json({ success: true })
 }

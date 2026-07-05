@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { requireRole, ADMIN_ROLES } from '@/lib/authz'
+import { logAudit } from '@/lib/audit'
 import { sendEmail } from '@/lib/email'
 import {
   EMAIL_RE,
@@ -121,6 +122,16 @@ export async function POST(request: NextRequest) {
       // Invite row exists (copy-link still works), but the email failed to deliver
       errors.push({ email, reason: `Invite created but email failed to send: ${e?.message || 'unknown error'}` })
     }
+  }
+
+  if (sent.length > 0) {
+    await logAudit(supabase, {
+      organizationId: orgId,
+      userId: user.id,
+      action: 'team_invited',
+      entityType: 'team_invite',
+      detail: { emails: sent.map(s => s.email), role },
+    })
   }
 
   return NextResponse.json({ success: errors.length === 0, sent, skipped, errors }, { status: 201 })

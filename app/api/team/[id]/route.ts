@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logAudit } from '@/lib/audit'
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -48,6 +49,16 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  await logAudit(supabase, {
+    organizationId: userData.organization_id,
+    userId: user.id,
+    action: 'team_role_changed',
+    entityType: 'user',
+    entityId: params.id,
+    detail: { role: body.role },
+  })
+
   return NextResponse.json(data)
 }
 
@@ -69,5 +80,14 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     .eq('organization_id', userData.organization_id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logAudit(supabase, {
+    organizationId: userData.organization_id,
+    userId: user.id,
+    action: 'team_member_removed',
+    entityType: 'user',
+    entityId: params.id,
+  })
+
   return NextResponse.json({ success: true })
 }

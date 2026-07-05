@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole, ADMIN_ROLES } from '@/lib/authz'
+import { logAudit } from '@/lib/audit'
 
 export async function POST() {
   const supabase = await createClient()
@@ -17,6 +18,15 @@ export async function POST() {
     .delete()
     .eq('organization_id', org.id)
     .in('key', ['qb_access_token', 'qb_refresh_token', 'qb_realm_id', 'qb_token_expiry', 'qb_connected'])
+
+  await logAudit(supabase, {
+    organizationId: authz.organizationId,
+    userId: user.id,
+    action: 'integration_disconnected',
+    entityType: 'integration',
+    entityId: 'quickbooks',
+    detail: { provider: 'quickbooks' },
+  })
 
   return NextResponse.json({ success: true })
 }

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/email/index'
 import { isStripeConfigured, createPaymentLink } from '@/lib/stripe'
 import { requireRole, BILLING_ROLES } from '@/lib/authz'
+import { logAudit } from '@/lib/audit'
 
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -122,6 +123,15 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       sent_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq('id', params.id)
+
+    await logAudit(supabase, {
+      organizationId: userData.organization_id,
+      userId: user.id,
+      action: 'invoice_sent',
+      entityType: 'invoice',
+      entityId: params.id,
+      detail: { invoice_number: invoice.invoice_number, to: clientEmail },
+    })
 
     return NextResponse.json({ success: true })
   } catch (err: any) {

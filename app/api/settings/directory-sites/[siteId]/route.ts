@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole, ADMIN_ROLES } from '@/lib/authz'
+import { logAudit } from '@/lib/audit'
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ siteId: string }> }) {
   const supabase = await createClient()
@@ -27,6 +28,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logAudit(supabase, {
+    organizationId: authz.organizationId,
+    userId: user.id,
+    action: 'directory_site_updated',
+    entityType: 'directory_site',
+    entityId: siteId,
+    detail: { url, category },
+  })
+
   return NextResponse.json(data)
 }
 
@@ -42,5 +53,14 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
   const { error } = await supabase.from('directory_sites').delete().eq('id', siteId)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logAudit(supabase, {
+    organizationId: authz.organizationId,
+    userId: user.id,
+    action: 'directory_site_deleted',
+    entityType: 'directory_site',
+    entityId: siteId,
+  })
+
   return NextResponse.json({ success: true })
 }

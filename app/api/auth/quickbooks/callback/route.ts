@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logAudit } from '@/lib/audit'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -42,6 +43,14 @@ export async function GET(req: NextRequest) {
     { organization_id: orgId, key: 'qb_token_expiry', value: String(Date.now() + tokens.expires_in * 1000) },
     { organization_id: orgId, key: 'qb_connected', value: 'true' },
   ])
+
+  await logAudit(supabase, {
+    organizationId: orgId,
+    action: 'integration_connected',
+    entityType: 'integration',
+    entityId: 'quickbooks',
+    detail: { provider: 'quickbooks' },
+  })
 
   return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings/integrations?connected=quickbooks`)
 }
