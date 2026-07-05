@@ -72,6 +72,41 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(newSchedule, { status: 201 })
 }
 
+export async function PATCH(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
+  if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
+
+  const { id, status } = await req.json()
+  const orgId = userData.organization_id
+
+  const { data: existing } = await supabase
+    .from('organization_settings')
+    .select('value')
+    .eq('organization_id', orgId)
+    .eq('key', SETTINGS_KEY)
+    .single()
+
+  let schedules: any[] = []
+  try { schedules = existing?.value ? JSON.parse(existing.value) : [] } catch {}
+  schedules = schedules.map((s: any) => s.id === id ? { ...s, status } : s)
+
+  await supabase
+    .from('organization_settings')
+    .upsert({
+      organization_id: orgId,
+      key: SETTINGS_KEY,
+      value: JSON.stringify(schedules),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'organization_id,key' })
+
+  const updated = schedules.find((s: any) => s.id === id)
+  return NextResponse.json(updated || { ok: true })
+}
+
 export async function DELETE(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

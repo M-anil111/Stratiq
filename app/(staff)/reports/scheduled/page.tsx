@@ -103,6 +103,16 @@ export default function ScheduledReportsPage() {
     })
   }
 
+  async function toggleStatus(id: string, current: 'active' | 'paused') {
+    const next = current === 'active' ? 'paused' : 'active'
+    setReports(r => r.map(rep => rep.id === id ? { ...rep, status: next } : rep))
+    await fetch('/api/reports/scheduled', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: next }),
+    })
+  }
+
   const dayOptions = fFrequency === 'Weekly' ? DAYS_OF_WEEK : DAYS_OF_MONTH
 
   return (
@@ -165,9 +175,17 @@ export default function ScheduledReportsPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <button onClick={() => deleteReport(rep.id)} className="text-slate-600 hover:text-red-400 transition-colors p-1 rounded">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => toggleStatus(rep.id, rep.status)}
+                        title={rep.status === 'active' ? 'Pause' : 'Resume'}
+                        className={`p-1 rounded transition-colors text-xs font-medium px-2 py-1 border ${rep.status === 'active' ? 'border-slate-600 text-slate-400 hover:text-amber-400 hover:border-amber-400' : 'border-slate-600 text-slate-400 hover:text-emerald-400 hover:border-emerald-400'}`}>
+                        {rep.status === 'active' ? 'Pause' : 'Resume'}
+                      </button>
+                      <button onClick={() => deleteReport(rep.id)} className="text-slate-600 hover:text-red-400 transition-colors p-1 rounded">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
