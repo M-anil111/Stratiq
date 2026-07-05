@@ -19,6 +19,7 @@ export async function GET() {
     .select('*')
     .eq('client_id', portalAccess.client_id)
     .order('created_at', { ascending: true })
+    .limit(100)
 
   return NextResponse.json(data || [])
 }
