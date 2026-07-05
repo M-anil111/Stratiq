@@ -18,6 +18,8 @@ const emptyForm = () => ({
 
 export default function BlogPage({ params }: { params: { id: string; projectId: string } }) {
   const [entries, setEntries] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editEntry, setEditEntry] = useState<any | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -27,8 +29,13 @@ export default function BlogPage({ params }: { params: { id: string; projectId: 
 
   useEffect(() => {
     fetch(`/api/projects/${params.projectId}/blog`)
-      .then(res => res.json())
-      .then(data => setEntries(data || []))
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to load blog submissions')
+        return res.json()
+      })
+      .then(data => setEntries(Array.isArray(data) ? data : []))
+      .catch(e => setFetchError(e.message))
+      .finally(() => setLoading(false))
   }, [params.projectId])
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -99,6 +106,11 @@ export default function BlogPage({ params }: { params: { id: string; projectId: 
 
   return (
     <div>
+      {fetchError && (
+        <div className="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          {fetchError}
+        </div>
+      )}
       <div className="glass-card">
         <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
           <h2 className="font-semibold text-white">Blog Submissions ({entries.length})</h2>
@@ -111,7 +123,11 @@ export default function BlogPage({ params }: { params: { id: string; projectId: 
           </button>
         </div>
 
-        {entries.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-16 text-slate-500">
+            <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
+          </div>
+        ) : entries.length === 0 ? (
           <div className="p-12 text-center text-slate-400">
             <p className="font-medium">No blog submissions yet</p>
             <p className="text-sm mt-1">Click "Add Blog Post" to log your first blog submission</p>

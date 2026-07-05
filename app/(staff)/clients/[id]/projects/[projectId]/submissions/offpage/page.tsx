@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Plus, ExternalLink, Edit2, Trash2, X, Loader2, Send } from 'lucide-react'
+import { Plus, ExternalLink, Edit2, Trash2, X, Loader2, Send, Eye, EyeOff } from 'lucide-react'
 
 const TYPES = [
   'Classified Submission', 'Business Listing', 'Social Bookmarking',
@@ -261,7 +261,12 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
-                  <input className="input-glass" type={showPassword ? 'text' : 'password'} value={form.password} onChange={set('password')} placeholder="••••••" />
+                  <div className="relative">
+                    <input className="input-glass pr-10" type={showPassword ? 'text' : 'password'} value={form.password} onChange={set('password')} placeholder="••••••" />
+                    <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
               <div>

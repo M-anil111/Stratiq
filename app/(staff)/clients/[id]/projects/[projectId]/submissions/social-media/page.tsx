@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Plus, ExternalLink, Edit2, Trash2, X, Loader2, Send } from 'lucide-react'
+import { Plus, ExternalLink, Edit2, Trash2, X, Loader2, Send, Eye, EyeOff } from 'lucide-react'
 
 const PLATFORMS = [
   'YouTube', 'TikTok', 'Instagram Reels', 'Instagram Post', 'Snapchat',
@@ -8,22 +8,26 @@ const PLATFORMS = [
   'Pinterest', 'Rumble', 'Linktree', 'Google Business Profile', 'Locals',
   'IGTV', 'Vimeo', 'Dailymotion', 'Twitch',
 ]
-const TYPES = ['Image', 'Video', 'Carousel', 'GIF']
-const STATUSES = ['Live', 'Under Review', 'Deleted']
+const TYPES = ['Image', 'Video', 'Carousel', 'Story', 'Reel', 'GIF']
+const STATUSES = ['Draft', 'Scheduled', 'Live', 'Under Review', 'Failed', 'Deleted']
 
 const selectClass = "w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 const statusColors: Record<string, string> = {
+  draft: 'bg-slate-500/15 text-slate-400 border border-slate-500/25',
+  scheduled: 'bg-blue-500/15 text-blue-400 border border-blue-500/25',
   live: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
   under_review: 'bg-amber-500/15 text-amber-400 border border-amber-500/25',
-  deleted: 'bg-red-500/15 text-red-400 border border-red-500/25',
+  failed: 'bg-red-500/15 text-red-400 border border-red-500/25',
+  deleted: 'bg-red-500/10 text-red-500 border border-red-500/20',
 }
 
 function today() { return new Date().toISOString().split('T')[0] }
 
 const emptyForm = () => ({
-  platform: '', type: 'image', status: 'live', live_link: '',
-  submission_date: today(), username: '', password: '', comment: '',
+  platform: '', type: 'image', status: 'draft', live_link: '',
+  post_content: '', media_url: '', scheduled_date: '', submission_date: today(),
+  username: '', password: '', comment: '',
 })
 
 export default function SocialMediaPage({ params }: { params: { id: string; projectId: string } }) {
@@ -53,8 +57,11 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
     setForm({
       platform: post.platform || '',
       type: post.type || 'image',
-      status: post.status || 'live',
+      status: post.status || 'draft',
       live_link: post.live_link || '',
+      post_content: post.post_content || '',
+      media_url: post.media_url || '',
+      scheduled_date: post.scheduled_date || '',
       submission_date: post.submission_date || today(),
       username: post.username || '',
       password: '',
@@ -148,7 +155,7 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  {['Platform', 'Type', 'Status', 'Live Link', 'Date', 'Comment', 'Actions'].map(h => (
+                  {['Platform', 'Type', 'Content Preview', 'Status', 'Scheduled', 'Live Link', 'Engagement', 'Actions'].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -158,11 +165,17 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                   <tr key={post.id} className="hover:bg-white/[0.03]">
                     <td className="px-4 py-3 font-medium text-white">{post.platform}</td>
                     <td className="px-4 py-3 capitalize text-slate-300">{post.type}</td>
+                    <td className="px-4 py-3 max-w-[180px]">
+                      {post.post_content
+                        ? <span title={post.post_content} className="block truncate text-xs text-slate-400">{post.post_content.slice(0, 100)}{post.post_content.length > 100 ? '…' : ''}</span>
+                        : <span className="text-slate-600 text-xs">—</span>}
+                    </td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[post.status] || ''}`}>
-                        {post.status.replace('_', ' ')}
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusColors[post.status] || ''}`}>
+                        {post.status.replace(/_/g, ' ')}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{post.scheduled_date || post.submission_date}</td>
                     <td className="px-4 py-3">
                       {post.live_link && (
                         <a href={post.live_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sky-400 hover:text-sky-300">
@@ -171,8 +184,15 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                         </a>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-slate-400">{post.submission_date}</td>
-                    <td className="px-4 py-3 text-slate-400 max-w-[150px] truncate">{post.comment}</td>
+                    <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
+                      {(post.likes != null || post.comments_count != null || post.shares != null)
+                        ? <span className="flex items-center gap-2">
+                            {post.likes != null && <span>👍 {post.likes}</span>}
+                            {post.comments_count != null && <span>💬 {post.comments_count}</span>}
+                            {post.shares != null && <span>↗ {post.shares}</span>}
+                          </span>
+                        : <span className="text-slate-600">—</span>}
+                    </td>
                     <td className="px-4 py-3">
                       {deleteId === post.id ? (
                         <div className="flex items-center gap-1.5 text-xs bg-red-500/10 border border-red-500/20 rounded-xl px-2 py-1">
@@ -210,7 +230,7 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
       {/* Add/Edit Post Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="glass w-full max-w-lg rounded-2xl p-6 shadow-xl">
+          <div className="glass w-full max-w-lg rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-5">
               <h3 className="text-lg font-semibold text-white">{editEntry ? 'Edit Social Media Post' : 'Add Social Media Post'}</h3>
               <button onClick={closeModal}><X className="h-5 w-5 text-slate-400" /></button>
@@ -225,23 +245,35 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Type <span className="text-red-400">*</span></label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Post Type <span className="text-red-400">*</span></label>
                   <select className={selectClass} value={form.type} onChange={set('type')} required>
                     {TYPES.map(t => <option key={t} value={t.toLowerCase()}>{t}</option>)}
                   </select>
                 </div>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Content</label>
+                <textarea className="input-glass resize-none h-24" value={form.post_content} onChange={set('post_content')} placeholder="Post caption or content..." />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Media URL</label>
+                <input className="input-glass" type="url" value={form.media_url} onChange={set('media_url')} placeholder="https://... (image or video URL)" />
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">Status <span className="text-red-400">*</span></label>
                   <select className={selectClass} value={form.status} onChange={set('status')} required>
-                    {STATUSES.map(s => <option key={s} value={s.toLowerCase().replace(' ', '_')}>{s}</option>)}
+                    {STATUSES.map(s => <option key={s} value={s.toLowerCase().replace(/ /g, '_')}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Submission Date <span className="text-red-400">*</span></label>
-                  <input className="input-glass" type="date" value={form.submission_date} onChange={set('submission_date')} required />
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Scheduled Date</label>
+                  <input className="input-glass" type="date" value={form.scheduled_date} onChange={set('scheduled_date')} />
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Submission Date <span className="text-red-400">*</span></label>
+                <input className="input-glass" type="date" value={form.submission_date} onChange={set('submission_date')} required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">Live Link</label>
@@ -254,7 +286,12 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
-                  <input className="input-glass" type={showPassword ? 'text' : 'password'} value={form.password} onChange={set('password')} placeholder="••••••" />
+                  <div className="relative">
+                    <input className="input-glass pr-10" type={showPassword ? 'text' : 'password'} value={form.password} onChange={set('password')} placeholder="••••••" />
+                    <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
               <div>
