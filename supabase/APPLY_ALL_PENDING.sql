@@ -1,5 +1,5 @@
 -- ============================================================
--- Stratiq: combined pending migrations (010 through 029)
+-- Stratiq: combined pending migrations (010 through 031)
 -- Paste this whole file into the Supabase SQL editor for project
 -- sczvyujahydnsdlakwzh and click Run. Safe/idempotent (IF NOT EXISTS).
 -- ============================================================
@@ -464,5 +464,55 @@ CREATE POLICY "org_user_project_access" ON user_project_access
 ALTER TABLE team_invites ADD COLUMN IF NOT EXISTS account_type TEXT;
 ALTER TABLE team_invites ADD COLUMN IF NOT EXISTS project_access TEXT;
 ALTER TABLE team_invites ADD COLUMN IF NOT EXISTS project_ids UUID[];
+
+
+-- >>>>>>>>>>>>>>>>>>>> supabase/migrations/030_helcim.sql <<<<<<<<<<<<<<<<<<<<
+-- Helcim invoice payment support.
+-- Reuses the existing invoices.payment_link column (added in 021) as the
+-- hosted payment page URL; only adds the Helcim transaction id here.
+alter table invoices add column if not exists helcim_transaction_id text;
+
+
+-- >>>>>>>>>>>>>>>>>>>> supabase/migrations/031_login_otp.sql <<<<<<<<<<<<<<<<<<<<
+-- Step-up auth: one-time login verification codes.
+
+CREATE TABLE IF NOT EXISTS login_otps (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  code_hash text NOT NULL,
+  expires_at timestamptz NOT NULL,
+  consumed boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_login_otps_user_id ON login_otps(user_id);
+
+ALTER TABLE login_otps ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'login_otps' AND policyname = 'own_login_otps_select'
+  ) THEN
+    CREATE POLICY own_login_otps_select ON login_otps
+      FOR SELECT USING (user_id = auth.uid());
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'login_otps' AND policyname = 'own_login_otps_insert'
+  ) THEN
+    CREATE POLICY own_login_otps_insert ON login_otps
+      FOR INSERT WITH CHECK (user_id = auth.uid());
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'login_otps' AND policyname = 'own_login_otps_update'
+  ) THEN
+    CREATE POLICY own_login_otps_update ON login_otps
+      FOR UPDATE USING (user_id = auth.uid());
+  END IF;
+END $$;
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_verified_at timestamptz;
 
 
