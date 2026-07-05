@@ -28,7 +28,24 @@ export async function POST(request: NextRequest) {
   const { data: userData } = await supabase.from('users').select('organization_id, full_name').eq('id', user.id).single()
   if (!userData?.organization_id) return NextResponse.json({ error: 'No org' }, { status: 403 })
 
-  const body = await request.json()
+  let body: { client_id?: string; content?: string }
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
+  if (!body.client_id) return NextResponse.json({ error: 'client_id is required' }, { status: 400 })
+  if (!body.content) return NextResponse.json({ error: 'content is required' }, { status: 400 })
+
+  const { data: clientRow } = await supabase
+    .from('clients')
+    .select('id')
+    .eq('id', body.client_id)
+    .eq('organization_id', userData.organization_id)
+    .single()
+  if (!clientRow) return NextResponse.json({ error: 'client_id not found in your organization' }, { status: 403 })
+
   const { data, error } = await supabase
     .from('messages')
     .insert({
