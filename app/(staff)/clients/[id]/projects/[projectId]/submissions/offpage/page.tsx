@@ -1,20 +1,18 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Plus, ExternalLink, Edit2, Trash2, X, Loader2, Send, Eye, EyeOff } from 'lucide-react'
+import { Plus, ExternalLink, Edit2, Trash2, X, Loader2 } from 'lucide-react'
 
-const TYPES = [
-  'Classified Submission', 'Business Listing', 'Social Bookmarking',
-  'Profile Creation', 'Blog Promotion', 'Directory Submission',
-]
-const STATUSES = ['Live', 'Under Review', 'Deleted']
-
-const selectClass = "w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+const STATUSES = ['pending', 'live', 'rejected']
 
 const statusColors: Record<string, string> = {
+  pending: 'bg-amber-500/15 text-amber-400 border border-amber-500/25',
   live: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
+  rejected: 'bg-red-500/15 text-red-400 border border-red-500/25',
   under_review: 'bg-amber-500/15 text-amber-400 border border-amber-500/25',
   deleted: 'bg-red-500/15 text-red-400 border border-red-500/25',
 }
+
+const selectClass = "w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 function today() {
   const now = new Date()
@@ -22,65 +20,54 @@ function today() {
 }
 
 const emptyForm = () => ({
-  submission_date: today(),
-  website_url: '',
   directory_site_id: '',
-  type: '',
-  status: 'live',
-  live_url: '',
-  email: '',
-  username: '',
-  password: '',
+  directory_name: '',
+  website_url: '',
+  status: 'pending',
+  submission_date: today(),
   comment: '',
 })
 
-interface DirectorySite {
-  id: string
-  url: string
-  domain: string
-  category: string
-  da_score: number | null
-}
-
 export default function OffPagePage({ params }: { params: { id: string; projectId: string } }) {
   const [entries, setEntries] = useState<any[]>([])
+  const [directorySites, setDirectorySites] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [directorySites, setDirectorySites] = useState<DirectorySite[]>([])
+  const [editEntry, setEditEntry] = useState<any | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState(emptyForm())
 
   useEffect(() => {
     fetch(`/api/projects/${params.projectId}/offpage`)
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setEntries(data) })
       .finally(() => setLoading(false))
+
     fetch('/api/settings/directory-sites')
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setDirectorySites(data) })
   }, [params.projectId])
 
-  const [editEntry, setEditEntry] = useState<any | null>(null)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [deleting, setDeleting] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [form, setForm] = useState(emptyForm())
-
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }))
+
+  const handleDirectoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value
+    const site = directorySites.find(s => s.id === val)
+    setForm(f => ({ ...f, directory_site_id: val, directory_name: site ? (site.domain || site.url) : '' }))
+  }
 
   const openAdd = () => { setEditEntry(null); setForm(emptyForm()); setShowForm(true) }
   const openEdit = (entry: any) => {
     setEditEntry(entry)
     setForm({
-      submission_date: entry.submission_date || today(),
-      website_url: entry.website_url || '',
       directory_site_id: entry.directory_site_id || '',
-      type: entry.type || '',
-      status: entry.status || 'live',
-      live_url: entry.live_url || '',
-      email: entry.email || '',
-      username: entry.username || '',
-      password: '',
+      directory_name: entry.directory_name || '',
+      website_url: entry.website_url || '',
+      status: entry.status || 'pending',
+      submission_date: entry.submission_date || today(),
       comment: entry.comment || '',
     })
     setShowForm(true)
@@ -91,16 +78,13 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
     e.preventDefault()
     setSaving(true)
     try {
-      // Resolve website_url from directory site if selected
-      let resolvedUrl = form.website_url
-      if (form.directory_site_id) {
-        const site = directorySites.find(s => s.id === form.directory_site_id)
-        if (site) resolvedUrl = site.url
-      }
       const payload = {
-        ...form,
-        website_url: resolvedUrl,
-        status: form.status.toLowerCase().replace(' ', '_'),
+        directory_site_id: form.directory_site_id || null,
+        directory_name: form.directory_name || null,
+        website_url: form.website_url,
+        status: form.status,
+        submission_date: form.submission_date,
+        comment: form.comment || null,
       }
       if (editEntry) {
         const res = await fetch(`/api/projects/${params.projectId}/offpage/${editEntry.id}`, {
@@ -144,208 +128,118 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
     }
   }
 
+  const displayDir = (entry: any) => entry.directory_name || directorySites.find((s: any) => s.id === entry.directory_site_id)?.domain || entry.website_url
+
   return (
     <div>
-      {/* Progress bar */}
-      <div className="glass-card p-4 mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-slate-300">Off-Page Link Building — Monthly Target</span>
-          <span className="text-sm text-slate-400">{entries.length}/0</span>
-        </div>
-        <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
-          <div className="h-full bg-sky-500 rounded-full" style={{ width: '0%' }} />
-        </div>
-        <p className="text-xs text-slate-500 mt-1">No target set for this month</p>
-      </div>
-
       <div className="glass-card">
         <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
-          <h2 className="font-semibold text-white">Off-Page Submissions ({entries.length})</h2>
-          <button
-            onClick={openAdd}
-            className="btn-brand flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
-          >
+          <h2 className="font-semibold text-white">Directory Citations ({entries.length})</h2>
+          <button onClick={openAdd} className="btn-brand flex items-center gap-2 px-3 py-1.5 text-sm font-medium">
             <Plus className="h-4 w-4" />
             Add Submission
           </button>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-slate-400">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 opacity-40" />
-          </div>
+          <div className="p-12 text-center text-slate-400"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
         ) : entries.length === 0 ? (
           <div className="p-12 text-center text-slate-400">
             <p className="font-medium">No submissions yet</p>
-            <p className="text-sm mt-1">Click "Add Submission" to log your first off-page entry</p>
+            <p className="text-sm mt-1">Click &quot;Add Submission&quot; to log your first directory citation</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  {['#', 'Directory / Website', 'Type', 'Status', 'Live URL', 'Date', 'Comment', 'Actions'].map(h => (
+                  {['#', 'Directory', 'URL Submitted To', 'Status', 'Date Submitted', 'Notes', 'Actions'].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.06]">
-                {entries.map((entry, i) => {
-                  const site = directorySites.find(s => s.id === entry.directory_site_id)
-                  return (
-                    <tr key={entry.id} className="hover:bg-white/[0.03]">
-                      <td className="px-4 py-3 text-slate-500">{i + 1}</td>
-                      <td className="px-4 py-3 max-w-[180px]">
-                        {site ? (
-                          <div>
-                            <div className="font-medium text-white truncate">{site.domain}</div>
-                            <div className="text-xs text-slate-500 truncate">{entry.website_url || site.url}</div>
-                          </div>
-                        ) : (
-                          <span className="font-medium text-white truncate block">{entry.website_url}</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-slate-300">{entry.type}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[entry.status] || ''}`}>
-                          {(entry.status || '').replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        {entry.live_url && (
-                          <a href={entry.live_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sky-400 hover:text-sky-300">
-                            <ExternalLink className="h-3 w-3" />
-                            View
-                          </a>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-slate-400">{entry.submission_date}</td>
-                      <td className="px-4 py-3 text-slate-400 max-w-[120px] truncate">{entry.comment}</td>
-                      <td className="px-4 py-3">
-                        {deleteId === entry.id ? (
-                          <div className="flex items-center gap-1.5 text-xs bg-red-500/10 border border-red-500/20 rounded-xl px-2 py-1">
-                            <span className="text-red-400">Delete?</span>
-                            <button onClick={() => setDeleteId(null)} className="px-2 py-0.5 border border-white/[0.10] rounded text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all">Cancel</button>
-                            <button onClick={handleDelete} disabled={deleting} className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded disabled:opacity-60">
-                              {deleting ? '...' : 'Delete'}
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-1">
-                            <button onClick={() => openEdit(entry)} className="p-1 text-slate-400 hover:text-sky-400"><Edit2 className="h-4 w-4" /></button>
-                            <button onClick={() => setDeleteId(entry.id)} className="p-1 text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
+                {entries.map((entry, i) => (
+                  <tr key={entry.id} className="hover:bg-white/[0.03]">
+                    <td className="px-4 py-3 text-slate-500">{i + 1}</td>
+                    <td className="px-4 py-3 font-medium text-white max-w-[160px] truncate">{displayDir(entry)}</td>
+                    <td className="px-4 py-3">
+                      {entry.website_url ? (
+                        <a href={entry.website_url.startsWith('http') ? entry.website_url : `https://${entry.website_url}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sky-400 hover:text-sky-300 max-w-[140px] truncate">
+                          <ExternalLink className="h-3 w-3 flex-shrink-0" />{entry.website_url}
+                        </a>
+                      ) : <span className="text-slate-600">—</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[entry.status] || ''}`}>
+                        {entry.status?.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-400">{entry.submission_date || '—'}</td>
+                    <td className="px-4 py-3 text-slate-400 max-w-[120px] truncate">{entry.comment || '—'}</td>
+                    <td className="px-4 py-3">
+                      {deleteId === entry.id ? (
+                        <div className="flex items-center gap-1.5 text-xs bg-red-500/10 border border-red-500/20 rounded-xl px-2 py-1">
+                          <span className="text-red-400">Delete?</span>
+                          <button onClick={() => setDeleteId(null)} className="px-2 py-0.5 border border-white/[0.10] rounded text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all">Cancel</button>
+                          <button onClick={handleDelete} disabled={deleting} className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded disabled:opacity-60">
+                            {deleting ? '...' : 'Delete'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-1">
+                          <button onClick={() => openEdit(entry)} className="p-1 text-slate-400 hover:text-sky-400"><Edit2 className="h-4 w-4" /></button>
+                          <button onClick={() => setDeleteId(entry.id)} className="p-1 text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         )}
-
-        <div className="p-4 border-t border-white/[0.06] flex flex-wrap gap-2">
-          <button className="btn-brand flex items-center gap-1.5 px-3 py-1.5 text-sm">
-            <Send className="h-3.5 w-3.5" /> Send to All
-          </button>
-          <button className="px-3 py-1.5 rounded-lg border border-white/[0.10] text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Send to DM Manager</button>
-          <button className="px-3 py-1.5 rounded-lg border border-white/[0.10] text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Send to Sales Manager</button>
-          <button className="px-3 py-1.5 rounded-lg border border-white/[0.10] text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Send to Client</button>
-        </div>
       </div>
 
-      {/* Add/Edit Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="glass w-full max-w-lg rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-lg font-semibold text-white">{editEntry ? 'Edit Off-Page Submission' : 'Add Off-Page Submission'}</h3>
+              <h3 className="text-lg font-semibold text-white">{editEntry ? 'Edit Directory Submission' : 'Add Directory Submission'}</h3>
               <button onClick={closeModal}><X className="h-5 w-5 text-slate-400" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Submission Date <span className="text-red-400">*</span></label>
-                <input className="input-glass" type="date" value={form.submission_date} onChange={set('submission_date')} required />
-              </div>
-
-              {/* Directory site dropdown */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Directory Site</label>
-                <select
-                  className={selectClass}
-                  value={form.directory_site_id}
-                  onChange={e => {
-                    const siteId = e.target.value
-                    const site = directorySites.find(s => s.id === siteId)
-                    setForm(f => ({
-                      ...f,
-                      directory_site_id: siteId,
-                      website_url: site ? site.url : f.website_url,
-                    }))
-                  }}
-                >
-                  <option value="">— Select from directory or enter manually —</option>
-                  {directorySites.map(site => (
-                    <option key={site.id} value={site.id}>
-                      {site.domain} ({site.category}){site.da_score != null ? ` — DA ${site.da_score}` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Website URL <span className="text-red-400">*</span></label>
-                <input
-                  className="input-glass"
-                  type="url"
-                  value={form.website_url}
-                  onChange={set('website_url')}
-                  placeholder="https://example.com"
-                  required={!form.directory_site_id}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Type <span className="text-red-400">*</span></label>
-                  <select className={selectClass} value={form.type} onChange={set('type')} required>
-                    <option value="">Select...</option>
-                    {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                <label className="block text-sm font-medium text-slate-300 mb-1">Directory <span className="text-red-400">*</span></label>
+                {directorySites.length > 0 ? (
+                  <select className={selectClass} value={form.directory_site_id} onChange={handleDirectoryChange} required>
+                    <option value="">Select directory...</option>
+                    {directorySites.map((site: any) => (
+                      <option key={site.id} value={site.id}>{site.domain || site.url}{site.category ? ` — ${site.category}` : ''}</option>
+                    ))}
                   </select>
-                </div>
+                ) : (
+                  <input className="input-glass" value={form.directory_name} onChange={set('directory_name')} placeholder="Directory name" required />
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">URL Submitted To <span className="text-red-400">*</span></label>
+                <input className="input-glass" value={form.website_url} onChange={set('website_url')} placeholder="https://example.com/submit" required />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">Status <span className="text-red-400">*</span></label>
                   <select className={selectClass} value={form.status} onChange={set('status')} required>
-                    {STATUSES.map(s => <option key={s} value={s.toLowerCase().replace(' ', '_')}>{s}</option>)}
+                    {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
                   </select>
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Live URL</label>
-                <input className="input-glass" type="url" value={form.live_url} onChange={set('live_url')} placeholder="https://..." />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Email</label>
-                <input className="input-glass" type="email" value={form.email} onChange={set('email')} placeholder="account@email.com" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Username</label>
-                  <input className="input-glass" value={form.username} onChange={set('username')} placeholder="Username" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
-                  <div className="relative">
-                    <input className="input-glass pr-10" type={showPassword ? 'text' : 'password'} value={form.password} onChange={set('password')} placeholder="••••••" />
-                    <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Date Submitted</label>
+                  <input className="input-glass" type="date" value={form.submission_date} onChange={set('submission_date')} />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Comment</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
                 <textarea className="input-glass resize-none h-20" value={form.comment} onChange={set('comment')} placeholder="Optional notes..." />
               </div>
               <div className="flex gap-3 pt-2">

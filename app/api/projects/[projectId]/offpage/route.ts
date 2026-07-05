@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { encryptIfPresent } from '@/lib/encryption'
 
 export async function GET(request: NextRequest, { params }: { params: { projectId: string } }) {
   const supabase = await createClient()
@@ -16,7 +15,10 @@ export async function GET(request: NextRequest, { params }: { params: { projectI
     .eq('organization_id', userData?.organization_id)
     .order('submission_date', { ascending: false })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json([])
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 
   const safe = (data || []).map(({ password_encrypted, ...rest }: any) => rest)
   return NextResponse.json(safe)
@@ -38,19 +40,50 @@ export async function POST(request: NextRequest, { params }: { params: { project
       organization_id: userData.organization_id,
       submission_date: body.submission_date,
       website_url: body.website_url,
-      type: body.type,
-      status: body.status || 'live',
-      live_url: body.live_url,
-      email: body.email,
-      username: body.username,
-      password_encrypted: encryptIfPresent(body.password),
-      comment: body.comment,
+      directory_site_id: body.directory_site_id || null,
+      directory_name: body.directory_name || null,
+      type: body.type || 'directory_submission',
+      status: body.status || 'pending',
+      live_url: body.live_url || null,
+      email: body.email || null,
+      username: body.username || null,
+      comment: body.comment || null,
       created_by: user.id,
     })
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json({ error: 'Table not ready' }, { status: 500 })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   const { password_encrypted, ...safe } = data as any
   return NextResponse.json(safe, { status: 201 })
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: { projectId: string } }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
+  const body = await request.json()
+  const { id, ...fields } = body
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+
+  const { data, error } = await supabase
+    .from('offpage_submissions')
+    .update({ ...fields, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('project_id', params.projectId)
+    .eq('organization_id', userData?.organization_id)
+    .select()
+    .single()
+
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json({ error: 'Table not ready' }, { status: 500 })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  const { password_encrypted, ...safe } = data as any
+  return NextResponse.json(safe)
 }
