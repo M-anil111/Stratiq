@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireRole, ADMIN_ROLES } from '@/lib/authz'
 
 export async function GET() {
   const supabase = await createClient()
@@ -24,6 +25,9 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const authz = await requireRole(supabase, user.id, ADMIN_ROLES)
+  if (!authz.ok) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
 
   const body = await request.json()
   const { url, category, da_score } = body

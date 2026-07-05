@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { decryptIfPresent } from '@/lib/encryption'
+import { requireRole, MANAGER_ROLES } from '@/lib/authz'
 
 // POST /api/projects/:projectId/credentials/:credId/decrypt
 // Returns the decrypted password for one credential.
-// Only authenticated users of the same org can access this.
+// Restricted to managers/admins of the same org.
 export async function POST(
   _request: NextRequest,
   { params }: { params: { projectId: string; credId: string } }
@@ -12,6 +13,9 @@ export async function POST(
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const authz = await requireRole(supabase, user.id, MANAGER_ROLES)
+  if (!authz.ok) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
 
   const { data, error } = await supabase
     .from('login_credentials')

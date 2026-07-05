@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getQBToken } from '@/lib/quickbooks'
+import { requireRole, MANAGER_ROLES } from '@/lib/authz'
 
 const QB_BASE = (sandbox: boolean) =>
   sandbox ? 'https://sandbox-quickbooks.api.intuit.com' : 'https://quickbooks.api.intuit.com'
@@ -14,6 +15,9 @@ export async function POST(req: NextRequest) {
 
   const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
+
+  const authz = await requireRole(supabase, user.id, MANAGER_ROLES)
+  if (!authz.ok) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
 
   const { clientId } = await req.json()
   if (!clientId) return NextResponse.json({ error: 'clientId required' }, { status: 400 })

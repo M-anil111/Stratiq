@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireRole, ADMIN_ROLES, BILLING_ROLES } from '@/lib/authz'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -27,6 +28,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
+
+  const authz = await requireRole(supabase, user.id, BILLING_ROLES)
+  if (!authz.ok) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
 
   const body = await req.json()
   const lineItems: any[] = body.line_items || []
@@ -64,6 +68,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
 
+  const authz = await requireRole(supabase, user.id, BILLING_ROLES)
+  if (!authz.ok) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+
   const body = await req.json()
   const { status, paid_at } = body
 
@@ -100,16 +107,14 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: userData } = await supabase.from('users').select('organization_id, role').eq('id', user.id).single()
-  if (!userData || !['super_admin', 'admin', 'manager'].includes(userData.role)) {
-    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-  }
+  const authz = await requireRole(supabase, user.id, ADMIN_ROLES)
+  if (!authz.ok) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
 
   const { error } = await supabase
     .from('invoices')
     .delete()
     .eq('id', params.id)
-    .eq('organization_id', userData.organization_id)
+    .eq('organization_id', authz.organizationId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getQBToken } from '@/lib/quickbooks'
+import { requireRole, BILLING_ROLES } from '@/lib/authz'
 
 // POST /api/invoices/[id]/push-to-qb
 // Pushes a Stratiq invoice to QuickBooks as an Invoice object.
@@ -12,6 +13,9 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
 
   const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
+
+  const authz = await requireRole(supabase, user.id, BILLING_ROLES)
+  if (!authz.ok) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
 
   // Fetch invoice
   const { data: invoice } = await supabase

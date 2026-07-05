@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { requireRole, ADMIN_ROLES } from '@/lib/authz'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -9,6 +10,9 @@ export async function POST(request: NextRequest) {
 
   const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
+
+  const authz = await requireRole(supabase, user.id, ADMIN_ROLES)
+  if (!authz.ok) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
 
   const { email, full_name, role } = await request.json()
   if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 })

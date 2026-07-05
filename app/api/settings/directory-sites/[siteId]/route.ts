@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireRole, ADMIN_ROLES } from '@/lib/authz'
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ siteId: string }> }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const authz = await requireRole(supabase, user.id, ADMIN_ROLES)
+  if (!authz.ok) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
 
   const { siteId } = await params
   const body = await request.json()
@@ -30,6 +34,9 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const authz = await requireRole(supabase, user.id, ADMIN_ROLES)
+  if (!authz.ok) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
 
   const { siteId } = await params
 

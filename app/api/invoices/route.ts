@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireRole, BILLING_ROLES } from '@/lib/authz'
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
@@ -36,6 +37,9 @@ export async function POST(req: NextRequest) {
 
   const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
+
+  const authz = await requireRole(supabase, user.id, BILLING_ROLES)
+  if (!authz.ok) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
 
   const body = await req.json()
   const lineItems: any[] = body.line_items || []
