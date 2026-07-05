@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     google_drive_folder_url: body.google_drive_folder_url,
     proposal_url: body.proposal_url || null,
     google_place_id: body.google_place_id || null,
-    proposal_status: 'pending',
+    proposal_status: 'pending_approval',
   }
 
   let data: any = null
@@ -128,6 +128,15 @@ export async function POST(request: NextRequest) {
     if (missing && missing in insertRow) {
       delete insertRow[missing]
       droppedColumns.push(missing)
+      continue
+    }
+    // A check-constraint violation (e.g. proposal_status enum mismatch across
+    // migration versions) shouldn't block creation — drop the offending column
+    // and let the DB default apply.
+    const checkViol = error.code === '23514' && error.message?.match(/clients_([a-z_]+)_check/)?.[1]
+    if (checkViol && checkViol in insertRow) {
+      delete insertRow[checkViol]
+      droppedColumns.push(checkViol)
       continue
     }
     break
