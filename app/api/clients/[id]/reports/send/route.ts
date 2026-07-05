@@ -11,7 +11,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
 
   const body = await request.json()
-  const { month } = body // YYYY-MM
+  const { month, recipient_email } = body // YYYY-MM, optional override
 
   if (!month) return NextResponse.json({ error: 'month required' }, { status: 400 })
   const [yearStr, monthStr] = month.split('-')
@@ -26,7 +26,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     .single()
   if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
-  if (!client.email) return NextResponse.json({ error: 'Client has no email address' }, { status: 400 })
+  const toEmail = recipient_email || client.email
+  if (!toEmail) return NextResponse.json({ error: 'Client has no email address and no recipient_email provided' }, { status: 400 })
 
   const { data: report } = await supabase
     .from('marketing_reports')
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
   try {
     await sendEmail({
-      to: client.email,
+      to: toEmail,
       subject: `${client.company_name} — ${monthLabel} Marketing Report`,
       html,
     })
