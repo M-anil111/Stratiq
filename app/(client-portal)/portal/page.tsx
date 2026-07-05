@@ -10,6 +10,15 @@ interface PortalStats {
   unread_messages: number
 }
 
+interface UpsellRecommendation {
+  id: string
+  title: string
+  description: string
+  monthly_price: number
+  priority: 'high' | 'medium' | 'low'
+  category: string
+}
+
 function StatSkeleton() {
   return (
     <div className="glass-card p-4 text-center animate-pulse">

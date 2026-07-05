@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Download, RefreshCw, Loader2, Search, ExternalLink, Send, CheckCircle2, AlertCircle, FileText } from 'lucide-react'
+import { Plus, Download, RefreshCw, Loader2, Search, ExternalLink, Send, CheckCircle2, AlertCircle, FileText, Ban, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 
 interface Client { id: string; company_name: string }
@@ -189,9 +189,28 @@ export default function InvoicesPage() {
 
   const updateStatus = async (inv: Invoice, status: string) => {
     await fetch(`/api/invoices/${inv.id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...inv, status }),
+      body: JSON.stringify({ status }),
+    })
+    loadInvoices()
+  }
+
+  const markPaid = async (inv: Invoice) => {
+    await fetch(`/api/invoices/${inv.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'paid', paid_at: new Date().toISOString() }),
+    })
+    loadInvoices()
+  }
+
+  const voidInvoice = async (inv: Invoice) => {
+    if (!confirm(`Void invoice ${inv.invoice_number}? This cannot be undone.`)) return
+    await fetch(`/api/invoices/${inv.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'voided' }),
     })
     loadInvoices()
   }
@@ -468,6 +487,24 @@ export default function InvoicesPage() {
                           }
                           {pushMsg[inv.id] || 'Push'}
                         </button>
+                        {inv.status !== 'paid' && inv.status !== 'voided' && (
+                          <button
+                            onClick={() => markPaid(inv)}
+                            title="Mark as Paid"
+                            className="text-xs px-2 py-1.5 border border-white/[0.10] text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all whitespace-nowrap flex items-center gap-1"
+                          >
+                            <DollarSign className="h-3 w-3" /> Paid
+                          </button>
+                        )}
+                        {inv.status !== 'voided' && (
+                          <button
+                            onClick={() => voidInvoice(inv)}
+                            title="Void invoice"
+                            className="text-xs px-2 py-1.5 border border-white/[0.10] text-red-400 hover:bg-red-500/10 rounded-lg transition-all whitespace-nowrap flex items-center gap-1"
+                          >
+                            <Ban className="h-3 w-3" /> Void
+                          </button>
+                        )}
                         <Link href={`/clients/${inv.client_id}?tab=invoices`} title="View in client" className="text-slate-500 hover:text-slate-300 transition-colors">
                           <ExternalLink className="h-3.5 w-3.5" />
                         </Link>

@@ -16,7 +16,10 @@ export async function GET(request: NextRequest, { params }: { params: { projectI
     .eq('organization_id', userData?.organization_id)
     .order('submission_date', { ascending: false })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json([])
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 
   const safe = (data || []).map(({ password_encrypted, ...rest }: any) => rest)
   return NextResponse.json(safe)
@@ -53,7 +56,39 @@ export async function POST(request: NextRequest, { params }: { params: { project
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json({ error: 'Table not found' }, { status: 503 })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   const { password_encrypted, ...safe } = data as any
   return NextResponse.json(safe, { status: 201 })
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: { projectId: string } }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
+  if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
+
+  const body = await request.json()
+  const { id, status, ...rest } = body
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+
+  const { data, error } = await supabase
+    .from('group_postings')
+    .update({ status, ...rest, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('project_id', params.projectId)
+    .eq('organization_id', userData.organization_id)
+    .select()
+    .single()
+
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json({ error: 'Table not found' }, { status: 503 })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  const { password_encrypted, ...safe } = data as any
+  return NextResponse.json(safe)
 }

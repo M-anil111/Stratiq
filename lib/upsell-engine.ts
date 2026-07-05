@@ -17,17 +17,53 @@ const ALL_SERVICES = [
   { id: 'web-design', title: 'Website Redesign', description: 'Modern, conversion-optimised website that turns visitors into customers.', monthly_price: 2500, category: 'Web Design', requires_not: ['Web Design'] },
 ]
 
+/**
+ * Cross-sell pairs: if the client has the left service but not the right,
+ * the right service gets a priority boost.
+ */
+const CROSS_SELL_BOOSTS: Array<{ has: string; recommend: string }> = [
+  { has: 'Meta Ads', recommend: 'google-ads' },
+  { has: 'Google Ads', recommend: 'meta-ads' },
+  { has: 'Content Writing', recommend: 'local-seo' },
+  { has: 'Social Media Management', recommend: 'meta-ads' },
+]
+
 export function getUpsellRecommendations(currentServices: string[]): UpsellRecommendation[] {
-  return ALL_SERVICES
-    .filter(service => !service.requires_not.some(s => currentServices.includes(s)))
-    .map((service, i) => ({
+  // Services that should be boosted to high priority due to cross-sell logic
+  const boostedIds = new Set<string>()
+  for (const rule of CROSS_SELL_BOOSTS) {
+    if (currentServices.includes(rule.has)) {
+      boostedIds.add(rule.recommend)
+    }
+  }
+
+  const eligible = ALL_SERVICES.filter(
+    service => !service.requires_not.some(s => currentServices.includes(s))
+  )
+
+  // Sort: boosted services first, then by monthly price descending
+  const sorted = [...eligible].sort((a, b) => {
+    const aBoosted = boostedIds.has(a.id) ? 1 : 0
+    const bBoosted = boostedIds.has(b.id) ? 1 : 0
+    if (bBoosted !== aBoosted) return bBoosted - aBoosted
+    return b.monthly_price - a.monthly_price
+  })
+
+  return sorted.map((service, i) => {
+    let priority: 'high' | 'medium' | 'low'
+    if (boostedIds.has(service.id) || i < 2) priority = 'high'
+    else if (i < 4) priority = 'medium'
+    else priority = 'low'
+
+    return {
       id: service.id,
       title: service.title,
       description: service.description,
       monthly_price: service.monthly_price,
-      priority: i < 2 ? 'high' : i < 4 ? 'medium' : 'low',
+      priority,
       category: service.category,
-    }))
+    }
+  })
 }
 
 export function getTopUpsell(currentServices: string[]): UpsellRecommendation | null {

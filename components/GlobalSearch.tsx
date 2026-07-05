@@ -140,7 +140,8 @@ export function GlobalSearch() {
           onChange={e => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => { if (results.length > 0) setOpen(true) }}
-          placeholder="Search clients, projects, invoices…"
+          id="global-search-input"
+          placeholder="Search… (⌘K)"
           className={cn(
             'w-full pl-9 pr-3 py-2 text-sm rounded-xl bg-white/[0.06] border border-white/[0.08]',
             'text-slate-200 placeholder:text-slate-500',

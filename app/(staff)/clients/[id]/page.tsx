@@ -75,6 +75,15 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     const now = new Date()
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
+  const [reportEditMode, setReportEditMode] = useState(false)
+  const [savingReport, setSavingReport] = useState(false)
+  const [sendingReport, setSendingReport] = useState(false)
+  const [reportForm, setReportForm] = useState({
+    meta_spend: '', meta_roas: '', meta_impressions: '', meta_clicks: '',
+    google_spend: '', google_roas: '', google_impressions: '', google_clicks: '', google_conversions: '',
+    seo_offpage: '', seo_blog: '', seo_onpage: '',
+    notes: '',
+  })
 
   // Integrations
   const [metaAccounts, setMetaAccounts] = useState<any[]>([])
@@ -609,6 +618,15 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                   </div>
                 </div>
               )}
+              {client.google_place_id && (
+                <div className="flex items-start gap-3">
+                  <ExternalLink className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-slate-500">Google Places</p>
+                    <a href={`https://maps.google.com/?cid=${client.google_place_id}`} target="_blank" rel="noopener noreferrer" className="text-sm text-sky-400 hover:text-sky-300">View on Google Maps</a>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Business */}
@@ -678,6 +696,44 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
               <p className="text-sm text-slate-300 leading-relaxed">{client.about_company}</p>
             </div>
           )}
+
+          {/* Key Stats & Quick Actions */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="glass-card p-5">
+              <h2 className="font-semibold text-sm uppercase tracking-wider text-sky-400 mb-4">Key Stats</h2>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-white/[0.03] rounded-lg p-3 border border-white/[0.05] text-center">
+                  <p className="text-2xl font-bold text-sky-400">{projects.filter(p => p.status === 'active' || p.status === 'onboarding' || p.status === 'in_onboarding').length}</p>
+                  <p className="text-xs text-slate-500 mt-1">Active Projects</p>
+                </div>
+                <div className="bg-white/[0.03] rounded-lg p-3 border border-white/[0.05] text-center">
+                  <p className="text-2xl font-bold text-violet-400">{openTasks || 0}</p>
+                  <p className="text-xs text-slate-500 mt-1">Open Tasks</p>
+                </div>
+                <div className="bg-white/[0.03] rounded-lg p-3 border border-white/[0.05] text-center">
+                  <p className="text-2xl font-bold text-emerald-400">{monthlyRevenue > 0 ? `$${monthlyRevenue >= 1000 ? `${(monthlyRevenue / 1000).toFixed(1)}k` : monthlyRevenue}` : '—'}</p>
+                  <p className="text-xs text-slate-500 mt-1">MRR</p>
+                </div>
+              </div>
+            </div>
+            <div className="glass-card p-5">
+              <h2 className="font-semibold text-sm uppercase tracking-wider text-sky-400 mb-4">Quick Actions</h2>
+              <div className="space-y-2">
+                <a href={`/clients/${params.id}/edit`}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border border-white/[0.08] text-slate-300 hover:bg-white/[0.06] transition-colors text-sm">
+                  <Edit2 className="h-4 w-4 text-slate-400 shrink-0" /> Edit Client
+                </a>
+                <a href={`/clients/${params.id}/projects/new`}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border border-white/[0.08] text-slate-300 hover:bg-white/[0.06] transition-colors text-sm">
+                  <Plus className="h-4 w-4 text-slate-400 shrink-0" /> Add Project
+                </a>
+                <button onClick={() => setActiveTab(3)}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border border-white/[0.08] text-slate-300 hover:bg-white/[0.06] transition-colors text-sm">
+                  <FileText className="h-4 w-4 text-slate-400 shrink-0" /> View Reports
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -858,6 +914,8 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       {activeTab === 3 && (() => {
         const googleData = reports.find(r => r.channel === 'google_ads')
         const metaData = reports.find(r => r.channel === 'meta_ads')
+        const seoData = reports.find(r => r.channel === 'seo')
+        const reportMeta = reports.find(r => r.channel === 'summary' || r.notes != null || r.is_sent_to_client != null) || reports[0]
         const now = new Date()
         const monthOptions: string[] = []
         for (let i = 0; i < 6; i++) {
@@ -868,60 +926,270 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         const fmtMoney = (v: any) => v != null ? `$${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'
         const fmtPct = (v: any) => v != null ? `${Number(v).toFixed(2)}%` : '—'
         const fmtRoas = (v: any) => v != null ? `${Number(v).toFixed(2)}x` : '—'
+
+        const saveReport = async () => {
+          setSavingReport(true)
+          await fetch(`/api/clients/${params.id}/reports`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              month: selectedMonth,
+              meta_ads: { spend: reportForm.meta_spend, roas: reportForm.meta_roas, impressions: reportForm.meta_impressions, clicks: reportForm.meta_clicks },
+              google_ads: { spend: reportForm.google_spend, roas: reportForm.google_roas, impressions: reportForm.google_impressions, clicks: reportForm.google_clicks, conversions: reportForm.google_conversions },
+              seo: { offpage: reportForm.seo_offpage, blog: reportForm.seo_blog, onpage: reportForm.seo_onpage },
+              notes: reportForm.notes,
+            }),
+          })
+          setReportsLoading(true)
+          const d = await fetch(`/api/clients/${params.id}/reports?month=${selectedMonth}`).then(r => r.json())
+          setReports(Array.isArray(d) ? d : [])
+          setReportsLoading(false)
+          setReportEditMode(false)
+          setSavingReport(false)
+        }
+
+        const sendReport = async () => {
+          setSendingReport(true)
+          await fetch(`/api/clients/${params.id}/reports/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ month: selectedMonth }),
+          })
+          setSendingReport(false)
+          setReportsLoading(true)
+          const d = await fetch(`/api/clients/${params.id}/reports?month=${selectedMonth}`).then(r => r.json())
+          setReports(Array.isArray(d) ? d : [])
+          setReportsLoading(false)
+        }
+
+        const inputCls = "w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 placeholder:text-slate-600"
+
         return (
-          <div>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-semibold text-slate-300">Marketing Reports</h2>
-              <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
-                className="bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50">
-                {monthOptions.map(m => {
-                  const [y, mo] = m.split('-')
-                  const label = new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-                  return <option key={m} value={m}>{label}</option>
-                })}
-              </select>
+          <div className="space-y-5">
+            {/* Header row */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <h2 className="text-base font-semibold text-slate-300">Marketing Reports</h2>
+                {reportMeta?.is_sent_to_client && (
+                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <CheckCircle className="h-3 w-3" />
+                    Sent{reportMeta.sent_at ? ` on ${new Date(reportMeta.sent_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <select value={selectedMonth} onChange={e => { setSelectedMonth(e.target.value); setReportEditMode(false) }}
+                  className="bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50">
+                  {monthOptions.map(m => {
+                    const [y, mo] = m.split('-')
+                    const label = new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                    return <option key={m} value={m}>{label}</option>
+                  })}
+                </select>
+                <button onClick={() => {
+                  if (!reportEditMode) {
+                    setReportForm({
+                      meta_spend: metaData?.spend ?? '', meta_roas: metaData?.roas ?? '', meta_impressions: metaData?.impressions ?? '', meta_clicks: metaData?.clicks ?? '',
+                      google_spend: googleData?.spend ?? '', google_roas: googleData?.roas ?? '', google_impressions: googleData?.impressions ?? '', google_clicks: googleData?.clicks ?? '', google_conversions: googleData?.conversions ?? '',
+                      seo_offpage: seoData?.offpage_count ?? seoData?.offpage ?? '', seo_blog: seoData?.blog_count ?? seoData?.blog ?? '', seo_onpage: seoData?.onpage_count ?? seoData?.onpage ?? '',
+                      notes: reportMeta?.notes ?? '',
+                    })
+                  }
+                  setReportEditMode(v => !v)
+                }} className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${reportEditMode ? 'border border-white/[0.08] text-slate-400 hover:text-white' : 'btn-brand'}`}>
+                  <Edit2 className="h-3.5 w-3.5" /> {reportEditMode ? 'Cancel' : 'Edit'}
+                </button>
+              </div>
             </div>
+
             {reportsLoading ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">{[0,1].map(i => <div key={i} className="h-48 skeleton rounded-xl" />)}</div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">{[0,1,2].map(i => <div key={i} className="h-48 skeleton rounded-xl" />)}</div>
+            ) : reportEditMode ? (
+              /* ── EDIT MODE ── */
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {/* Meta Ads edit */}
+                  <div className="glass-card p-5 space-y-3">
+                    <h3 className="text-sm font-semibold text-sky-400">Meta Ads</h3>
+                    <div>
+                      <label className="text-xs text-slate-500 mb-1 block">Spend ($)</label>
+                      <input className={inputCls} placeholder="0.00" type="number" step="0.01"
+                        value={reportForm.meta_spend} onChange={e => setReportForm(f => ({ ...f, meta_spend: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500 mb-1 block">ROAS</label>
+                      <input className={inputCls} placeholder="0.00" type="number" step="0.01"
+                        value={reportForm.meta_roas} onChange={e => setReportForm(f => ({ ...f, meta_roas: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500 mb-1 block">Impressions</label>
+                      <input className={inputCls} placeholder="0" type="number"
+                        value={reportForm.meta_impressions} onChange={e => setReportForm(f => ({ ...f, meta_impressions: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500 mb-1 block">Clicks</label>
+                      <input className={inputCls} placeholder="0" type="number"
+                        value={reportForm.meta_clicks} onChange={e => setReportForm(f => ({ ...f, meta_clicks: e.target.value }))} />
+                    </div>
+                  </div>
+                  {/* Google Ads edit */}
+                  <div className="glass-card p-5 space-y-3">
+                    <h3 className="text-sm font-semibold text-sky-400">Google Ads</h3>
+                    <div>
+                      <label className="text-xs text-slate-500 mb-1 block">Spend ($)</label>
+                      <input className={inputCls} placeholder="0.00" type="number" step="0.01"
+                        value={reportForm.google_spend} onChange={e => setReportForm(f => ({ ...f, google_spend: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500 mb-1 block">ROAS</label>
+                      <input className={inputCls} placeholder="0.00" type="number" step="0.01"
+                        value={reportForm.google_roas} onChange={e => setReportForm(f => ({ ...f, google_roas: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500 mb-1 block">Impressions</label>
+                      <input className={inputCls} placeholder="0" type="number"
+                        value={reportForm.google_impressions} onChange={e => setReportForm(f => ({ ...f, google_impressions: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500 mb-1 block">Clicks</label>
+                      <input className={inputCls} placeholder="0" type="number"
+                        value={reportForm.google_clicks} onChange={e => setReportForm(f => ({ ...f, google_clicks: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500 mb-1 block">Conversions</label>
+                      <input className={inputCls} placeholder="0" type="number"
+                        value={reportForm.google_conversions} onChange={e => setReportForm(f => ({ ...f, google_conversions: e.target.value }))} />
+                    </div>
+                  </div>
+                  {/* SEO edit */}
+                  <div className="glass-card p-5 space-y-3">
+                    <h3 className="text-sm font-semibold text-sky-400">SEO</h3>
+                    <div>
+                      <label className="text-xs text-slate-500 mb-1 block">Off-Page Links</label>
+                      <input className={inputCls} placeholder="0" type="number"
+                        value={reportForm.seo_offpage} onChange={e => setReportForm(f => ({ ...f, seo_offpage: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500 mb-1 block">Blog Posts</label>
+                      <input className={inputCls} placeholder="0" type="number"
+                        value={reportForm.seo_blog} onChange={e => setReportForm(f => ({ ...f, seo_blog: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500 mb-1 block">On-Page Optimizations</label>
+                      <input className={inputCls} placeholder="0" type="number"
+                        value={reportForm.seo_onpage} onChange={e => setReportForm(f => ({ ...f, seo_onpage: e.target.value }))} />
+                    </div>
+                  </div>
+                </div>
+                {/* Notes */}
+                <div className="glass-card p-5">
+                  <label className="text-xs text-slate-500 mb-2 block">Report Notes</label>
+                  <textarea className={`${inputCls} min-h-[80px] resize-none`} placeholder="Add notes about this month's performance…"
+                    value={reportForm.notes} onChange={e => setReportForm(f => ({ ...f, notes: e.target.value }))} />
+                </div>
+                {/* Save / Send buttons */}
+                <div className="flex items-center justify-between gap-3">
+                  <button onClick={() => setReportEditMode(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white border border-white/[0.08] rounded-lg">Cancel</button>
+                  <div className="flex gap-2">
+                    <button onClick={saveReport} disabled={savingReport}
+                      className="flex items-center gap-2 px-5 py-2 text-sm btn-brand font-medium rounded-lg disabled:opacity-50">
+                      {savingReport && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Save Report
+                    </button>
+                    <button onClick={async () => { await saveReport(); await sendReport() }} disabled={savingReport || sendingReport}
+                      className="flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-lg border border-sky-500/40 text-sky-400 hover:bg-sky-500/10 disabled:opacity-50 transition-colors">
+                      <Send className="h-3.5 w-3.5" /> Save & Send
+                    </button>
+                  </div>
+                </div>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="glass-card p-5">
-                  <h3 className="text-sm font-semibold text-sky-400 mb-4">Google Ads</h3>
-                  {googleData ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { label: 'Impressions', value: fmtNum(googleData.impressions) },
-                        { label: 'Clicks', value: fmtNum(googleData.clicks) },
-                        { label: 'Conversions', value: fmtNum(googleData.conversions) },
-                        { label: 'Spend', value: fmtMoney(googleData.spend) },
-                        { label: 'CTR', value: googleData.ctr != null ? fmtPct(googleData.ctr) : (googleData.impressions && googleData.clicks ? fmtPct((googleData.clicks / googleData.impressions) * 100) : '—') },
-                      ].map(row => (
-                        <div key={row.label} className="bg-white/[0.03] rounded-lg p-3 border border-white/[0.05]">
-                          <p className="text-xs text-slate-400">{row.label}</p>
-                          <p className="text-sm font-semibold text-white mt-0.5">{row.value}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : <div className="flex items-center justify-center h-32 text-slate-400 text-sm">No data synced yet</div>}
+              /* ── VIEW MODE ── */
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {/* Meta Ads view */}
+                  <div className="glass-card p-5">
+                    <h3 className="text-sm font-semibold text-sky-400 mb-4">Meta Ads</h3>
+                    {metaData ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { label: 'Spend', value: fmtMoney(metaData.spend) },
+                          { label: 'ROAS', value: fmtRoas(metaData.roas) },
+                          { label: 'Impressions', value: fmtNum(metaData.impressions) },
+                          { label: 'Clicks', value: fmtNum(metaData.clicks) },
+                        ].map(row => (
+                          <div key={row.label} className="bg-white/[0.03] rounded-lg p-3 border border-white/[0.05]">
+                            <p className="text-xs text-slate-400">{row.label}</p>
+                            <p className="text-sm font-semibold text-white mt-0.5">{row.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : <div className="flex flex-col items-center justify-center h-32 text-slate-500 text-sm gap-2"><AlertCircle className="h-6 w-6" />No data — click Edit to enter</div>}
+                  </div>
+                  {/* Google Ads view */}
+                  <div className="glass-card p-5">
+                    <h3 className="text-sm font-semibold text-sky-400 mb-4">Google Ads</h3>
+                    {googleData ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { label: 'Spend', value: fmtMoney(googleData.spend) },
+                          { label: 'ROAS', value: fmtRoas(googleData.roas) },
+                          { label: 'Impressions', value: fmtNum(googleData.impressions) },
+                          { label: 'Clicks', value: fmtNum(googleData.clicks) },
+                          { label: 'Conversions', value: fmtNum(googleData.conversions) },
+                          { label: 'CTR', value: googleData.ctr != null ? fmtPct(googleData.ctr) : (googleData.impressions && googleData.clicks ? fmtPct((googleData.clicks / googleData.impressions) * 100) : '—') },
+                        ].map(row => (
+                          <div key={row.label} className="bg-white/[0.03] rounded-lg p-3 border border-white/[0.05]">
+                            <p className="text-xs text-slate-400">{row.label}</p>
+                            <p className="text-sm font-semibold text-white mt-0.5">{row.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : <div className="flex flex-col items-center justify-center h-32 text-slate-500 text-sm gap-2"><AlertCircle className="h-6 w-6" />No data — click Edit to enter</div>}
+                  </div>
+                  {/* SEO view */}
+                  <div className="glass-card p-5">
+                    <h3 className="text-sm font-semibold text-sky-400 mb-4">SEO</h3>
+                    {seoData ? (
+                      <div className="grid grid-cols-1 gap-3">
+                        {[
+                          { label: 'Off-Page Links', value: fmtNum(seoData.offpage_count ?? seoData.offpage) },
+                          { label: 'Blog Posts', value: fmtNum(seoData.blog_count ?? seoData.blog) },
+                          { label: 'On-Page Optimizations', value: fmtNum(seoData.onpage_count ?? seoData.onpage) },
+                        ].map(row => (
+                          <div key={row.label} className="bg-white/[0.03] rounded-lg p-3 border border-white/[0.05] flex justify-between items-center">
+                            <p className="text-xs text-slate-400">{row.label}</p>
+                            <p className="text-sm font-semibold text-white">{row.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : <div className="flex flex-col items-center justify-center h-32 text-slate-500 text-sm gap-2"><AlertCircle className="h-6 w-6" />No data — click Edit to enter</div>}
+                  </div>
                 </div>
-                <div className="glass-card p-5">
-                  <h3 className="text-sm font-semibold text-sky-400 mb-4">Meta Ads</h3>
-                  {metaData ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { label: 'Impressions', value: fmtNum(metaData.impressions) },
-                        { label: 'Clicks', value: fmtNum(metaData.clicks) },
-                        { label: 'Spend', value: fmtMoney(metaData.spend) },
-                        { label: 'ROAS', value: fmtRoas(metaData.roas) },
-                      ].map(row => (
-                        <div key={row.label} className="bg-white/[0.03] rounded-lg p-3 border border-white/[0.05]">
-                          <p className="text-xs text-slate-400">{row.label}</p>
-                          <p className="text-sm font-semibold text-white mt-0.5">{row.value}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : <div className="flex items-center justify-center h-32 text-slate-400 text-sm">No data synced yet</div>}
-                </div>
+                {/* Notes + send action */}
+                {(reportMeta?.notes || reports.length > 0) && (
+                  <div className="glass-card p-5 space-y-4">
+                    {reportMeta?.notes && (
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">Notes</p>
+                        <p className="text-sm text-slate-300 whitespace-pre-wrap">{reportMeta.notes}</p>
+                      </div>
+                    )}
+                    {!reportMeta?.is_sent_to_client && reports.length > 0 && (
+                      <button onClick={sendReport} disabled={sendingReport}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-sky-500/40 text-sky-400 hover:bg-sky-500/10 disabled:opacity-50 transition-colors">
+                        {sendingReport ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                        {sendingReport ? 'Sending…' : 'Send to Client'}
+                      </button>
+                    )}
+                  </div>
+                )}
+                {reports.length === 0 && (
+                  <div className="glass-card p-10 text-center">
+                    <FileText className="h-8 w-8 text-slate-600 mx-auto mb-2" />
+                    <p className="text-slate-400 text-sm">No report data for this month</p>
+                    <button onClick={() => setReportEditMode(true)} className="text-sky-400 text-xs mt-1 hover:text-sky-300">Enter data manually →</button>
+                  </div>
+                )}
               </div>
             )}
           </div>

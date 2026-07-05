@@ -1,8 +1,21 @@
+'use client'
+import { useEffect } from 'react'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MobileNav } from '@/components/layout/mobile-nav'
 import { GlobalSearch } from '@/components/GlobalSearch'
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        document.getElementById('global-search-input')?.focus()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
   return (
     <div className="min-h-screen bg-mesh">
       <Sidebar />

@@ -83,6 +83,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     // Mark invoice as sent
     await supabase.from('invoices').update({
       status: 'sent',
+      sent_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq('id', params.id)
 
