@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Download, Send, ChevronDown, ChevronRight } from 'lucide-react'
+import { Download, Send, ChevronDown, ChevronRight, Link2 } from 'lucide-react'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const YEARS = [2026, 2025, 2024]
@@ -45,6 +45,9 @@ export default function MarketingReportsPage() {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [sendError, setSendError] = useState('')
+  const [sharing, setSharing] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [shareError, setShareError] = useState('')
   const [seoOpen, setSeoOpen] = useState(true)
   const [gadsOpen, setGadsOpen] = useState(true)
   const [metaOpen, setMetaOpen] = useState(true)
@@ -113,6 +116,34 @@ export default function MarketingReportsPage() {
       const err = await res.json()
       setSendError(err.error || 'Failed to send')
       setTimeout(() => setSendError(''), 4000)
+    }
+  }
+
+  const handleCopyShareLink = async () => {
+    if (!clientId) return
+    const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`
+    setSharing(true)
+    setShareError('')
+    try {
+      const res = await fetch(`/api/clients/${clientId}/reports/share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ month: monthStr }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.url) {
+        setShareError(data.error || 'Failed to create share link')
+        setTimeout(() => setShareError(''), 4000)
+        return
+      }
+      await navigator.clipboard.writeText(window.location.origin + data.url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setShareError('Failed to create share link')
+      setTimeout(() => setShareError(''), 4000)
+    } finally {
+      setSharing(false)
     }
   }
 
@@ -267,7 +298,12 @@ export default function MarketingReportsPage() {
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium">
               <Send className="h-4 w-4" /> {sending ? 'Sending…' : sent ? 'Sent!' : 'Send to Client'}
             </button>
+            <button onClick={handleCopyShareLink} disabled={sharing || !clientId}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium">
+              <Link2 className="h-4 w-4" /> {sharing ? 'Creating link…' : copied ? 'Copied!' : 'Copy Share Link'}
+            </button>
             {sendError && <span className="text-red-400 text-sm">{sendError}</span>}
+            {shareError && <span className="text-red-400 text-sm">{shareError}</span>}
           </div>
         </>
       )}
