@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/email/index'
-import { isStripeConfigured, createPaymentLink } from '@/lib/stripe'
+import { isHelcimConfigured, createHostedPaymentUrl } from '@/lib/helcim'
 import { requireRole, BILLING_ROLES } from '@/lib/authz'
 import { logAudit } from '@/lib/audit'
 
@@ -41,15 +41,16 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   const agencyName = orgMap.company_name || 'Your Agency'
   const lineItems: any[] = invoice.line_items || []
 
-  // Optional Stripe payment link (env-gated — skipped entirely if not configured)
+  // Optional Helcim hosted payment page (env-gated — skipped entirely if not configured)
   let paymentLink: string | null = null
-  if (isStripeConfigured() && (invoice.total || 0) > 0) {
+  if (isHelcimConfigured() && (invoice.total || 0) > 0) {
     try {
-      paymentLink = await createPaymentLink({
+      paymentLink = await createHostedPaymentUrl({
         amount: invoice.total,
-        currency: 'usd',
+        currency: 'USD',
         description: `Invoice #${invoice.invoice_number} — ${agencyName}`,
         invoiceNumber: invoice.invoice_number,
+        customerName: clientName,
       })
       // Persist the link; tolerate a missing payment_link column (migration not yet run)
       try {
@@ -62,7 +63,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
         // column missing — non-fatal
       }
     } catch (err) {
-      console.error('Stripe payment link creation failed:', err)
+      console.error('Helcim payment link creation failed:', err)
       paymentLink = null
     }
   }
@@ -101,7 +102,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       ${paymentLink ? `
       <div style="text-align:center;margin:24px 0;">
         <a href="${paymentLink}" style="display:inline-block;background:#0ea5e9;color:#ffffff;font-weight:600;font-size:16px;padding:14px 40px;border-radius:8px;text-decoration:none;">Pay Now</a>
-        <p style="color:#9ca3af;font-size:12px;margin-top:8px;">Pay securely online via Stripe</p>
+        <p style="color:#9ca3af;font-size:12px;margin-top:8px;">Pay securely online via Helcim</p>
       </div>` : ''}
       ${invoice.due_date ? `<p style="color:#374151;"><strong>Due Date:</strong> ${invoice.due_date}</p>` : ''}
       ${invoice.notes ? `<p style="color:#374151;"><strong>Notes:</strong> ${invoice.notes}</p>` : ''}

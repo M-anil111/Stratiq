@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { CheckCircle, XCircle, RefreshCw, Loader2, Briefcase } from 'lucide-react'
+import { CheckCircle, XCircle, RefreshCw, Loader2, Briefcase, CreditCard } from 'lucide-react'
 
 type IntegrationStatus = 'connected' | 'disconnected' | 'error' | 'loading'
 
@@ -37,6 +37,7 @@ export default function IntegrationsPage() {
   const [googleStatus, setGoogleStatus] = useState<IntegrationStatus>('loading')
   const [metaStatus, setMetaStatus] = useState<IntegrationStatus>('loading')
   const [qbStatus, setQbStatus] = useState<IntegrationStatus>('loading')
+  const [helcimStatus, setHelcimStatus] = useState<IntegrationStatus>('loading')
 
   const [disconnecting, setDisconnecting] = useState(false)
   const [metaDisconnecting, setMetaDisconnecting] = useState(false)
@@ -89,6 +90,7 @@ export default function IntegrationsPage() {
       .then(data => {
         setGoogleStatus(data.google_connected === 'true' ? 'connected' : 'disconnected')
         setQbStatus(data.qb_connected === 'true' ? 'connected' : 'disconnected')
+        setHelcimStatus(data.helcim_connected === 'true' ? 'connected' : 'disconnected')
         setLastSynced({
           qb: data.qb_last_synced || null,
           meta: data.meta_last_synced || null,
@@ -110,6 +112,7 @@ export default function IntegrationsPage() {
         setGoogleStatus('disconnected')
         setQbStatus('disconnected')
         setMetaStatus('disconnected')
+        setHelcimStatus('disconnected')
       })
   }, [showBanner])
 
@@ -432,6 +435,47 @@ export default function IntegrationsPage() {
                 <a href="/api/auth/quickbooks/connect" className="btn-brand">
                   Connect QuickBooks
                 </a>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Helcim (invoice payments) */}
+        <div className="glass-card p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="h-9 w-9 rounded-lg bg-sky-500/20 flex items-center justify-center shrink-0">
+                <CreditCard className="h-5 w-5 text-sky-400" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="font-semibold text-white">Helcim</h2>
+                  <StatusBadge status={helcimStatus} />
+                </div>
+                <p className="text-sm text-slate-400 mt-1">Collect invoice payments online via Helcim Hosted Payment Pages. A "Pay Now" button is added to sent invoices when configured.</p>
+                {helcimStatus === 'disconnected' && (
+                  <ol className="mt-3 space-y-1">
+                    {[
+                      'Set HELCIM_API_TOKEN (Payment API token) in your environment',
+                      'Set HELCIM_PAYMENT_PAGE_URL to your Hosted Payment Page base URL',
+                      'Set HELCIM_WEBHOOK_VERIFIER_TOKEN and point Helcim webhooks at /api/webhooks/helcim',
+                    ].map((step, i) => (
+                      <li key={i} className="text-xs text-slate-400 flex gap-1.5">
+                        <span className="font-medium text-slate-300">{i + 1}.</span>
+                        {step}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            </div>
+            <div className="shrink-0">
+              {helcimStatus === 'loading' ? (
+                <div className="h-9 w-24 skeleton rounded-xl" />
+              ) : helcimStatus === 'connected' ? (
+                <StatusBadge status="connected" />
+              ) : (
+                <span className="text-xs text-slate-500">Configure via environment</span>
               )}
             </div>
           </div>

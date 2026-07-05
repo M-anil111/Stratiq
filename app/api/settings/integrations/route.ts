@@ -31,12 +31,15 @@ export async function GET() {
   const hasGoogle = settings.google_connected === 'true' || !!data?.find(r => r.key === 'google_access_token' && r.value)
   const hasQb = settings.qb_connected === 'true' || !!data?.find(r => r.key === 'qb_access_token' && r.value)
   const hasMeta = settings.meta_connected === 'true'
+  // Helcim is configured entirely via env (no per-org OAuth tokens stored).
+  const hasHelcim = !!process.env.HELCIM_API_TOKEN
 
   return NextResponse.json({
     ...settings,
     google_connected: hasGoogle ? 'true' : 'false',
     qb_connected: hasQb ? 'true' : 'false',
     meta_connected: hasMeta ? 'true' : 'false',
+    helcim_connected: hasHelcim ? 'true' : 'false',
     qb_last_synced: settings.qb_last_synced || null,
     meta_last_synced: settings.meta_last_synced || null,
     google_ads_last_synced: settings.google_ads_last_synced || null,
