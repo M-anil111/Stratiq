@@ -158,6 +158,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       reach: body.meta_reach,
       ctr: body.meta_ctr,
       conversions: body.meta_conversions,
+      revenue: body.meta_revenue ?? null,
+      period_start: body.meta_period_start ?? null,
+      period_end: body.meta_period_end ?? null,
     }
   }
 
@@ -171,10 +174,13 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       roas: body.google_roas,
       ctr: body.google_ctr,
       conversions: body.google_conversions,
+      revenue: body.google_revenue ?? null,
+      period_start: body.google_period_start ?? null,
+      period_end: body.google_period_end ?? null,
     }
   }
 
-  if (body.notes) upsertData.notes = body.notes
+  if ('notes' in body) upsertData.notes = body.notes ?? null
 
   const { data, error } = await supabase
     .from('marketing_reports')

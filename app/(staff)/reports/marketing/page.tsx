@@ -12,15 +12,22 @@ interface Report {
   google_conversions: number | null
   google_spend: number | null
   google_roas: number | null
+  google_revenue: number | null
+  google_period_start: string | null
+  google_period_end: string | null
   meta_reach: number | null
   meta_impressions: number | null
   meta_clicks: number | null
   meta_conversions: number | null
   meta_spend: number | null
   meta_roas: number | null
+  meta_revenue: number | null
+  meta_period_start: string | null
+  meta_period_end: string | null
   seo_offpage_count: number | null
   seo_blog_count: number | null
   seo_onpage_count: number | null
+  notes: string | null
 }
 
 const selectClass = "bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
@@ -65,8 +72,9 @@ export default function MarketingReportsPage() {
       .finally(() => setLoading(false))
   }, [clientId, month, year])
 
-  const set = (field: keyof Report) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm(f => ({ ...f, [field]: e.target.value === '' ? null : Number(e.target.value) }))
+  const STRING_FIELDS: (keyof Report)[] = ['google_period_start', 'google_period_end', 'meta_period_start', 'meta_period_end', 'notes']
+  const set = (field: keyof Report) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm(f => ({ ...f, [field]: e.target.value === '' ? null : STRING_FIELDS.includes(field) ? e.target.value : Number(e.target.value) }))
 
   const ctr = (clicks: number | null | undefined, impressions: number | null | undefined) => {
     if (clicks && impressions) return ((clicks / impressions) * 100).toFixed(2) + '%'
@@ -181,18 +189,21 @@ export default function MarketingReportsPage() {
             {gadsOpen && (
               <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {[
-                  { label: 'Impressions', field: 'google_impressions' as keyof Report },
-                  { label: 'Clicks', field: 'google_clicks' as keyof Report },
+                  { label: 'Impressions', field: 'google_impressions' as keyof Report, type: 'number' },
+                  { label: 'Clicks', field: 'google_clicks' as keyof Report, type: 'number' },
                   { label: 'CTR', computed: ctr(form.google_clicks, form.google_impressions) },
-                  { label: 'Conversions', field: 'google_conversions' as keyof Report },
-                  { label: 'Ad Spend ($)', field: 'google_spend' as keyof Report },
-                  { label: 'ROAS', field: 'google_roas' as keyof Report },
+                  { label: 'Conversions', field: 'google_conversions' as keyof Report, type: 'number' },
+                  { label: 'Ad Spend ($)', field: 'google_spend' as keyof Report, type: 'number' },
+                  { label: 'ROAS', field: 'google_roas' as keyof Report, type: 'number' },
+                  { label: 'Revenue ($)', field: 'google_revenue' as keyof Report, type: 'number' },
+                  { label: 'Period Start', field: 'google_period_start' as keyof Report, type: 'date' },
+                  { label: 'Period End', field: 'google_period_end' as keyof Report, type: 'date' },
                 ].map(item => (
                   <div key={item.label}>
                     <label className="block text-xs font-medium text-slate-400 mb-1">{item.label}</label>
                     {item.computed !== undefined
                       ? <div className="px-3 py-2 bg-white/[0.05] rounded-lg text-sm font-medium text-slate-300">{item.computed}</div>
-                      : <input className="input-glass" type="number" value={(form as any)[item.field!] ?? ''} onChange={set(item.field!)} placeholder="0" />
+                      : <input className="input-glass" type={item.type || 'number'} value={(form as any)[item.field!] ?? ''} onChange={set(item.field!)} placeholder={item.type === 'date' ? '' : '0'} />
                     }
                   </div>
                 ))}
@@ -212,24 +223,38 @@ export default function MarketingReportsPage() {
             {metaOpen && (
               <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {[
-                  { label: 'Reach', field: 'meta_reach' as keyof Report },
-                  { label: 'Impressions', field: 'meta_impressions' as keyof Report },
-                  { label: 'Clicks', field: 'meta_clicks' as keyof Report },
+                  { label: 'Reach', field: 'meta_reach' as keyof Report, type: 'number' },
+                  { label: 'Impressions', field: 'meta_impressions' as keyof Report, type: 'number' },
+                  { label: 'Clicks', field: 'meta_clicks' as keyof Report, type: 'number' },
                   { label: 'CTR', computed: ctr(form.meta_clicks, form.meta_impressions) },
-                  { label: 'Conversions', field: 'meta_conversions' as keyof Report },
-                  { label: 'Ad Spend ($)', field: 'meta_spend' as keyof Report },
-                  { label: 'ROAS', field: 'meta_roas' as keyof Report },
+                  { label: 'Conversions', field: 'meta_conversions' as keyof Report, type: 'number' },
+                  { label: 'Ad Spend ($)', field: 'meta_spend' as keyof Report, type: 'number' },
+                  { label: 'ROAS', field: 'meta_roas' as keyof Report, type: 'number' },
+                  { label: 'Revenue ($)', field: 'meta_revenue' as keyof Report, type: 'number' },
+                  { label: 'Period Start', field: 'meta_period_start' as keyof Report, type: 'date' },
+                  { label: 'Period End', field: 'meta_period_end' as keyof Report, type: 'date' },
                 ].map(item => (
                   <div key={item.label}>
                     <label className="block text-xs font-medium text-slate-400 mb-1">{item.label}</label>
                     {item.computed !== undefined
                       ? <div className="px-3 py-2 bg-white/[0.05] rounded-lg text-sm font-medium text-slate-300">{item.computed}</div>
-                      : <input className="input-glass" type="number" value={(form as any)[item.field!] ?? ''} onChange={set(item.field!)} placeholder="0" />
+                      : <input className="input-glass" type={item.type || 'number'} value={(form as any)[item.field!] ?? ''} onChange={set(item.field!)} placeholder={item.type === 'date' ? '' : '0'} />
                     }
                   </div>
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Notes */}
+          <div className="glass-card mb-4 p-5">
+            <label className="block text-sm font-semibold text-white mb-2">Notes</label>
+            <textarea
+              className="input-glass w-full h-24 resize-none"
+              placeholder="Add notes for this report…"
+              value={(form as any).notes ?? ''}
+              onChange={set('notes')}
+            />
           </div>
 
           {/* Actions */}
