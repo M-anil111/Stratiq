@@ -1,10 +1,12 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Send, MessageSquare } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 const MAX_CHARS = 2000
 const WARN_CHARS = 1800
 const POLL_INTERVAL = 30_000
+const FALLBACK_POLL_INTERVAL = 60_000
 
 interface Message {
   id: string
@@ -12,6 +14,7 @@ interface Message {
   sender_type: 'client' | 'staff'
   sender_name: string | null
   created_at: string
+  client_id?: string
 }
 
 function formatTimestamp(iso: string): string {
@@ -53,6 +56,7 @@ export default function PortalMessagesPage() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [clientId, setClientId] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -61,21 +65,83 @@ export default function PortalMessagesPage() {
     try {
       const res = await fetch('/api/portal/messages')
       if (res.ok) {
-        const data = await res.json()
-        setMessages(data || [])
+        const data: Message[] = (await res.json()) || []
+        setMessages(data)
+        const withClientId = data.find((m) => m.client_id)
+        if (withClientId?.client_id) {
+          setClientId((prev) => prev ?? withClientId.client_id!)
+        }
       }
     } finally {
       setLoading(false)
     }
   }, [])
 
+  const startPolling = useCallback(
+    (interval: number) => {
+      if (pollRef.current) clearInterval(pollRef.current)
+      pollRef.current = setInterval(fetchMessages, interval)
+    },
+    [fetchMessages]
+  )
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+  }, [])
+
+  // Initial load + default polling (until realtime takes over)
   useEffect(() => {
     fetchMessages()
-    pollRef.current = setInterval(fetchMessages, POLL_INTERVAL)
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current)
+    startPolling(POLL_INTERVAL)
+    return () => stopPolling()
+  }, [fetchMessages, startPolling, stopPolling])
+
+  // Supabase Realtime subscription — degrades silently to polling on failure
+  useEffect(() => {
+    if (!clientId) return
+    let supabase: ReturnType<typeof createClient>
+    let channel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null
+    try {
+      supabase = createClient()
+      channel = supabase
+        .channel(`messages-${clientId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `client_id=eq.${clientId}`,
+          },
+          (payload) => {
+            const msg = payload.new as Message
+            if (!msg?.id) return
+            setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]))
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            // Realtime is live — no need to poll
+            stopPolling()
+          } else {
+            // Channel failed / closed — fall back to slow polling
+            startPolling(FALLBACK_POLL_INTERVAL)
+          }
+        })
+    } catch {
+      startPolling(FALLBACK_POLL_INTERVAL)
     }
-  }, [fetchMessages])
+    return () => {
+      try {
+        if (channel) supabase.removeChannel(channel)
+      } catch {
+        // ignore
+      }
+    }
+  }, [clientId, startPolling, stopPolling])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

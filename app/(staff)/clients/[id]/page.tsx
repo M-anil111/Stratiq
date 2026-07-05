@@ -7,6 +7,33 @@ import {
   CheckSquare, Square, Circle, MessageSquare, PhoneCall, Users, Calendar,
   Loader2, X, ChevronDown, AlertCircle, ClipboardList, BarChart2, FolderOpen,
 } from 'lucide-react'
+import { createClient as createSupabaseClient } from '@/lib/supabase/client'
+
+const MSG_MAX_CHARS = 2000
+const MSG_WARN_CHARS = 1800
+const MSG_FALLBACK_POLL_INTERVAL = 60_000
+
+function formatMsgTimestamp(iso: string): string {
+  const date = new Date(iso)
+  const now = new Date()
+  const isToday =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+  if (isToday) return time
+  return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${time}`
+}
+
+function msgInitials(name: string | null | undefined, fallback: string): string {
+  if (!name) return fallback
+  return name
+    .split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+}
 
 const statusColors: Record<string, string> = {
   active: 'bg-emerald-500/20 text-emerald-400',
@@ -66,7 +93,11 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [msgInput, setMsgInput] = useState('')
   const [sending, setSending] = useState(false)
   const [msgsUnavailable, setMsgsUnavailable] = useState(false)
+  const [msgsLoading, setMsgsLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const msgTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const msgPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const msgsUnavailableRef = useRef(false)
 
   // Reports
   const [reports, setReports] = useState<any[]>([])
@@ -140,6 +171,26 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [showNewMenu, setShowNewMenu] = useState(false)
   const newMenuRef = useRef<HTMLDivElement>(null)
 
+  const fetchClientMessages = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/messages?clientId=${params.id}`)
+      const d = await res.json()
+      if (d?.__unavailable) {
+        setMsgsUnavailable(true)
+        msgsUnavailableRef.current = true
+        setMessages([])
+      } else {
+        setMsgsUnavailable(false)
+        msgsUnavailableRef.current = false
+        setMessages(Array.isArray(d) ? d : [])
+      }
+    } catch {
+      // keep whatever we have
+    } finally {
+      setMsgsLoading(false)
+    }
+  }, [params.id])
+
   useEffect(() => {
     fetch(`/api/clients/${params.id}`)
       .then(r => r.json())
@@ -190,13 +241,6 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         .then(r => r.json())
         .then(d => { setReports(Array.isArray(d) ? d : []); setReportsLoading(false) })
         .catch(() => setReportsLoading(false))
-    }
-    if (activeTab === 4) {
-      setMsgsUnavailable(false)
-      fetch(`/api/messages?clientId=${params.id}`).then(r => r.json()).then(d => {
-        if (d?.__unavailable) { setMsgsUnavailable(true); setMessages([]) }
-        else { setMessages(Array.isArray(d) ? d : []) }
-      })
     }
     if (activeTab === 5) {
       loadDrive(null)
@@ -258,6 +302,70 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   }, [selectedMonth])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  // Messages tab: initial load + Supabase Realtime with polling fallback
+  useEffect(() => {
+    if (activeTab !== 4) return
+
+    setMsgsLoading(true)
+    fetchClientMessages()
+
+    const stopMsgPolling = () => {
+      if (msgPollRef.current) {
+        clearInterval(msgPollRef.current)
+        msgPollRef.current = null
+      }
+    }
+    const startMsgPolling = () => {
+      stopMsgPolling()
+      msgPollRef.current = setInterval(() => {
+        if (!msgsUnavailableRef.current) fetchClientMessages()
+      }, MSG_FALLBACK_POLL_INTERVAL)
+    }
+
+    // Poll until realtime confirms subscription
+    startMsgPolling()
+
+    let supabase: ReturnType<typeof createSupabaseClient>
+    let channel: ReturnType<ReturnType<typeof createSupabaseClient>['channel']> | null = null
+    try {
+      supabase = createSupabaseClient()
+      channel = supabase
+        .channel(`messages-${params.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `client_id=eq.${params.id}`,
+          },
+          (payload) => {
+            const msg = payload.new as any
+            if (!msg?.id) return
+            setMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]))
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            stopMsgPolling()
+          } else {
+            startMsgPolling()
+          }
+        })
+    } catch {
+      // Realtime unavailable — polling fallback already running
+    }
+
+    return () => {
+      stopMsgPolling()
+      try {
+        if (channel) supabase.removeChannel(channel)
+      } catch {
+        // ignore
+      }
+    }
+  }, [activeTab, params.id, fetchClientMessages])
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -333,14 +441,23 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   }
 
   const sendMessage = async () => {
-    if (!msgInput.trim() || sending) return
+    const trimmed = msgInput.trim()
+    if (!trimmed || sending || trimmed.length > MSG_MAX_CHARS) return
     setSending(true)
-    const res = await fetch('/api/messages', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: params.id, content: msgInput }),
-    })
-    if (res.ok) { const msg = await res.json(); setMessages(m => [...m, msg]); setMsgInput('') }
-    setSending(false)
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: params.id, content: trimmed }),
+      })
+      if (res.ok) {
+        const msg = await res.json()
+        setMessages(m => (m.some(x => x.id === msg.id) ? m : [...m, msg]))
+        setMsgInput('')
+        msgTextareaRef.current?.focus()
+      }
+    } finally {
+      setSending(false)
+    }
   }
 
   const addTask = async () => {
@@ -1210,45 +1327,94 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       {/* ── MESSAGES ── */}
       {activeTab === 4 && (
         <div className="flex flex-col h-[500px] glass-card overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {msgsUnavailable ? (
               <div className="flex flex-col items-center justify-center h-full gap-2">
                 <AlertCircle className="h-8 w-8 text-slate-600" />
                 <p className="text-slate-400 text-sm font-medium">Messages feature coming soon</p>
               </div>
+            ) : msgsLoading && messages.length === 0 ? (
+              <div className="space-y-4">
+                {[0, 1, 2].map(i => (
+                  <div key={i} className={`flex items-end gap-2 ${i === 1 ? 'flex-row-reverse' : ''}`}>
+                    <div className="w-8 h-8 rounded-full shrink-0 animate-pulse bg-white/[0.08]" />
+                    <div
+                      className={`animate-pulse rounded-2xl ${i === 1 ? 'rounded-br-sm bg-sky-500/30' : 'rounded-bl-sm bg-white/[0.08]'}`}
+                      style={{ height: 56, width: i === 1 ? 220 : 260 }}
+                    />
+                  </div>
+                ))}
+              </div>
             ) : messages.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-slate-400 text-sm">No messages yet</div>
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-white/[0.04] flex items-center justify-center">
+                  <MessageSquare className="h-6 w-6 text-slate-500" />
+                </div>
+                <p className="text-slate-400 text-sm font-medium">No messages yet.</p>
+                <p className="text-slate-600 text-xs">Start the conversation below.</p>
+              </div>
             ) : messages.map(msg => {
               const isStaff = msg.sender_type === 'staff'
               return (
                 <div key={msg.id} className={`flex items-end gap-2 ${isStaff ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${isStaff ? 'bg-sky-500/20 text-sky-400' : 'bg-white/[0.08] text-slate-400'}`}>
-                    {(msg.sender_name || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                  {/* Avatar */}
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${isStaff ? 'bg-sky-500/30 text-sky-300' : 'bg-white/[0.08] text-slate-400'}`}>
+                    {msgInitials(msg.sender_name, isStaff ? 'ST' : 'CL')}
                   </div>
-                  <div className={`max-w-[70%] space-y-0.5`}>
-                    <div className={`px-3 py-2 rounded-2xl text-sm ${isStaff ? 'bg-sky-500 text-white rounded-br-sm' : 'bg-white/[0.08] text-slate-300 rounded-bl-sm'}`}>
-                      {!isStaff && <p className="text-xs font-medium mb-0.5 text-slate-400">{msg.sender_name}</p>}
-                      <p>{msg.content}</p>
-                    </div>
-                    {msg.created_at && (
-                      <p className={`text-[10px] text-slate-600 px-1 ${isStaff ? 'text-right' : ''}`}>
-                        {new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                      </p>
+                  {/* Bubble */}
+                  <div className={`max-w-[75%] ${isStaff ? 'items-end' : 'items-start'} flex flex-col`}>
+                    {!isStaff && (
+                      <p className="text-[11px] font-medium mb-1 text-slate-400 px-1">{msg.sender_name || 'Client'}</p>
                     )}
+                    <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${isStaff ? 'bg-sky-500 text-white rounded-br-sm' : 'glass text-slate-200 rounded-bl-sm'}`}>
+                      <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                      {msg.created_at && (
+                        <p className={`text-[10px] mt-1.5 ${isStaff ? 'text-sky-200/70 text-right' : 'text-slate-500'}`}>
+                          {formatMsgTimestamp(msg.created_at)}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               )
             })}
             <div ref={bottomRef} />
           </div>
-          <div className="p-3 border-t border-white/[0.08] flex gap-2">
-            <input value={msgInput} onChange={e => setMsgInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-              className="input-glass flex-1" placeholder="Message client..." />
-            <button onClick={sendMessage} disabled={!msgInput.trim() || sending}
-              className="btn-brand p-2 disabled:opacity-50 rounded-lg">
-              <Send className="h-4 w-4" />
-            </button>
+          <div className="p-3 border-t border-white/[0.08]">
+            <div className="flex items-end gap-2">
+              <div className="flex-1 relative">
+                <textarea
+                  ref={msgTextareaRef}
+                  value={msgInput}
+                  onChange={e => setMsgInput(e.target.value.slice(0, MSG_MAX_CHARS))}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      sendMessage()
+                    }
+                  }}
+                  rows={1}
+                  disabled={msgsUnavailable}
+                  className="input-glass w-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none min-h-[44px] max-h-32 overflow-y-auto leading-relaxed disabled:opacity-50"
+                  placeholder="Message client… (Enter to send, Shift+Enter for new line)"
+                  style={{ fieldSizing: 'content' } as React.CSSProperties}
+                />
+                {msgInput.length >= MSG_WARN_CHARS && (
+                  <span className={`absolute bottom-2 right-3 text-[10px] pointer-events-none ${MSG_MAX_CHARS - msgInput.length < 0 ? 'text-red-400' : 'text-slate-500'}`}>
+                    {MSG_MAX_CHARS - msgInput.length}
+                  </span>
+                )}
+              </div>
+              <button onClick={sendMessage} disabled={!msgInput.trim() || sending || msgsUnavailable || msgInput.length > MSG_MAX_CHARS}
+                className="btn-brand p-2.5 disabled:opacity-40 rounded-xl shrink-0 self-end mb-0.5" aria-label="Send message">
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
+            {msgInput.length >= MSG_WARN_CHARS && (
+              <p className="text-[10px] mt-1 text-slate-500">
+                {MSG_MAX_CHARS - msgInput.length} characters remaining
+              </p>
+            )}
           </div>
         </div>
       )}
