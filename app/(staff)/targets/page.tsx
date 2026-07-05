@@ -29,7 +29,7 @@ export default function TargetsPage() {
   async function saveDefaultTargets() {
     setSaving(true)
     try {
-      await fetch('/api/targets', {
+      const res = await fetch('/api/targets', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -42,9 +42,16 @@ export default function TargetsPage() {
           group_target: defaultTargets.group,
         }),
       })
-      setSavedLabel(true)
-      setTimeout(() => setSavedLabel(false), 2000)
-    } catch {}
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        alert(d.error || 'Failed to save targets. Please try again.')
+      } else {
+        setSavedLabel(true)
+        setTimeout(() => setSavedLabel(false), 2000)
+      }
+    } catch {
+      alert('Failed to save targets. Please check your connection and try again.')
+    }
     setSaving(false)
   }
 
@@ -130,6 +137,7 @@ export default function TargetsPage() {
                         {[0, 1, 2].map(j => (
                           <td key={j} className="px-4 py-3"><div className="h-3 skeleton rounded w-24" /></td>
                         ))}
+                        <td className="px-4 py-3"><div className="h-3 skeleton rounded w-24" /></td>
                         <td className="px-4 py-3"><div className="h-3 skeleton rounded w-16" /></td>
                       </tr>
                     ))

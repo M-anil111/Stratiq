@@ -19,23 +19,46 @@ function StatSkeleton() {
   )
 }
 
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
 export default function PortalHomePage() {
   const [stats, setStats] = useState<PortalStats | null>(null)
+  const [statsError, setStatsError] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [upsellVisible, setUpsellVisible] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('portal_upsell_dismissed')) {
+      setUpsellVisible(true)
+    }
+  }, [])
 
   useEffect(() => {
     fetch('/api/portal/stats')
-      .then(r => r.json())
-      .then(data => setStats(data))
-      .catch(() => setStats({ active_projects: 0, files_count: 0, unread_messages: 0 }))
+      .then(r => {
+        if (!r.ok) { setStatsError(true); return null }
+        return r.json()
+      })
+      .then(data => { if (data) setStats(data) })
+      .catch(() => setStatsError(true))
       .finally(() => setLoading(false))
   }, [])
+
+  function dismissUpsell() {
+    localStorage.setItem('portal_upsell_dismissed', '1')
+    setUpsellVisible(false)
+  }
 
   return (
     <div>
       {/* Greeting */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Good morning 👋</h1>
+        <h1 className="text-2xl font-bold text-white">{getGreeting()} 👋</h1>
         <p className="text-slate-400 mt-1">Here&apos;s what&apos;s happening with your projects</p>
       </div>
 
@@ -47,6 +70,8 @@ export default function PortalHomePage() {
             <StatSkeleton />
             <StatSkeleton />
           </>
+        ) : statsError ? (
+          <div className="col-span-3 glass-card p-4 text-center text-slate-400 text-sm">Unable to load stats. Please refresh the page.</div>
         ) : (
           <>
             <div className="glass-card p-4 text-center">
@@ -66,18 +91,20 @@ export default function PortalHomePage() {
       </div>
 
       {/* Upsell card */}
-      <div className="mb-8 glass-card p-4 border-sky-500/20">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="font-semibold text-white">Grow 3x faster with Google Ads</p>
-            <p className="text-sm text-slate-400 mt-1">Get a free audit and see how paid search can triple your leads.</p>
-            <Link href="#" className="inline-block mt-3 px-4 py-1.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white text-sm rounded-lg hover:from-sky-400 hover:to-sky-500 transition-all">
-              Get Free Audit
-            </Link>
+      {upsellVisible && (
+        <div className="mb-8 glass-card p-4 border-sky-500/20">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="font-semibold text-white">Grow 3x faster with Google Ads</p>
+              <p className="text-sm text-slate-400 mt-1">Get a free audit and see how paid search can triple your leads.</p>
+              <Link href="#" className="inline-block mt-3 px-4 py-1.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white text-sm rounded-lg hover:from-sky-400 hover:to-sky-500 transition-all">
+                Get Free Audit
+              </Link>
+            </div>
+            <button onClick={dismissUpsell} className="text-slate-500 hover:text-slate-300 text-sm ml-4 transition-colors">Dismiss</button>
           </div>
-          <button className="text-slate-500 hover:text-slate-300 text-sm ml-4 transition-colors">Dismiss</button>
         </div>
-      </div>
+      )}
 
       {/* Quick links */}
       <div className="space-y-3">

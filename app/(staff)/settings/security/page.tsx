@@ -1,11 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Shield, LogOut, Loader2 } from 'lucide-react'
-
-const mockSessions = [
-  { id: '1', device: 'Chrome on macOS', ip: '192.168.1.1', lastSeen: 'Just now', current: true },
-  { id: '2', device: 'Mobile Safari on iPhone', ip: '10.0.0.5', lastSeen: '2 hours ago', current: false },
-]
+import { Shield, Loader2 } from 'lucide-react'
 
 export default function SecuritySettingsPage() {
   const [form, setForm] = useState({ current_password: '', new_password: '', confirm_password: '' })
@@ -53,24 +48,7 @@ export default function SecuritySettingsPage() {
       {/* Active Sessions */}
       <div className="glass-card p-5">
         <h2 className="font-semibold text-white mb-4">Active Sessions</h2>
-        <div className="divide-y divide-white/[0.06]">
-          {mockSessions.map(session => (
-            <div key={session.id} className="flex items-center justify-between py-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-white">{session.device}</p>
-                  {session.current && <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">Current</span>}
-                </div>
-                <p className="text-xs text-slate-400">IP: {session.ip} · {session.lastSeen}</p>
-              </div>
-              {!session.current && (
-                <button className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 font-medium">
-                  <LogOut className="h-3.5 w-3.5" /> Revoke
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+        <p className="text-sm text-slate-400">Active session management is not available in this version.</p>
       </div>
 
       {/* Change Password */}
