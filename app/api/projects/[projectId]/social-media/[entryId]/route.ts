@@ -9,11 +9,11 @@ export async function PUT(request: NextRequest, { params }: { params: { projectI
 
   const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
   const body = await request.json()
-  const { platform, type, status, live_link, submission_date, username, password, comment } = body
+  const { platform, type, status, live_link, post_content, media_url, scheduled_date, submission_date, username, password, comment } = body
 
   const { data, error } = await supabase
     .from('social_media_postings')
-    .update({ platform, type, status, live_link, submission_date, username, password_encrypted: encryptIfPresent(password), comment, updated_at: new Date().toISOString() })
+    .update({ platform, type, status, live_link, post_content, media_url, scheduled_date: scheduled_date || null, submission_date, username, password_encrypted: encryptIfPresent(password), comment, updated_at: new Date().toISOString() })
     .eq('id', params.entryId)
     .eq('project_id', params.projectId)
     .eq('organization_id', userData?.organization_id)
