@@ -12,12 +12,17 @@ export async function GET() {
   const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('organization_settings')
     .select('value')
     .eq('organization_id', userData.organization_id)
     .eq('key', 'notification_emails')
     .single()
+
+  // PGRST116 = no rows (normal on first load); 42P01 = table missing
+  if (error && error.code !== 'PGRST116' && error.code !== '42P01') {
+    return NextResponse.json({ emails: '' })
+  }
 
   return NextResponse.json({ emails: data?.value || '' })
 }

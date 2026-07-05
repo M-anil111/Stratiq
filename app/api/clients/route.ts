@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from('clients')
-    .select('*, sales_manager:users!sales_manager_id(full_name, email), dm_manager:users!dm_manager_id(full_name, email), marketing_manager:users!marketing_manager_id(full_name, email)', { count: 'exact' })
+    .select('*, sales_manager:users!sales_manager_id(full_name, email), dm_manager:users!dm_manager_id(full_name, email), marketing_manager:users!marketing_manager_id(full_name, email), projects(id, status)', { count: 'exact' })
     .eq('organization_id', userData.organization_id)
     .order('company_name')
     .range(offset, offset + limit - 1)
@@ -35,7 +35,12 @@ export async function GET(request: NextRequest) {
   const { data, error, count } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ clients: data, total: count, page, limit })
+  const clients = (data || []).map((client: any) => ({
+    ...client,
+    active_project_count: (client.projects || []).filter((p: any) => p.status === 'active').length,
+  }))
+
+  return NextResponse.json({ clients, total: count, page, limit })
 }
 
 export async function POST(request: NextRequest) {

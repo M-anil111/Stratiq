@@ -105,6 +105,7 @@ export default function ClientsPage() {
   const [clientLoading, setClientLoading] = useState(false)
   const [activeProjectIdx, setActiveProjectIdx] = useState(0)
   const [activeServiceTab, setActiveServiceTab] = useState<'active' | 'expired'>('active')
+  const [sortBy, setSortBy] = useState<'name' | 'mrr' | 'status'>('name')
   const [showNewMenu, setShowNewMenu] = useState(false)
   const newMenuRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<NodeJS.Timeout>()
@@ -153,10 +154,24 @@ export default function ClientsPage() {
       .catch(() => setClientLoading(false))
   }
 
+  const sortedClients = useMemo(() => {
+    return [...clients].sort((a, b) => {
+      if (sortBy === 'mrr') {
+        const mrrA = (a.service_packages || []).reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0)
+        const mrrB = (b.service_packages || []).reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0)
+        return mrrB - mrrA
+      }
+      if (sortBy === 'status') {
+        return (a.project_status || '').localeCompare(b.project_status || '')
+      }
+      return (a.company_name || '').localeCompare(b.company_name || '')
+    })
+  }, [clients, sortBy])
+
   // Group clients by contact person
   const grouped = useMemo(() => {
     const map = new Map<string, { contactName: string; clients: any[] }>()
-    for (const c of clients) {
+    for (const c of sortedClients) {
       const key = [c.contact_first_name, c.contact_last_name].filter(Boolean).join(' ') || c.company_name
       if (!map.has(key)) map.set(key, { contactName: key, clients: [] })
       map.get(key)!.clients.push(c)
@@ -217,6 +232,17 @@ export default function ClientsPage() {
           ))}
         </div>
 
+        {/* Sort controls */}
+        <div className="px-3 py-1.5 flex items-center gap-1 border-b border-white/[0.06]">
+          <span className="text-[10px] text-slate-600 uppercase tracking-wider mr-1">Sort</span>
+          {([['name', 'Name'], ['mrr', 'MRR'], ['status', 'Status']] as const).map(([val, label]) => (
+            <button key={val} onClick={() => setSortBy(val)}
+              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${sortBy === val ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : 'text-slate-500 hover:text-slate-300'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Client list */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
@@ -253,10 +279,20 @@ export default function ClientsPage() {
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[c.project_status] || 'bg-slate-500'}`} />
                           <p className="text-sm font-medium text-white truncate">{displayName}</p>
+                          {c.project_status && (
+                            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold border shrink-0 ${STATUS_COLORS[c.project_status] || 'bg-slate-500/20 text-slate-400 border-slate-500/30'}`}>
+                              {c.project_status.replace(/_/g, ' ')}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center justify-between">
                           <p className="text-xs text-slate-500 truncate">{c.sales_manager?.full_name || c.industry || '—'}</p>
-                          {mrr > 0 && <p className="text-xs text-sky-400 shrink-0 ml-2">${mrr.toLocaleString()}</p>}
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            {(c.active_project_count ?? 0) > 0 && (
+                              <span className="text-[10px] text-violet-400">{c.active_project_count}p</span>
+                            )}
+                            {mrr > 0 && <p className="text-xs text-sky-400">${mrr.toLocaleString()}</p>}
+                          </div>
                         </div>
                       </div>
                     </button>

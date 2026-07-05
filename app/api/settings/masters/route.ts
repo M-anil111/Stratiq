@@ -30,7 +30,10 @@ export async function GET(request: NextRequest) {
   }
 
   const { data, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json([])
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json(data || [])
 }
 
