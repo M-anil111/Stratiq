@@ -10,6 +10,8 @@ import {
 } from 'lucide-react'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import MergeModal from '@/components/MergeModal'
+import AnalyticsTab from './AnalyticsTab'
+import SearchConsoleTab from './SearchConsoleTab'
 
 const MSG_MAX_CHARS = 2000
 const MSG_WARN_CHARS = 1800
@@ -63,7 +65,7 @@ const NOTE_ICONS: Record<string, any> = {
   activity: ClipboardList,
 }
 
-const TABS = ['Overview', 'Tasks', 'Notes', 'Reports', 'Messages', 'Files', 'Integrations', 'Invoices', 'Activity']
+const TABS = ['Overview', 'Tasks', 'Notes', 'Reports', 'Messages', 'Files', 'Integrations', 'Invoices', 'Activity', 'Analytics', 'Search Console']
 
 export default function ClientDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -1954,6 +1956,12 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
           )}
         </div>
       )}
+
+      {/* ── ANALYTICS ── */}
+      {activeTab === 9 && <AnalyticsTab clientId={params.id} />}
+
+      {/* ── SEARCH CONSOLE ── */}
+      {activeTab === 10 && <SearchConsoleTab clientId={params.id} />}
     </div>
   )
 }
