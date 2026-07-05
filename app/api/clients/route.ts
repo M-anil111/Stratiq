@@ -20,21 +20,40 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '25')
   const offset = (page - 1) * limit
 
-  let query = supabase
-    .from('clients')
-    .select('*, sales_manager:users!sales_manager_id(full_name, email), dm_manager:users!dm_manager_id(full_name, email), marketing_manager:users!marketing_manager_id(full_name, email), projects(id, status)', { count: 'exact' })
-    .eq('organization_id', userData.organization_id)
-    .order('company_name')
-    .range(offset, offset + limit - 1)
+  // Manager joins depend on FK columns from migration 007 that may not be applied.
+  // Fall back to progressively simpler selects so the clients list never hard-fails.
+  const selects = [
+    '*, sales_manager:users!sales_manager_id(full_name, email), dm_manager:users!dm_manager_id(full_name, email), marketing_manager:users!marketing_manager_id(full_name, email), projects(id, status)',
+    '*, sales_manager:users!sales_manager_id(full_name, email), dm_manager:users!dm_manager_id(full_name, email), projects(id, status)',
+    '*, projects(id, status)',
+    '*',
+  ]
 
-  if (search) {
-    query = query.or(`company_name.ilike.%${search}%,website.ilike.%${search}%,email.ilike.%${search}%,city.ilike.%${search}%`)
-  }
-  if (status) {
-    query = query.eq('project_status', status)
+  let data: any = null
+  let error: any = null
+  let count: number | null = null
+  for (const sel of selects) {
+    let query = supabase
+      .from('clients')
+      .select(sel, { count: 'exact' })
+      .eq('organization_id', userData.organization_id)
+      .order('company_name')
+      .range(offset, offset + limit - 1)
+    if (search) {
+      query = query.or(`company_name.ilike.%${search}%,website.ilike.%${search}%,email.ilike.%${search}%,city.ilike.%${search}%`)
+    }
+    if (status) {
+      query = query.eq('project_status', status)
+    }
+    const res = await query
+    data = res.data
+    error = res.error
+    count = res.count
+    if (!error) break
+    // Retry with a simpler select only when a column/relationship is missing
+    if (!/Could not find|does not exist|schema cache|relationship/i.test(error.message || '')) break
   }
 
-  const { data, error, count } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const clients = (data || []).map((client: any) => ({
@@ -57,42 +76,62 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { data, error } = await supabase
-    .from('clients')
-    .insert({
-      organization_id: userData.organization_id,
-      sales_manager_id: body.sales_manager_id || null,
-      dm_manager_id: body.dm_manager_id || null,
-      marketing_manager_id: body.marketing_manager_id || null,
-      company_name: body.company_name,
-      website: body.website,
-      about_company: body.about_company,
-      industry: body.industry,
-      email: body.email,
-      phone: body.phone,
-      street_address: body.street_address,
-      city: body.city,
-      state: body.state,
-      country: body.country || 'US',
-      hashtags: body.hashtags || [],
-      categories: body.categories || [],
-      num_employees: body.num_employees ? parseInt(body.num_employees) : null,
-      project_status: body.project_status || 'active',
-      services: body.services || [],
-      service_packages: body.service_packages || [],
-      advertising_types: body.advertising_types || [],
-      goals: body.goals || [],
-      stakeholder_expectations: body.stakeholder_expectations || [],
-      target_audience: body.target_audience,
-      website_last_updated: body.website_last_updated || null,
-      ndisk_link: body.ndisk_link,
-      google_drive_folder_url: body.google_drive_folder_url,
-      proposal_url: body.proposal_url || null,
-      google_place_id: body.google_place_id || null,
-      proposal_status: 'pending',
-    })
-    .select()
-    .single()
+
+  // Build the insert row. Some columns come from migrations that may not yet be
+  // applied to this database (e.g. marketing_manager_id from 007). Rather than
+  // hard-failing the whole insert, we retry while stripping any column PostgREST
+  // reports as missing from the schema cache, so client creation always succeeds
+  // with whatever columns the DB actually has.
+  const insertRow: Record<string, any> = {
+    organization_id: userData.organization_id,
+    sales_manager_id: body.sales_manager_id || null,
+    dm_manager_id: body.dm_manager_id || null,
+    marketing_manager_id: body.marketing_manager_id || null,
+    company_name: body.company_name,
+    website: body.website,
+    about_company: body.about_company,
+    industry: body.industry,
+    email: body.email,
+    phone: body.phone,
+    street_address: body.street_address,
+    city: body.city,
+    state: body.state,
+    country: body.country || 'US',
+    hashtags: body.hashtags || [],
+    categories: body.categories || [],
+    num_employees: body.num_employees ? parseInt(body.num_employees) : null,
+    project_status: body.project_status || 'active',
+    services: body.services || [],
+    service_packages: body.service_packages || [],
+    advertising_types: body.advertising_types || [],
+    goals: body.goals || [],
+    stakeholder_expectations: body.stakeholder_expectations || [],
+    target_audience: body.target_audience,
+    website_last_updated: body.website_last_updated || null,
+    ndisk_link: body.ndisk_link,
+    google_drive_folder_url: body.google_drive_folder_url,
+    proposal_url: body.proposal_url || null,
+    google_place_id: body.google_place_id || null,
+    proposal_status: 'pending',
+  }
+
+  let data: any = null
+  let error: any = null
+  const droppedColumns: string[] = []
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const res = await supabase.from('clients').insert(insertRow).select().single()
+    data = res.data
+    error = res.error
+    if (!error) break
+    // PostgREST reports missing columns as: Could not find the 'X' column of 'clients' in the schema cache
+    const missing = error.message?.match(/Could not find the '([^']+)' column/)?.[1]
+    if (missing && missing in insertRow) {
+      delete insertRow[missing]
+      droppedColumns.push(missing)
+      continue
+    }
+    break
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
