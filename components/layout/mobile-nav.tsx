@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { LayoutDashboard, Users, BarChart3, Target, MoreHorizontal, UserCog, Settings, LogOut, X, Sparkles, FileText } from 'lucide-react'
+import { LayoutDashboard, Users, BarChart3, Target, MoreHorizontal, UserCog, Settings, LogOut, X, Sparkles, FileText, BookUser } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const tabs = [
@@ -82,6 +82,11 @@ export function MobileNav() {
               </button>
             </div>
             <div className="space-y-1">
+              <Link href="/contacts" onClick={() => setMoreOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-white/[0.06] transition-all duration-200">
+                <BookUser className="h-5 w-5 text-slate-400" />
+                <span className="font-medium">Contacts</span>
+              </Link>
               <Link href="/invoices" onClick={() => setMoreOpen(false)}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-white/[0.06] transition-all duration-200">
                 <FileText className="h-5 w-5 text-slate-400" />
