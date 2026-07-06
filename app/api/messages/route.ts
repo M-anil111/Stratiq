@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { notifyPortalClient } from '@/lib/portal-notify'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -64,5 +65,18 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Best-effort portal login nudge — only for staff-authored messages, never fatal.
+  try {
+    await notifyPortalClient(supabase, {
+      clientId: body.client_id,
+      type: 'message',
+      summary: (body.content || '').slice(0, 120),
+      appUrl: request.nextUrl.origin,
+    })
+  } catch {
+    // non-fatal
+  }
+
   return NextResponse.json(data, { status: 201 })
 }

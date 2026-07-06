@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/email/index'
+import { notifyPortalClient } from '@/lib/portal-notify'
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -106,6 +107,20 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     .eq('client_id', params.id)
     .eq('year', year)
     .eq('month', monthNum)
+
+  // Best-effort portal login nudge (in addition to the report email above).
+  // Dedupe if the recipient already IS the portal client.
+  try {
+    await notifyPortalClient(supabase, {
+      clientId: params.id,
+      type: 'report',
+      summary: `Your ${monthLabel} marketing report is ready to view.`,
+      appUrl: request.nextUrl.origin,
+      skipIfEmail: toEmail,
+    })
+  } catch {
+    // non-fatal
+  }
 
   return NextResponse.json({ success: true })
 }

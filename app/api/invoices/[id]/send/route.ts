@@ -4,6 +4,7 @@ import { sendEmail } from '@/lib/email/index'
 import { isHelcimConfigured, createHostedPaymentUrl } from '@/lib/helcim'
 import { requireRole, BILLING_ROLES } from '@/lib/authz'
 import { logAudit } from '@/lib/audit'
+import { notifyPortalClient } from '@/lib/portal-notify'
 
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -133,6 +134,19 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       entityId: params.id,
       detail: { invoice_number: invoice.invoice_number, to: clientEmail },
     })
+
+    // Best-effort portal login nudge (in addition to the invoice email above).
+    try {
+      await notifyPortalClient(supabase, {
+        clientId: (invoice as any).client_id,
+        type: 'invoice',
+        summary: `Invoice #${invoice.invoice_number} for $${(invoice.total || 0).toFixed(2)} is ready to view.`,
+        appUrl: _req.nextUrl.origin,
+        skipIfEmail: clientEmail,
+      })
+    } catch {
+      // non-fatal
+    }
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
