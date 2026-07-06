@@ -1,6 +1,63 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
-import { Plus, ExternalLink, Edit2, Trash2, X, Loader2, Send, Eye, EyeOff, CheckSquare, Square } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Plus, ExternalLink, Edit2, Trash2, X, Loader2, Send, Eye, EyeOff, CheckSquare, Square, CalendarClock, Upload, Download } from 'lucide-react'
+
+// Bulk-import fields (map a CSV column to one of these)
+const BULK_FIELDS: { key: string; label: string }[] = [
+  { key: 'platform', label: 'Account/Platform' },
+  { key: 'scheduled_date', label: 'Date' },
+  { key: 'post_content', label: 'Message' },
+  { key: 'link', label: 'Link' },
+  { key: 'media_url', label: 'Photo URL' },
+  { key: 'campaign', label: 'Campaign' },
+]
+
+const BULK_MAX = 300
+
+// Minimal CSV parser: handles quoted fields, commas and newlines inside quotes
+function parseCSV(text: string): string[][] {
+  const rows: string[][] = []
+  let row: string[] = []
+  let field = ''
+  let inQuotes = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++ } else { inQuotes = false }
+      } else field += c
+    } else {
+      if (c === '"') inQuotes = true
+      else if (c === ',') { row.push(field); field = '' }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = '' }
+      else if (c === '\r') { /* skip */ }
+      else field += c
+    }
+  }
+  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row) }
+  return rows.filter(r => r.some(cell => cell.trim() !== ''))
+}
+
+// Parse a "mm/dd/yy hh:mm" (or similar) date string into an ISO datetime.
+// Returns '' when the value can't be understood.
+function parseScheduleDate(raw: string): string {
+  const v = (raw || '').trim()
+  if (!v) return ''
+  // mm/dd/yy or mm/dd/yyyy with optional time
+  const m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[\sT]+(\d{1,2}):(\d{2}))?/)
+  if (m) {
+    let [, mm, dd, yy, hh, min] = m
+    let year = parseInt(yy, 10)
+    if (year < 100) year += 2000
+    const d = new Date(year, parseInt(mm, 10) - 1, parseInt(dd, 10), hh ? parseInt(hh, 10) : 0, min ? parseInt(min, 10) : 0)
+    if (!isNaN(d.getTime())) return d.toISOString()
+    return ''
+  }
+  // Fallback: let Date try (handles ISO strings)
+  const d = new Date(v)
+  if (!isNaN(d.getTime())) return d.toISOString()
+  return ''
+}
 
 const PLATFORMS = [
   'Facebook Post', 'Instagram Post', 'Instagram Reels', 'Twitter/X', 'LinkedIn',
@@ -104,6 +161,17 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkStatus, setBulkStatus] = useState('')
   const [bulkLoading, setBulkLoading] = useState(false)
+
+  // Bulk schedule (CSV import)
+  const [showBulk, setShowBulk] = useState(false)
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([])
+  const [csvRows, setCsvRows] = useState<string[][]>([])
+  const [bulkMapping, setBulkMapping] = useState<Record<number, string>>({})
+  const [bulkDefaultPlatform, setBulkDefaultPlatform] = useState(PLATFORMS[0])
+  const [importing, setImporting] = useState(false)
+  const [bulkError, setBulkError] = useState('')
+  const [bulkResult, setBulkResult] = useState<{ created: number; skipped: number; errors: string[] } | null>(null)
+  const bulkFileRef = useRef<HTMLInputElement>(null)
 
   const fetchPosts = useCallback(async () => {
     setLoading(true)
@@ -245,6 +313,94 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
     }
   }
 
+  // ---- Bulk schedule (CSV) ----
+  const openBulk = () => {
+    setCsvHeaders([]); setCsvRows([]); setBulkMapping({}); setBulkError(''); setBulkResult(null)
+    setBulkDefaultPlatform(PLATFORMS[0])
+    setShowBulk(true)
+  }
+
+  const downloadBulkTemplate = () => {
+    const headers = 'Account/Platform,Date,Message,Link,Photo URL,Campaign'
+    const sample = 'Facebook Post,07/15/26 09:30,"Check out our summer sale!",https://example.com,https://example.com/photo.jpg,Summer Launch'
+    const blob = new Blob([`${headers}\n${sample}\n`], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'social-media-schedule-template.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleBulkFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setBulkError(''); setBulkResult(null)
+    const text = await file.text()
+    const parsed = parseCSV(text)
+    if (parsed.length < 1) { setBulkError('CSV appears to be empty'); return }
+    const headers = parsed[0]
+    const rows = parsed.slice(1)
+    const autoMap: Record<number, string> = {}
+    headers.forEach((h, i) => {
+      const norm = h.trim().toLowerCase().replace(/[\s_/-]+/g, '')
+      const match = BULK_FIELDS.find(f =>
+        f.key.replace(/[\s_-]+/g, '') === norm ||
+        f.label.toLowerCase().replace(/[\s_/-]+/g, '') === norm ||
+        (norm === 'account' && f.key === 'platform') ||
+        (norm === 'photo' && f.key === 'media_url') ||
+        (norm === 'photourl' && f.key === 'media_url') ||
+        (norm === 'url' && f.key === 'link') ||
+        (norm === 'text' && f.key === 'post_content') ||
+        (norm === 'caption' && f.key === 'post_content') ||
+        (norm === 'datetime' && f.key === 'scheduled_date')
+      )
+      autoMap[i] = match ? match.key : ''
+    })
+    setCsvHeaders(headers)
+    setCsvRows(rows)
+    setBulkMapping(autoMap)
+  }
+
+  // Map CSV rows -> payload rows (only rows with a Message are kept)
+  const bulkMappedRows = () => {
+    return csvRows.map(r => {
+      const obj: Record<string, string> = {}
+      Object.entries(bulkMapping).forEach(([idx, key]) => {
+        if (key) obj[key] = (r[Number(idx)] ?? '').trim()
+      })
+      const platform = obj.platform || bulkDefaultPlatform
+      return {
+        platform,
+        post_content: obj.post_content || '',
+        media_url: obj.media_url || '',
+        link: obj.link || '',
+        campaign: obj.campaign || '',
+        scheduled_date: parseScheduleDate(obj.scheduled_date || ''),
+      }
+    }).filter(o => o.post_content)
+  }
+
+  const runBulkSchedule = async () => {
+    const rows = bulkMappedRows()
+    if (!Object.values(bulkMapping).includes('post_content')) { setBulkError('Map a column to "Message" first'); return }
+    if (rows.length === 0) { setBulkError('No rows with a message to schedule'); return }
+    setImporting(true); setBulkError('')
+    try {
+      const res = await fetch(`/api/projects/${params.projectId}/social-media/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows: rows.slice(0, BULK_MAX) }),
+      })
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setBulkError(d.error || 'Bulk schedule failed'); return }
+      const result = await res.json()
+      setBulkResult(result)
+      await fetchPosts()
+    } finally {
+      setImporting(false)
+    }
+  }
+
   const liveCount = posts.filter(p => p.status === 'live').length
   const scheduledCount = posts.filter(p => p.status === 'scheduled').length
 
@@ -267,10 +423,16 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-white/[0.06]">
           <h2 className="font-semibold text-white">Posts</h2>
-          <button onClick={openAdd} className="btn-brand flex items-center gap-2 px-3 py-1.5 text-sm font-medium">
-            <Plus className="h-4 w-4" />
-            Add Post
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={openBulk} className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] transition-all">
+              <CalendarClock className="h-4 w-4" />
+              Schedule in bulk
+            </button>
+            <button onClick={openAdd} className="btn-brand flex items-center gap-2 px-3 py-1.5 text-sm font-medium">
+              <Plus className="h-4 w-4" />
+              Add Post
+            </button>
+          </div>
         </div>
 
         {/* Platform tabs */}
@@ -561,6 +723,129 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Schedule Modal */}
+      {showBulk && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="glass w-full max-w-lg mx-4 rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-lg font-semibold text-white">Schedule in bulk</h3>
+              <button onClick={() => setShowBulk(false)}><X className="h-5 w-5 text-slate-400" /></button>
+            </div>
+
+            {bulkResult ? (
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-sm text-emerald-300">
+                  Scheduled <strong>{bulkResult.created}</strong> post{bulkResult.created === 1 ? '' : 's'}.
+                  {bulkResult.skipped > 0 && <> Skipped <strong>{bulkResult.skipped}</strong> row{bulkResult.skipped === 1 ? '' : 's'} without a message.</>}
+                </div>
+                {bulkResult.errors?.length > 0 && (
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs text-amber-300 space-y-1">
+                    {bulkResult.errors.map((er, i) => <p key={i}>{er}</p>)}
+                  </div>
+                )}
+                <div className="flex justify-end">
+                  <button onClick={() => setShowBulk(false)} className="btn-brand py-2.5 px-4 text-sm">Done</button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                <p className="text-sm text-slate-400">
+                  Upload a CSV to schedule many posts at once. Each row becomes a scheduled post.
+                  Date format: <code className="text-slate-300">mm/dd/yy hh:mm</code> (e.g. <code className="text-slate-300">07/15/26 09:30</code>).
+                </p>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <input ref={bulkFileRef} type="file" accept=".csv,text/csv" onChange={handleBulkFile} className="hidden" />
+                  <button onClick={() => bulkFileRef.current?.click()} className="flex items-center gap-2 px-4 py-2 text-sm rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] transition-all">
+                    <Upload className="h-4 w-4" /> {csvHeaders.length > 0 ? 'Choose a different file' : 'Choose CSV file'}
+                  </button>
+                  <button onClick={downloadBulkTemplate} className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300 transition-colors">
+                    <Download className="h-4 w-4" /> Download CSV template
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Default platform <span className="text-xs text-slate-500 font-normal">(used when a row has no platform)</span></label>
+                  <select className={selectClass} value={bulkDefaultPlatform} onChange={e => setBulkDefaultPlatform(e.target.value)}>
+                    {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+
+                {csvHeaders.length > 0 && (
+                  <>
+                    <div>
+                      <p className="text-sm font-medium text-slate-300 mb-2">Map columns</p>
+                      <div className="space-y-2">
+                        {csvHeaders.map((h, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <span className="flex-1 text-xs text-white font-mono truncate px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06]">{h || `Column ${i + 1}`}</span>
+                            <span className="text-slate-500 text-xs">→</span>
+                            <select
+                              value={bulkMapping[i] ?? ''}
+                              onChange={e => setBulkMapping(m => ({ ...m, [i]: e.target.value }))}
+                              className={selectClass + ' flex-1'}
+                            >
+                              <option value="">Don&apos;t import</option>
+                              {BULK_FIELDS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-slate-300 mb-2">
+                        Preview <span className="text-slate-500 font-normal">({bulkMappedRows().length} post{bulkMappedRows().length === 1 ? '' : 's'} to schedule)</span>
+                      </p>
+                      <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="bg-white/[0.05]">
+                              <th className="px-3 py-2 text-left font-semibold text-slate-500">Platform</th>
+                              <th className="px-3 py-2 text-left font-semibold text-slate-500">Date</th>
+                              <th className="px-3 py-2 text-left font-semibold text-slate-500">Message</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {bulkMappedRows().slice(0, 10).map((row, ri) => (
+                              <tr key={ri} className="border-t border-white/[0.04]">
+                                <td className="px-3 py-2 text-slate-300 truncate max-w-[120px]">{row.platform}</td>
+                                <td className="px-3 py-2 text-slate-300 whitespace-nowrap">
+                                  {row.scheduled_date
+                                    ? new Date(row.scheduled_date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: '2-digit', hour: 'numeric', minute: '2-digit' })
+                                    : <span className="text-amber-400">no date</span>}
+                                </td>
+                                <td className="px-3 py-2 text-slate-300 truncate max-w-[200px]">{row.post_content}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {bulkMappedRows().length > BULK_MAX && (
+                        <p className="text-xs text-amber-400 mt-2">
+                          Only the first {BULK_MAX} rows will be scheduled. {bulkMappedRows().length - BULK_MAX} additional row{bulkMappedRows().length - BULK_MAX === 1 ? '' : 's'} will be ignored.
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {bulkError && <p className="text-sm text-red-400">{bulkError}</p>}
+
+                <div className="flex gap-3 pt-2">
+                  <button onClick={() => setShowBulk(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] transition-all text-sm">
+                    Cancel
+                  </button>
+                  <button onClick={runBulkSchedule} disabled={importing || csvHeaders.length === 0} className="flex-1 btn-brand py-2.5 text-sm disabled:opacity-60">
+                    {importing ? 'Scheduling...' : `Schedule ${Math.min(bulkMappedRows().length, BULK_MAX) || ''} posts`}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
