@@ -29,6 +29,11 @@ export async function POST(req: NextRequest) {
     .single()
   if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
+  // If the client is already linked to a QB customer, don't create a duplicate.
+  if (client.qb_customer_id) {
+    return NextResponse.json({ qb_customer_id: String(client.qb_customer_id), display_name: client.company_name, already_linked: true })
+  }
+
   try {
     const { token, realmId } = await getQBToken(supabase)
     const isSandbox = process.env.QUICKBOOKS_SANDBOX === 'true'
@@ -75,6 +80,14 @@ export async function POST(req: NextRequest) {
     const created = await res.json()
     const qbId = created.Customer?.Id
     const qbName = created.Customer?.DisplayName || displayName
+
+    // Store the QB customer id directly on the client for reliable matching
+    // (tolerant — ignore if the column doesn't exist yet).
+    await supabase
+      .from('clients')
+      .update({ qb_customer_id: qbId })
+      .eq('id', clientId)
+      .eq('organization_id', userData.organization_id)
 
     // Save integration mapping
     await supabase.from('client_integrations').upsert({

@@ -47,6 +47,7 @@ export default function IntegrationsPage() {
   const [googleDriveSyncing, setGoogleDriveSyncing] = useState(false)
   const [metaSyncing, setMetaSyncing] = useState(false)
   const [qbSyncing, setQbSyncing] = useState(false)
+  const [qbCustomerSyncing, setQbCustomerSyncing] = useState(false)
 
   const [lastSynced, setLastSynced] = useState<{
     qb: string | null
@@ -213,6 +214,23 @@ export default function IntegrationsPage() {
       showBanner('error', 'QB sync failed.')
     }
     setQbSyncing(false)
+  }
+
+  const handleQbCustomerSync = async () => {
+    setQbCustomerSyncing(true)
+    try {
+      const res = await fetch('/api/integrations/quickbooks/customers/sync', { method: 'POST' })
+      const d = await res.json()
+      if (res.ok) {
+        const unmatched = Array.isArray(d.unmatched) ? d.unmatched.length : 0
+        showBanner('success', `Customers synced — ${d.matched} client${d.matched === 1 ? '' : 's'} linked${unmatched ? `, ${unmatched} QB customer${unmatched === 1 ? '' : 's'} unmatched` : ''}.`)
+      } else {
+        showBanner('error', d.error || 'Customer sync failed.')
+      }
+    } catch {
+      showBanner('error', 'Customer sync failed.')
+    }
+    setQbCustomerSyncing(false)
   }
 
   const handleLookerSave = async () => {
@@ -446,6 +464,14 @@ export default function IntegrationsPage() {
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${qbSyncing ? 'animate-spin' : ''}`} />
                     Sync Products
+                  </button>
+                  <button
+                    onClick={handleQbCustomerSync}
+                    disabled={qbCustomerSyncing}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-white/[0.08] text-slate-300 rounded-xl hover:bg-white/[0.06] transition-all disabled:opacity-50"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${qbCustomerSyncing ? 'animate-spin' : ''}`} />
+                    Sync Customers
                   </button>
                   <button
                     onClick={handleQbDisconnect}
