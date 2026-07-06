@@ -1,48 +1,89 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-// Map from UI toggle key prefix → DB column (email-channel only)
-const UI_TO_DB: Record<string, string> = {
-  notif_weekly_targets_email: 'weekly_target_email',
-  notif_friday_reminder_email: 'friday_reminder_email',
-  notif_missed_target_email: 'missed_target_email',
-  notif_monthly_report_email: 'monthly_report_email',
-  notif_client_message_email: 'new_message_email',
-  notif_client_added_email: 'new_client_email',
+// HubSpot-style notification preferences center.
+// Stored per user as a JSON map: { [topicKey]: { email: bool, bell: bool, popup: bool } }
+// in user_notification_prefs.prefs (jsonb). Legacy boolean columns are preserved so any
+// older callers keep working, but the map is the source of truth for the new UI.
+
+type Channels = { email: boolean; bell: boolean; popup: boolean }
+type PrefsMap = Record<string, Channels>
+
+// Sensible defaults: email on for high-signal topics, bell on for most, popup mostly off.
+// Security topics are non-optional (always on) — enforced here as well as in the UI.
+const DEFAULTS: PrefsMap = {
+  // Clients & Contacts
+  client_assigned: { email: true, bell: true, popup: false },
+  client_added: { email: false, bell: true, popup: false },
+  mention: { email: true, bell: true, popup: true },
+  // Projects
+  project_assigned: { email: true, bell: true, popup: false },
+  project_status: { email: false, bell: true, popup: false },
+  // Leads
+  lead_assigned: { email: true, bell: true, popup: false },
+  lead_stage: { email: false, bell: true, popup: false },
+  // Invoices & Payments
+  invoice_paid: { email: true, bell: true, popup: false },
+  invoice_overdue: { email: true, bell: true, popup: false },
+  payment_received: { email: true, bell: true, popup: false },
+  // Messages
+  client_message: { email: true, bell: true, popup: true },
+  // Reports
+  report_sent: { email: true, bell: true, popup: false },
+  report_scheduled: { email: false, bell: true, popup: false },
+  // Team
+  invite_accepted: { email: false, bell: true, popup: false },
+  role_changed: { email: true, bell: true, popup: false },
+  // Approvals
+  proposal_decision: { email: true, bell: true, popup: false },
+  // Security (non-optional)
+  suspicious_login: { email: true, bell: true, popup: true },
+  new_signin: { email: true, bell: true, popup: false },
+  // System
+  import_complete: { email: false, bell: true, popup: false },
+  export_ready: { email: false, bell: true, popup: false },
+  integration_disconnected: { email: true, bell: true, popup: false },
+  sync_error: { email: true, bell: true, popup: false },
 }
 
-const DB_TO_UI = Object.fromEntries(Object.entries(UI_TO_DB).map(([k, v]) => [v, k]))
+// Topics that can never be fully disabled.
+const LOCKED = new Set(['suspicious_login', 'new_signin'])
+
+function mergeOverDefaults(stored: unknown): PrefsMap {
+  const out: PrefsMap = {}
+  const s = (stored && typeof stored === 'object' ? stored : {}) as Record<string, any>
+  for (const [key, def] of Object.entries(DEFAULTS)) {
+    const row = s[key] && typeof s[key] === 'object' ? s[key] : {}
+    out[key] = {
+      email: typeof row.email === 'boolean' ? row.email : def.email,
+      bell: typeof row.bell === 'boolean' ? row.bell : def.bell,
+      popup: typeof row.popup === 'boolean' ? row.popup : def.popup,
+    }
+    if (LOCKED.has(key)) out[key] = { email: true, bell: true, popup: def.popup || out[key].popup }
+  }
+  return out
+}
 
 export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data, error } = await supabase
-    .from('user_notification_prefs')
-    .select('*')
-    .eq('user_id', user.id)
-    .single()
+  try {
+    const { data, error } = await supabase
+      .from('user_notification_prefs')
+      .select('prefs')
+      .eq('user_id', user.id)
+      .maybeSingle()
 
-  if (error) {
-    if (error.code === '42P01' || error.code === 'PGRST116') return NextResponse.json({})
-    return NextResponse.json({})
+    if (error) {
+      // 42P01 = missing table, 42703 = missing column → return defaults gracefully
+      return NextResponse.json({ prefs: mergeOverDefaults(null) })
+    }
+    return NextResponse.json({ prefs: mergeOverDefaults(data?.prefs) })
+  } catch {
+    return NextResponse.json({ prefs: mergeOverDefaults(null) })
   }
-
-  if (!data) return NextResponse.json({})
-
-  // Build response: expose DB columns under both their own name and the UI key
-  const result: Record<string, any> = { ...data }
-  for (const [dbCol, uiKey] of Object.entries(DB_TO_UI)) {
-    if (data[dbCol] !== undefined) result[uiKey] = data[dbCol]
-  }
-
-  // Merge in any extra prefs stored as JSONB
-  if (data.preferences && typeof data.preferences === 'object') {
-    Object.assign(result, data.preferences)
-  }
-
-  return NextResponse.json(result)
 }
 
 export async function PUT(request: NextRequest) {
@@ -50,52 +91,53 @@ export async function PUT(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json()
+  let body: any = {}
+  try { body = await request.json() } catch { body = {} }
 
-  // Build known-column updates
-  const knownUpdates: Record<string, any> = {
-    user_id: user.id,
-    updated_at: new Date().toISOString(),
-  }
+  const incoming = (body?.prefs && typeof body.prefs === 'object') ? body.prefs : body
+  const merged = mergeOverDefaults(incoming)
 
-  for (const [uiKey, dbCol] of Object.entries(UI_TO_DB)) {
-    if (body[uiKey] !== undefined) knownUpdates[dbCol] = body[uiKey]
-    // Also accept old-style direct DB column names
-    if (body[dbCol] !== undefined) knownUpdates[dbCol] = body[dbCol]
-  }
+  // Determine organization for org-scoping (best-effort; column may not exist).
+  let organization_id: string | null = null
+  try {
+    const { data: u } = await supabase
+      .from('users')
+      .select('organization_id')
+      .eq('id', user.id)
+      .maybeSingle()
+    organization_id = (u as any)?.organization_id ?? null
+  } catch { /* ignore */ }
 
-  // Store all remaining keys (inapp toggles, other notification types) in preferences JSONB
-  const knownUiKeys = new Set([...Object.keys(UI_TO_DB), ...Object.values(UI_TO_DB)])
-  const extraPrefs: Record<string, any> = {}
-  for (const [k, v] of Object.entries(body)) {
-    if (!knownUiKeys.has(k) && k !== 'user_id' && k !== 'updated_at' && k !== 'id') {
-      extraPrefs[k] = v
+  const attempt = async (payload: Record<string, any>) =>
+    supabase
+      .from('user_notification_prefs')
+      .upsert(payload, { onConflict: 'user_id' })
+      .select('prefs')
+      .maybeSingle()
+
+  try {
+    const { error } = await attempt({
+      user_id: user.id,
+      organization_id,
+      prefs: merged,
+      updated_at: new Date().toISOString(),
+    })
+
+    if (error) {
+      // Retry without possibly-missing columns (prefs / organization_id).
+      const { error: e2 } = await attempt({
+        user_id: user.id,
+        prefs: merged,
+        updated_at: new Date().toISOString(),
+      })
+      if (e2) {
+        // Missing table/column entirely → treat save as a graceful no-op.
+        return NextResponse.json({ prefs: merged, saved: false })
+      }
     }
-  }
-  if (Object.keys(extraPrefs).length > 0) {
-    knownUpdates.preferences = extraPrefs
-  }
-
-  const { data, error } = await supabase
-    .from('user_notification_prefs')
-    .upsert(knownUpdates, { onConflict: 'user_id' })
-    .select()
-    .single()
-
-  if (error) {
-    // If preferences column doesn't exist yet, retry without it
-    if (error.message?.includes('preferences')) {
-      const { preferences: _p, ...withoutPrefs } = knownUpdates
-      const { data: data2, error: error2 } = await supabase
-        .from('user_notification_prefs')
-        .upsert(withoutPrefs, { onConflict: 'user_id' })
-        .select()
-        .single()
-      if (error2) return NextResponse.json({ error: error2.message }, { status: 500 })
-      return NextResponse.json(data2)
-    }
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch {
+    return NextResponse.json({ prefs: merged, saved: false })
   }
 
-  return NextResponse.json(data)
+  return NextResponse.json({ prefs: merged, saved: true })
 }

@@ -603,3 +603,13 @@ CREATE POLICY "org_keyword_rankings" ON keyword_rankings
   FOR ALL TO authenticated USING (
     organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
   );
+
+-- ============================================================
+-- 037_notification_prefs.sql
+-- HubSpot-style notification preferences: per-user JSON map.
+-- ============================================================
+ALTER TABLE user_notification_prefs
+  ADD COLUMN IF NOT EXISTS prefs JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+ALTER TABLE user_notification_prefs
+  ADD COLUMN IF NOT EXISTS organization_id UUID;
