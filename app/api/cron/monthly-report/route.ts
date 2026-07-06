@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createAdminClient()
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.stratiq.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://stratiqnow.com'
   const now = new Date()
 
   // Previous month (the month just ended)

@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         .eq('organization_id', userData.organization_id)
         .in('role', ['super_admin', 'admin'])
 
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.stratiq.io'
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://stratiqnow.com'
       for (const admin of admins || []) {
         await sendEmail({
           to: admin.email,

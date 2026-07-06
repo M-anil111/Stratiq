@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Sparkles, Loader2, AlertCircle, ShieldCheck } from 'lucide-react'
 
-const SUPPORT_EMAIL = 'support@stratiq.app'
+const SUPPORT_EMAIL = 'support@stratiqnow.com'
 
 export default function VerifyPage() {
   const router = useRouter()

@@ -6,11 +6,11 @@ moment its client-ID env var is present.
 
 ## Before you start — two things that apply to every platform
 
-1. **Your app domain.** Everywhere below, replace `YOUR_DOMAIN` with the URL your
-   app is actually served from — your custom domain if you have one, otherwise the
-   Vercel production URL (e.g. `https://stratiq.vercel.app`). To find it: Vercel →
-   project **stratiq** → **Domains**. If you also test on Vercel **preview** URLs,
-   register those callback URLs too (some providers allow multiple).
+1. **Your app domain is `https://stratiqnow.com`.** Everywhere below, `YOUR_DOMAIN`
+   means `stratiqnow.com` — so the callback for e.g. Facebook is
+   `https://stratiqnow.com/api/auth/social/facebook/callback`. If you also test on
+   the Vercel **preview** URL, register those callback URLs too (some providers
+   allow multiple redirect URIs).
 
 2. **The redirect / callback URL** each platform must whitelist is always:
    ```

@@ -5,7 +5,7 @@ export const VALID_INVITE_ROLES = ['team_member', 'manager', 'admin', 'billing_a
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export function getAppUrl(requestOrigin?: string): string {
-  return process.env.NEXT_PUBLIC_APP_URL || requestOrigin || 'https://app.stratiq.app'
+  return process.env.NEXT_PUBLIC_APP_URL || requestOrigin || 'https://stratiqnow.com'
 }
 
 export function inviteExpiry(): string {
