@@ -57,7 +57,10 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     if (error.code === '42P01') {
-      return NextResponse.json({ error: 'custom_field_definitions table does not exist. Run the migration first.' }, { status: 500 })
+      return NextResponse.json({ error: 'The custom fields table has not been set up yet. Please run the database migration.' }, { status: 503 })
+    }
+    if (error.code === '42703') {
+      return NextResponse.json({ error: 'The custom fields table is missing a required column. Please run the latest database migration.' }, { status: 503 })
     }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
@@ -82,7 +85,10 @@ export async function DELETE(request: NextRequest) {
     .eq('id', id)
     .eq('organization_id', userData.organization_id)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json({ ok: true })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json({ ok: true })
 }
 
@@ -105,6 +111,11 @@ export async function PATCH(request: NextRequest) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01' || error.code === '42703') {
+      return NextResponse.json({ error: 'The custom fields table is not fully set up. Please run the latest database migration.' }, { status: 503 })
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json(data)
 }

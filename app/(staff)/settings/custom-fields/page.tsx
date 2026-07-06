@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Trash2, Loader2, X } from 'lucide-react'
+import { Plus, Trash2, Loader2, X, Info } from 'lucide-react'
+import { InfoHint } from '@/components/ui/InfoHint'
 
 type FieldType = 'text' | 'number' | 'date' | 'dropdown' | 'checkbox'
 type EntityType = 'client' | 'project'
@@ -14,12 +15,12 @@ interface CustomField {
   position?: number
 }
 
-const FIELD_TYPES: { value: FieldType; label: string }[] = [
-  { value: 'text', label: 'Text' },
-  { value: 'number', label: 'Number' },
-  { value: 'date', label: 'Date' },
-  { value: 'dropdown', label: 'Dropdown' },
-  { value: 'checkbox', label: 'Checkbox' },
+const FIELD_TYPES: { value: FieldType; label: string; hint: string }[] = [
+  { value: 'text', label: 'Text', hint: 'A single line of free text — names, IDs, short notes.' },
+  { value: 'number', label: 'Number', hint: 'Numeric values only — counts, amounts, scores.' },
+  { value: 'date', label: 'Date', hint: 'A calendar date, shown with a date picker.' },
+  { value: 'dropdown', label: 'Dropdown', hint: 'A choice from a preset list of options. Tip: reusable option lists are managed under Data Sets.' },
+  { value: 'checkbox', label: 'Checkbox', hint: 'A simple yes / no (true / false) toggle.' },
 ]
 
 const selectClass =
@@ -111,9 +112,22 @@ export default function CustomFieldsPage() {
 
   return (
     <div className="p-4 lg:p-8 max-w-4xl">
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Custom Fields</h1>
         <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">Define extra fields to capture on clients and projects</p>
+      </div>
+
+      {/* What are custom fields? */}
+      <div className="glass-card p-4 mb-6 flex gap-3">
+        <div className="shrink-0 mt-0.5 h-8 w-8 rounded-lg bg-sky-500/15 text-sky-500 dark:text-sky-400 flex items-center justify-center">
+          <Info className="h-4 w-4" />
+        </div>
+        <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+          <span className="font-medium text-slate-900 dark:text-white">Custom fields let admins capture extra information</span> on
+          each client or project beyond the built-in fields. For example, add a "Contract renewal date" to clients or a
+          "Kick-off owner" to projects. Fields you define here appear on the matching record's create and edit forms,
+          in the order they are listed.
+        </div>
       </div>
 
       {/* Tab bar */}
@@ -128,7 +142,10 @@ export default function CustomFieldsPage() {
 
       <div className="glass-card overflow-hidden">
         <div className="p-4 border-b border-slate-900/10 dark:border-white/[0.08] flex items-center justify-between">
-          <h2 className="font-semibold text-slate-900 dark:text-white">{tabs[activeTab].label}</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+            {tabs[activeTab].label}
+            <InfoHint content={`Extra fields shown on every ${entity} record. Drag-free ordering follows the order fields are added.`} />
+          </h2>
           <button onClick={openModal} className="btn-brand flex items-center gap-2">
             <Plus className="h-4 w-4" /> Add Field
           </button>
@@ -141,16 +158,29 @@ export default function CustomFieldsPage() {
           </div>
         ) : fields.length === 0 ? (
           <div className="p-10 text-center text-slate-600 dark:text-slate-400">
+            <div className="mx-auto mb-3 h-11 w-11 rounded-xl bg-slate-900/[0.04] dark:bg-white/[0.06] flex items-center justify-center">
+              <Plus className="h-5 w-5 opacity-50" />
+            </div>
             <p className="font-medium text-slate-700 dark:text-slate-300 mb-1">No custom fields yet</p>
-            <p className="text-sm">Click "Add Field" to create your first field for {tabs[activeTab].label.toLowerCase()}.</p>
+            <p className="text-sm max-w-sm mx-auto">Add one to capture extra info on your {entity} records — it will appear on the {entity} create and edit forms.</p>
+            <button onClick={openModal} className="btn-brand inline-flex items-center gap-2 mt-4">
+              <Plus className="h-4 w-4" /> Add your first field
+            </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-900/[0.04] dark:bg-white/[0.03]">
                 <tr>
-                  {['Field Name', 'Type', 'Required', 'Actions'].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">{h}</th>
+                  {([
+                    { h: 'Field Name', hint: '' },
+                    { h: 'Type', hint: 'How data for this field is entered and stored.' },
+                    { h: 'Required', hint: 'When on, users must fill this field before saving the record.' },
+                    { h: 'Actions', hint: '' },
+                  ]).map(({ h, hint }) => (
+                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                      <span className="inline-flex items-center gap-1">{h}{hint && <InfoHint content={hint} />}</span>
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -223,17 +253,26 @@ export default function CustomFieldsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Type</label>
+                <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                  Type
+                  <InfoHint content="Choose how this field is entered. Each type stores and validates data differently." />
+                </label>
                 <select value={modalType} onChange={e => setModalType(e.target.value as FieldType)} className={selectClass}>
                   {FIELD_TYPES.map(t => (
                     <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
                 </select>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
+                  {FIELD_TYPES.find(t => t.value === modalType)?.hint}
+                </p>
               </div>
 
               <div className="flex items-center justify-between py-2">
                 <div>
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Required</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    Required
+                    <InfoHint content="When on, this field must be filled before the record can be saved." />
+                  </p>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Force users to fill this field</p>
                 </div>
                 <button

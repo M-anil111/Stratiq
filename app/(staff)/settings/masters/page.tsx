@@ -2,9 +2,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   CheckCircle, XCircle, Search, Trash2, ToggleLeft, ToggleRight,
-  Clock, Building2, Target, ListChecks, Receipt, FileText, Star, Activity,
+  Clock, Building2, Target, ListChecks, Receipt, FileText, Star, Activity, Info,
 } from 'lucide-react'
 import AddButton from '@/components/ui/AddButton'
+import { InfoHint } from '@/components/ui/InfoHint'
 
 const CATEGORIES = [
   { key: 'industry', label: 'Industries', icon: Building2, description: 'Industry sectors used to classify clients' },
@@ -163,9 +164,25 @@ export default function MastersPage() {
   return (
     <div className="min-h-screen bg-mesh">
       <div className="max-w-5xl mx-auto px-4 py-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Data Sets</h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Manage the dropdown values used across the platform. Each data set has its own tab.</p>
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            Data Sets
+            <InfoHint side="bottom" content="Reusable lists of dropdown options (also called master data). Define a value once here and it can be reused everywhere that dropdown appears — so everyone picks from the same consistent list." />
+          </h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Manage the reusable dropdown values used across the platform. Each data set has its own tab.</p>
+        </div>
+
+        {/* What are data sets? */}
+        <div className="glass-card p-4 mb-6 flex gap-3">
+          <div className="shrink-0 mt-0.5 h-8 w-8 rounded-lg bg-sky-500/15 text-sky-500 dark:text-sky-400 flex items-center justify-center">
+            <Info className="h-4 w-4" />
+          </div>
+          <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            <span className="font-medium text-slate-900 dark:text-white">Data sets are the option lists behind dropdowns</span> such as
+            industries, project statuses and billing terms. Keeping them centralized means every form offers the same choices and
+            reports stay consistent. Admins can add and approve values instantly; other team members can suggest new values that an
+            admin then approves.
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
@@ -203,6 +220,7 @@ export default function MastersPage() {
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                   <activeCategory.icon className="h-5 w-5 text-sky-400" />
                   {activeCategory.label}
+                  <InfoHint content={`${activeCategory.description}. These values populate the "${activeCategory.label}" dropdown wherever it appears.`} />
                 </h2>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{activeCategory.description}</p>
               </div>
@@ -234,6 +252,7 @@ export default function MastersPage() {
                       <div className="flex items-center gap-2 px-4 py-2">
                         <Clock size={12} className="text-amber-400" />
                         <span className="text-xs text-amber-400 font-semibold uppercase tracking-wider">Pending Approval ({pending.length})</span>
+                        <InfoHint content="Suggested by a team member and waiting for an admin to approve. Pending values do not appear in dropdowns until approved." />
                       </div>
                       {pending.map(m => <MasterRow key={m.id} m={m} />)}
                     </div>
@@ -243,6 +262,7 @@ export default function MastersPage() {
                       <div className="flex items-center gap-2 px-4 py-2">
                         <CheckCircle size={12} className="text-emerald-400" />
                         <span className="text-xs text-emerald-400 font-semibold uppercase tracking-wider">Approved ({approved.length})</span>
+                        <InfoHint content="Live values that appear in this dropdown. Deactivate one to hide it from new records without deleting past data." />
                       </div>
                       {approved.map(m => <MasterRow key={m.id} m={m} />)}
                     </div>
