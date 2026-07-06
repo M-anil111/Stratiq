@@ -38,22 +38,33 @@ export async function GET() {
 
     const collected: (PHTask & { _project?: { id: number; name: string }; _list?: { id: number; name: string } })[] = []
 
-    for (const project of scanProjects) {
-      let todolists: Awaited<ReturnType<typeof listTodolists>> = []
-      try {
-        todolists = await listTodolists(project.id)
-      } catch {
-        continue
-      }
-      const scanLists = todolists.slice(0, MAX_LISTS_PER_PROJECT)
-      if (todolists.length > scanLists.length) partial = true
+    // Fetch todolists for all projects concurrently, then all tasks concurrently.
+    // Bounded by MAX_PROJECTS × MAX_LISTS_PER_PROJECT (≤ the 25 req/10s ceiling),
+    // and the lib's TTL cache absorbs repeats — this avoids serial-request timeouts.
+    const projectLists = await Promise.all(
+      scanProjects.map(async (project) => {
+        try {
+          const todolists = await listTodolists(project.id)
+          const scanLists = todolists.slice(0, MAX_LISTS_PER_PROJECT)
+          if (todolists.length > scanLists.length) partial = true
+          return { project, scanLists }
+        } catch {
+          return { project, scanLists: [] as Awaited<ReturnType<typeof listTodolists>> }
+        }
+      })
+    )
 
-      for (const tl of scanLists) {
+    const listJobs = projectLists.flatMap(({ project, scanLists }) =>
+      scanLists.map((tl) => ({ project, tl }))
+    )
+
+    await Promise.all(
+      listJobs.map(async ({ project, tl }) => {
         let tasks: PHTask[] = []
         try {
           tasks = await listTasks(project.id, tl.id)
         } catch {
-          continue
+          return
         }
         for (const t of tasks) {
           if (Array.isArray(t.assigned) && t.assigned.map(Number).includes(myId) && !t.completed) {
@@ -64,8 +75,8 @@ export async function GET() {
             })
           }
         }
-      }
-    }
+      })
+    )
 
     return NextResponse.json({
       configured: true,

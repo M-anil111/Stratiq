@@ -18,6 +18,22 @@ export function proofhubConfigured(): boolean {
   return Boolean(API_KEY && ACCOUNT_URL)
 }
 
+// ---- capability flags -----------------------------------------------------
+// Verified against github.com/ProofHub/api_v3:
+//  - POST /projects (create project) IS documented → supported.
+//  - GET /projects/{p}/todolists/{tl}/tasks/{t}/history → per-task activity.
+//  - GET /alltodo (with completed=true) → historical/completed tasks.
+//  - No board/project TEMPLATES endpoint is documented → feature off.
+//  - No account-wide activity / "everything" feed is documented (only
+//    /alltodo & /alltime, which are task/time lists, not activity) → feature off.
+export const PROOFHUB_CAPS = {
+  createProject: true,
+  taskHistory: true,
+  allTasks: true,
+  templates: false,
+  activityFeed: false,
+} as const
+
 export function proofhubAccount(): string {
   // Host portion, e.g. "company" from https://company.proofhub.com
   try {
@@ -200,7 +216,7 @@ function asArray<T>(data: unknown): T[] {
   if (Array.isArray(data)) return data as T[]
   if (data && typeof data === 'object') {
     const obj = data as Record<string, unknown>
-    for (const key of ['data', 'projects', 'todolists', 'tasks', 'people', 'comments', 'items']) {
+    for (const key of ['data', 'projects', 'todolists', 'tasks', 'todos', 'people', 'comments', 'items', 'history', 'activities']) {
       if (Array.isArray(obj[key])) return obj[key] as T[]
     }
   }
@@ -231,6 +247,23 @@ export async function listProjects(): Promise<PHProject[]> {
 
 export async function getProject(p: number | string): Promise<PHProject> {
   return ph<PHProject>(`projects/${p}`)
+}
+
+// Create a project in ProofHub. The v3 API expects `title` for the name.
+export type ProjectWriteBody = {
+  title: string
+  description?: string
+  category?: number
+  start_date?: string
+  end_date?: string
+}
+export async function createProject(body: ProjectWriteBody): Promise<PHProject> {
+  const res = await ph<PHProject>('projects', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+  invalidatePrefix(`GET ${ACCOUNT_URL}/api/v3/projects`)
+  return res
 }
 
 export async function listTodolists(p: number | string): Promise<PHTodolist[]> {
@@ -317,6 +350,51 @@ export async function listSubtasks(p: number | string, tl: number | string, t: n
   return asArray<PHTask>(await ph(`projects/${p}/todolists/${tl}/tasks/${t}/subtasks`))
 }
 
+// Per-task activity log. Endpoint: .../tasks/{t}/history
+export type PHActivity = {
+  id?: number | string
+  action?: string
+  description?: string
+  content?: string
+  created_at?: string
+  created_by?: unknown
+  [k: string]: unknown
+}
+export async function getTaskHistory(
+  p: number | string,
+  tl: number | string,
+  t: number | string
+): Promise<PHActivity[]> {
+  return asArray<PHActivity>(await ph(`projects/${p}/todolists/${tl}/tasks/${t}/history`))
+}
+
+// Account-wide task list (/alltodo). Efficient way to pull historical/completed
+// tasks scoped to one or more projects with a single request. Note: alltodo
+// task objects are lighter than per-todolist task objects (they may omit the
+// todolist reference), so use them for display/history rather than deep-linking.
+export type AllTodoOpts = {
+  projects?: (number | string)[]
+  assigned?: (number | string)[]
+  labels?: (number | string)[]
+  completed?: boolean
+  includeSubtasks?: boolean
+  includeUnassigned?: boolean
+  start?: number
+  limit?: number
+}
+export async function listAllTasks(opts: AllTodoOpts = {}): Promise<PHTask[]> {
+  const qs = new URLSearchParams()
+  qs.set('start', String(opts.start ?? 0))
+  qs.set('limit', String(opts.limit ?? 100))
+  if (opts.projects?.length) qs.set('projects', opts.projects.join(','))
+  if (opts.assigned?.length) qs.set('assigned', opts.assigned.join(','))
+  if (opts.labels?.length) qs.set('labels', opts.labels.join(','))
+  if (opts.completed) qs.set('completed', 'true')
+  if (opts.includeSubtasks) qs.set('include_subtasks', 'true')
+  if (opts.includeUnassigned) qs.set('include_unassigned', 'true')
+  return asArray<PHTask>(await ph(`alltodo?${qs.toString()}`))
+}
+
 export async function listPeople(): Promise<PHPerson[]> {
   return asArray<PHPerson>(await ph('people'))
 }
@@ -357,6 +435,18 @@ export function harvestStages(tasks: PHTask[]): PHStage[] {
   for (const t of tasks) {
     if (t.stage && typeof t.stage.id === 'number') {
       seen.set(t.stage.id, t.stage.name || `Stage ${t.stage.id}`)
+    }
+  }
+  return Array.from(seen.entries()).map(([id, name]) => ({ id, name }))
+}
+
+// Harvest distinct workflows/boards from a project's tasks. Like stages, there
+// is no workflow-discovery endpoint, so we derive them from the tasks.
+export function harvestWorkflows(tasks: PHTask[]): PHStage[] {
+  const seen = new Map<number, string>()
+  for (const t of tasks) {
+    if (t.workflow && typeof t.workflow.id === 'number') {
+      seen.set(t.workflow.id, t.workflow.name || `Board ${t.workflow.id}`)
     }
   }
   return Array.from(seen.entries()).map(([id, name]) => ({ id, name }))

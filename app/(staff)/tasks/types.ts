@@ -41,5 +41,16 @@ export type Board = {
   projectId: number
   lists: BoardList[]
   stages: Stage[]
+  workflows: Stage[]
+  completedTasks: PHTaskLite[]
+  includeCompleted: boolean
   partial: boolean
+}
+
+export type Activity = {
+  id?: number | string
+  action?: string
+  description?: string
+  content?: string
+  created_at?: string
 }

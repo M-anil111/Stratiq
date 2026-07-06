@@ -1,9 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { Check, Loader2, MessageSquare, Send, ListTree, Tag, Calendar, Users } from 'lucide-react'
+import { Check, Loader2, MessageSquare, Send, ListTree, Tag, Calendar, Users, Activity as ActivityIcon } from 'lucide-react'
 import SlideOver from '@/components/SlideOver'
-import { Person, Stage, PHTaskLite } from './types'
+import { Person, Stage, PHTaskLite, Activity } from './types'
 import { Avatar, LabelPill } from './ui'
+import { sanitizeHtml } from '@/lib/sanitize-html'
 
 export type TaskRef = { taskId: number; projectId: number; todolistId: number }
 
@@ -24,6 +25,7 @@ export default function TaskDetailDrawer({
   const [task, setTask] = useState<PHTaskLite | null>(null)
   const [subtasks, setSubtasks] = useState<PHTaskLite[]>([])
   const [comments, setComments] = useState<any[]>([])
+  const [activity, setActivity] = useState<Activity[]>([])
   const [saving, setSaving] = useState(false)
   const [newComment, setNewComment] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -34,9 +36,10 @@ export default function TaskDetailDrawer({
     setError(null)
     try {
       const qs = `projectId=${taskRef.projectId}&todolistId=${taskRef.todolistId}`
-      const [tRes, cRes] = await Promise.all([
+      const [tRes, cRes, hRes] = await Promise.all([
         fetch(`/api/proofhub/tasks/${taskRef.taskId}?${qs}`),
         fetch(`/api/proofhub/tasks/${taskRef.taskId}/comments?${qs}`),
+        fetch(`/api/proofhub/tasks/${taskRef.taskId}/history?${qs}`),
       ])
       const tJson = await tRes.json()
       if (!tRes.ok) throw new Error(tJson.message || tJson.error || 'Failed to load task')
@@ -44,6 +47,8 @@ export default function TaskDetailDrawer({
       setSubtasks(Array.isArray(tJson.subtasks) ? tJson.subtasks : [])
       const cJson = await cRes.json()
       setComments(Array.isArray(cJson.comments) ? cJson.comments : [])
+      const hJson = await hRes.json().catch(() => ({}))
+      setActivity(Array.isArray(hJson.activities) ? hJson.activities : [])
     } catch (e: any) {
       setError(e.message || 'Failed to load')
     } finally {
@@ -52,11 +57,13 @@ export default function TaskDetailDrawer({
   }, [taskRef])
 
   useEffect(() => {
+    setNewComment('')
     if (taskRef) load()
     else {
       setTask(null)
       setComments([])
       setSubtasks([])
+      setActivity([])
       setError(null)
     }
   }, [taskRef, load])
@@ -163,7 +170,7 @@ export default function TaskDetailDrawer({
           {task.description && (
             <div
               className="prose-sm text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words"
-              dangerouslySetInnerHTML={{ __html: task.description }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(task.description) }}
             />
           )}
 
@@ -196,6 +203,7 @@ export default function TaskDetailDrawer({
             </div>
             <input
               type="date"
+              key={task.id}
               defaultValue={task.due_date ? String(task.due_date).slice(0, 10) : ''}
               onChange={(e) => patch({ due_date: e.target.value })}
               disabled={saving}
@@ -273,11 +281,11 @@ export default function TaskDetailDrawer({
                 <div key={c.id ?? i} className="glass-card rounded-lg p-3 text-sm">
                   <div
                     className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words"
-                    dangerouslySetInnerHTML={{ __html: c.content || c.body || '' }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(c.content || c.body || '') }}
                   />
                   {c.created_at && (
                     <div className="text-[11px] text-slate-400 mt-1">
-                      {new Date(c.created_at).toLocaleString()}
+                      <span suppressHydrationWarning>{new Date(c.created_at).toLocaleString()}</span>
                     </div>
                   )}
                 </div>
@@ -301,6 +309,28 @@ export default function TaskDetailDrawer({
               </button>
             </div>
           </div>
+
+          {/* Activity (task history) */}
+          {activity.length > 0 && (
+            <div>
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+                <ActivityIcon className="h-3.5 w-3.5" /> Activity
+              </div>
+              <ul className="space-y-2.5 border-l border-slate-900/10 dark:border-white/10 pl-3">
+                {activity.map((a, i) => (
+                  <li key={a.id ?? i} className="text-sm text-slate-600 dark:text-slate-300">
+                    <div
+                      className="whitespace-pre-wrap break-words"
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(a.description || a.content || a.action || 'Activity') }}
+                    />
+                    {a.created_at && (
+                      <div className="text-[11px] text-slate-400 mt-0.5" suppressHydrationWarning>{new Date(a.created_at).toLocaleString()}</div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </SlideOver>

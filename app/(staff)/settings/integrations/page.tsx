@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { CheckCircle, XCircle, RefreshCw, Loader2, Briefcase, CreditCard, BarChart3 } from 'lucide-react'
+import { CheckCircle, XCircle, RefreshCw, Loader2, Briefcase, CreditCard, BarChart3, Download } from 'lucide-react'
 
 type IntegrationStatus = 'connected' | 'disconnected' | 'error' | 'loading'
 
@@ -48,6 +48,7 @@ export default function IntegrationsPage() {
   const [metaSyncing, setMetaSyncing] = useState(false)
   const [qbSyncing, setQbSyncing] = useState(false)
   const [qbCustomerSyncing, setQbCustomerSyncing] = useState(false)
+  const [qbImporting, setQbImporting] = useState(false)
 
   const [lastSynced, setLastSynced] = useState<{
     qb: string | null
@@ -231,6 +232,35 @@ export default function IntegrationsPage() {
       showBanner('error', 'Customer sync failed.')
     }
     setQbCustomerSyncing(false)
+  }
+
+  const handleQbImportAll = async () => {
+    if (!confirm('Import ALL QuickBooks customers into Stratiq as clients and contacts? Existing clients are updated, not duplicated.')) return
+    setQbImporting(true)
+    try {
+      const res = await fetch('/api/integrations/quickbooks/import-all', { method: 'POST' })
+      const d = await res.json()
+      if (res.ok) {
+        const parts = [
+          `${d.imported} new client${d.imported === 1 ? '' : 's'}`,
+          `${d.updated} updated`,
+          `${d.contacts} contact${d.contacts === 1 ? '' : 's'}`,
+        ]
+        if (d.skipped) parts.push(`${d.skipped} skipped`)
+        setLastSynced(prev => ({ ...prev, qb: new Date().toISOString() }))
+        const errCount = Array.isArray(d.errors) ? d.errors.length : 0
+        if (errCount > 0) {
+          showBanner('error', `Imported with ${errCount} issue${errCount === 1 ? '' : 's'}: ${parts.join(', ')}. First error: ${d.errors[0]}`)
+        } else {
+          showBanner('success', `QuickBooks import complete — ${parts.join(', ')}.`)
+        }
+      } else {
+        showBanner('error', d.error || 'QuickBooks import failed.')
+      }
+    } catch {
+      showBanner('error', 'QuickBooks import failed.')
+    }
+    setQbImporting(false)
   }
 
   const handleLookerSave = async () => {
@@ -472,6 +502,16 @@ export default function IntegrationsPage() {
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${qbCustomerSyncing ? 'animate-spin' : ''}`} />
                     Sync Customers
+                  </button>
+                  <button
+                    onClick={handleQbImportAll}
+                    disabled={qbImporting}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-slate-900/10 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all disabled:opacity-50"
+                  >
+                    {qbImporting
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      : <Download className="h-3.5 w-3.5" />}
+                    {qbImporting ? 'Importing…' : 'Import Customers & Contacts'}
                   </button>
                   <button
                     onClick={handleQbDisconnect}

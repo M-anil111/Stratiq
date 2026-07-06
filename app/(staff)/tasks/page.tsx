@@ -2,15 +2,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   ListChecks, Plus, Loader2, FolderKanban, LayoutGrid, List as ListIcon,
-  Check, Circle, AlertTriangle, ChevronLeft, PlugZap,
+  Check, Circle, AlertTriangle, ChevronLeft, PlugZap, Link2, Layers,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Person, Project, Board, PHTaskLite, Stage } from './types'
 import { Avatar, AvatarStack, LabelPill, formatDue, dueBucket } from './ui'
 import TaskDetailDrawer, { TaskRef } from './TaskDetailDrawer'
 import NewTaskDrawer from './NewTaskDrawer'
+import SyncProjects from './SyncProjects'
 
-type Tab = 'my' | 'projects'
+type Tab = 'my' | 'projects' | 'sync'
 type ProjectView = 'board' | 'list'
 
 export default function TasksPage() {
@@ -33,6 +34,8 @@ export default function TasksPage() {
   const [projectView, setProjectView] = useState<ProjectView>('board')
   const [board, setBoard] = useState<Board | null>(null)
   const [boardLoading, setBoardLoading] = useState(false)
+  const [showCompleted, setShowCompleted] = useState(false)
+  const [workflowFilter, setWorkflowFilter] = useState<number | null>(null)
 
   // ---- initial status + shared data ----
   useEffect(() => {
@@ -84,11 +87,11 @@ export default function TasksPage() {
   }, [status?.configured, tab, loadMyTasks])
 
   // ---- board ----
-  const loadBoard = useCallback(async (projectId: number) => {
+  const loadBoard = useCallback(async (projectId: number, completed: boolean) => {
     setBoardLoading(true)
     setLoadError(null)
     try {
-      const res = await fetch(`/api/proofhub/projects/${projectId}/board`)
+      const res = await fetch(`/api/proofhub/projects/${projectId}/board${completed ? '?completed=1' : ''}`)
       const j = await res.json()
       if (!res.ok) throw new Error(j.message || j.error || 'Failed to load board')
       setBoard(j)
@@ -100,21 +103,27 @@ export default function TasksPage() {
   }, [])
 
   useEffect(() => {
-    if (selectedProject) loadBoard(selectedProject.id)
-  }, [selectedProject, loadBoard])
+    if (selectedProject) loadBoard(selectedProject.id, showCompleted)
+  }, [selectedProject, showCompleted, loadBoard])
 
   function refresh() {
     if (tab === 'my') loadMyTasks()
-    if (selectedProject) loadBoard(selectedProject.id)
+    if (selectedProject) loadBoard(selectedProject.id, showCompleted)
   }
 
   async function quickComplete(t: PHTaskLite, projectId: number, todolistId: number) {
     try {
-      await fetch(`/api/proofhub/tasks/${t.id}`, {
+      const res = await fetch(`/api/proofhub/tasks/${t.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId, todolistId, complete: !t.completed }),
       })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.message || json.error || 'Failed to update task')
+      }
+    } catch (e: any) {
+      setLoadError(e.message || 'Failed to update task')
     } finally {
       refresh()
     }
@@ -122,13 +131,19 @@ export default function TasksPage() {
 
   async function moveTaskToStage(t: PHTaskLite, projectId: number, todolistId: number, stage: number) {
     try {
-      await fetch(`/api/proofhub/tasks/${t.id}`, {
+      const res = await fetch(`/api/proofhub/tasks/${t.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId, todolistId, stage, moveStage: true }),
       })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.message || json.error || 'Failed to move task')
+      }
+    } catch (e: any) {
+      setLoadError(e.message || 'Failed to move task')
     } finally {
-      if (selectedProject) loadBoard(selectedProject.id)
+      if (selectedProject) loadBoard(selectedProject.id, showCompleted)
     }
   }
 
@@ -182,6 +197,7 @@ export default function TasksPage() {
       <div className="flex items-center gap-1 mb-6 border-b border-slate-900/[0.06] dark:border-white/[0.06]">
         <TabButton active={tab === 'my'} onClick={() => { setTab('my'); setSelectedProject(null) }} icon={<ListChecks className="h-4 w-4" />} label="My Tasks" />
         <TabButton active={tab === 'projects'} onClick={() => setTab('projects')} icon={<FolderKanban className="h-4 w-4" />} label="Projects" />
+        <TabButton active={tab === 'sync'} onClick={() => { setTab('sync'); setSelectedProject(null) }} icon={<Link2 className="h-4 w-4" />} label="Sync / Link" />
       </div>
 
       {loadError && (
@@ -202,6 +218,9 @@ export default function TasksPage() {
           onComplete={(t) => quickComplete(t, (t._project?.id ?? t.project?.id)!, (t._list?.id ?? t.list?.id)!)}
         />
       )}
+
+      {/* SYNC / LINK */}
+      {tab === 'sync' && <SyncProjects />}
 
       {/* PROJECTS */}
       {tab === 'projects' && !selectedProject && (
@@ -236,11 +255,46 @@ export default function TasksPage() {
             </div>
           </div>
 
+          {/* Board controls: workflow filter + completed/historical toggle */}
+          <div className="flex items-center gap-3 mb-4 flex-wrap">
+            <button
+              onClick={() => setShowCompleted((v) => !v)}
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                showCompleted
+                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-slate-900/[0.04] dark:bg-white/[0.04] border-slate-900/10 dark:border-white/10 text-slate-600 dark:text-slate-300'
+              )}
+            >
+              <Check className="h-3.5 w-3.5" /> {showCompleted ? 'Showing completed' : 'Show completed'}
+            </button>
+            {board && board.workflows.length > 1 && (
+              <div className="inline-flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5 text-slate-500" />
+                <select
+                  value={workflowFilter ?? ''}
+                  onChange={(e) => setWorkflowFilter(e.target.value ? Number(e.target.value) : null)}
+                  className="input-glass text-xs py-1.5"
+                  aria-label="Filter by board / workflow"
+                >
+                  <option value="">All boards ({board.workflows.length})</option>
+                  {board.workflows.map((w) => (
+                    <option key={w.id} value={w.id}>{w.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
           {board?.partial && (
             <div className="mb-4 rounded-lg bg-amber-500/10 border border-amber-500/25 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
               Showing a capped subset of lists to stay within ProofHub rate limits.
             </div>
           )}
+
+          <div className="mb-4 rounded-lg bg-slate-900/[0.03] dark:bg-white/[0.03] border border-slate-900/10 dark:border-white/10 px-3 py-2 text-[11px] text-slate-500">
+            Board templates aren&apos;t exposed by the ProofHub API, so template selection is unavailable. Global/account activity feeds are also not exposed — per-task activity is available inside each task.
+          </div>
 
           {boardLoading && (
             <div className="flex items-center justify-center py-16 text-slate-500"><Loader2 className="h-6 w-6 animate-spin" /></div>
@@ -250,6 +304,7 @@ export default function TasksPage() {
             <BoardView
               board={board}
               people={people}
+              workflowFilter={workflowFilter}
               onOpen={(t, listId) => setTaskRef({ taskId: t.id, projectId: board.projectId, todolistId: listId })}
               onMove={(t, listId, stage) => moveTaskToStage(t, board.projectId, listId, stage)}
             />
@@ -395,7 +450,7 @@ function TaskRow({
           {Array.isArray(task.labels) && task.labels.slice(0, 3).map((l) => <LabelPill key={l.id} label={l} />)}
         </div>
       </button>
-      {due && <span className={cn('text-xs font-medium shrink-0', due.tone)}>{due.text}</span>}
+      {due && <span className={cn('text-xs font-medium shrink-0', due.tone)} suppressHydrationWarning>{due.text}</span>}
       {assigned.length > 0 && <div className="shrink-0"><AvatarStack ids={assigned} people={people} size={22} /></div>}
     </div>
   )
@@ -403,14 +458,19 @@ function TaskRow({
 
 // ---- Board (kanban) ----
 function BoardView({
-  board, people, onOpen, onMove,
+  board, people, workflowFilter, onOpen, onMove,
 }: {
   board: Board
   people: Person[]
+  workflowFilter: number | null
   onOpen: (t: PHTaskLite, listId: number) => void
   onMove: (t: PHTaskLite, listId: number, stage: number) => void
 }) {
-  const allTasks = board.lists.flatMap((l) => l.tasks.map((t) => ({ t, listId: l.id })))
+  const matchWorkflow = (t: PHTaskLite) => workflowFilter == null || t.workflow?.id === workflowFilter
+  const allTasks = board.lists
+    .flatMap((l) => l.tasks.map((t) => ({ t, listId: l.id })))
+    .filter(({ t }) => matchWorkflow(t))
+  const completed = (board.completedTasks || []).filter(matchWorkflow)
   const stages: Stage[] = board.stages.length ? board.stages : [{ id: -1, name: 'Tasks' }]
 
   // group by stage id; tasks with no stage go under the first column
@@ -448,7 +508,7 @@ function BoardView({
                         </div>
                       )}
                       <div className="flex items-center justify-between gap-2">
-                        {due ? <span className={cn('text-[11px] font-medium', due.tone)}>{due.text}</span> : <span />}
+                        {due ? <span className={cn('text-[11px] font-medium', due.tone)} suppressHydrationWarning>{due.text}</span> : <span />}
                         {assigned.length > 0 && <AvatarStack ids={assigned} people={people} size={20} />}
                       </div>
                     </button>
@@ -473,6 +533,31 @@ function BoardView({
           </div>
         )
       })}
+
+      {/* Completed / historical column */}
+      {board.includeCompleted && (
+        <div className="shrink-0 w-72">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Completed</span>
+            <span className="text-[11px] text-slate-400">{completed.length}</span>
+          </div>
+          <div className="space-y-2">
+            {completed.map((t) => {
+              const assigned = Array.isArray(t.assigned) ? t.assigned.map(Number) : []
+              return (
+                <div key={t.id} className="glass-card rounded-xl p-3 opacity-75">
+                  <div className="text-sm font-medium mb-1.5 text-slate-400 line-through">{t.title}</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-slate-400">{t._project?.name || t.project?.name || ''}</span>
+                    {assigned.length > 0 && <AvatarStack ids={assigned} people={people} size={20} />}
+                  </div>
+                </div>
+              )
+            })}
+            {completed.length === 0 && <div className="text-[11px] text-slate-400 px-1 py-4 text-center">No completed tasks</div>}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -881,3 +881,13 @@ CREATE POLICY "org_report_schedules" ON report_schedules
   FOR ALL TO authenticated USING (
     organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
   );
+
+-- 045_qb_customer_link.sql — QuickBooks customer link column for import-all
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS qb_customer_id text;
+CREATE INDEX IF NOT EXISTS idx_clients_qb_customer_id ON clients(qb_customer_id);
+
+-- ============================================================================
+-- 044_proofhub_mapping.sql — link Stratiq clients/projects to a ProofHub project
+-- ============================================================================
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS proofhub_project_id TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS proofhub_project_id TEXT;
