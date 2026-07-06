@@ -5,6 +5,6 @@
     { "path": "/api/cron/missed-target", "schedule": "0 9 * * 1" },
     { "path": "/api/cron/monthly-report", "schedule": "0 9 1 * *" },
     { "path": "/api/cron/ads-sync", "schedule": "0 6 * * *" },
-    { "path": "/api/cron/publish-social", "schedule": "*/5 * * * *" }
+    { "path": "/api/cron/publish-social", "schedule": "0 7 * * *" }
   ]
 }
