@@ -1,8 +1,9 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Plus, Loader2, Trash2, Lock, CheckCircle } from 'lucide-react'
+import { ChevronLeft, Loader2, CheckCircle, Building2, AlertCircle } from 'lucide-react'
+import AddButton from '@/components/ui/AddButton'
 
 const SERVICES = [
   'SEO (Local)', 'SEO (National)', 'SEO (E-commerce)', 'Content Marketing',
@@ -12,17 +13,18 @@ const SERVICES = [
   'Graphic Design', 'Website Maintenance',
 ]
 
-const TRACKING_TOOLS = [
-  'Google Analytics', 'Google Tag Manager', 'Google Search Console', 'Google Ads',
-  'Google Business Profile', 'Facebook Pixel', 'Facebook Business Manager', 'HubSpot', 'Other',
-]
-
-const SOCIAL_PLATFORMS = [
-  'Instagram', 'Facebook', 'Twitter/X', 'LinkedIn', 'Pinterest', 'Threads',
-  'Locals', 'Google Business Profile', 'Rumble', 'YouTube', 'TikTok', 'Linktree',
-]
-
 const selectGlass = "w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+
+// Strip protocol / path / www so the NOT NULL domain column gets a clean value.
+function normalizeDomain(raw: string): string {
+  if (!raw) return ''
+  return raw
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^www\./i, '')
+    .replace(/\/.*$/, '')
+    .trim()
+}
 
 function MultiSelect({ options, value, onChange }: { options: string[], value: string[], onChange: (v: string[]) => void }) {
   const toggle = (opt: string) => {
@@ -41,67 +43,114 @@ function MultiSelect({ options, value, onChange }: { options: string[], value: s
   )
 }
 
-function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
-  return (
-    <div className="mb-6 pb-4 border-b border-white/[0.08]">
-      <h2 className="text-lg font-semibold text-white">{title}</h2>
-      {subtitle && <p className="text-sm text-slate-400 mt-0.5">{subtitle}</p>}
-    </div>
-  )
+interface Client {
+  id: string
+  company_name?: string
+  display_name?: string
+  website?: string
+  industry?: string
+  services?: string[]
+  logo_url?: string
+  sales_manager_id?: string
+  dm_manager_id?: string
 }
+interface TeamUser { id: string; full_name: string }
 
 export default function NewProjectPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [client, setClient] = useState<Client | null>(null)
+  const [users, setUsers] = useState<TeamUser[]>([])
+  const [logoOk, setLogoOk] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [success, setSuccess] = useState<{ id: string; domain: string } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [errors, setErrors] = useState<{ name?: string; domain?: string }>({})
+  const [success, setSuccess] = useState<{ id: string; name: string } | null>(null)
+
   const [form, setForm] = useState({
+    name: '',
     domain: '',
     status: 'active',
     industry: '',
     services: [] as string[],
+    sales_manager_id: '',
+    dm_manager_id: '',
+    start_date: '',
+    end_date: '',
+    notes: '',
   })
-  const [trackingTools, setTrackingTools] = useState([{ tool_name: '', profile_id: '', account_email: '' }])
-  const [credentials, setCredentials] = useState([{ site_name: '', username: '', password: '' }])
-  const [socialAccounts, setSocialAccounts] = useState(
-    SOCIAL_PLATFORMS.map(p => ({ platform: p, username: '', password: '', profile_url: '' }))
-  )
 
-  const setField = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+  // Load the linked client + team so we can prominently show and prefill from them.
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([
+      fetch(`/api/clients/${params.id}`).then(r => (r.ok ? r.json() : null)).catch(() => null),
+      fetch('/api/users').then(r => (r.ok ? r.json() : [])).catch(() => []),
+    ]).then(([c, u]) => {
+      if (cancelled) return
+      if (Array.isArray(u)) setUsers(u)
+      if (c && c.id) {
+        setClient(c)
+        const company = c.display_name || c.company_name || ''
+        const primary = Array.isArray(c.services) && c.services.length ? c.services[0] : ''
+        setForm(f => ({
+          ...f,
+          name: primary ? `${company} — ${primary}` : company,
+          domain: normalizeDomain(c.website || ''),
+          industry: c.industry || '',
+          services: Array.isArray(c.services) ? c.services.filter((s: string) => SERVICES.includes(s)) : [],
+          sales_manager_id: c.sales_manager_id || '',
+          dm_manager_id: c.dm_manager_id || '',
+        }))
+      }
+      setLoading(false)
+    })
+    return () => { cancelled = true }
+  }, [params.id])
+
+  const setField = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }))
 
-  const addTrackingTool = () => setTrackingTools(t => [...t, { tool_name: '', profile_id: '', account_email: '' }])
-  const removeTrackingTool = (i: number) => setTrackingTools(t => t.filter((_, idx) => idx !== i))
-  const updateTrackingTool = (i: number, field: string, val: string) =>
-    setTrackingTools(t => t.map((item, idx) => idx === i ? { ...item, [field]: val } : item))
-
-  const addCredential = () => setCredentials(c => [...c, { site_name: '', username: '', password: '' }])
-  const removeCredential = (i: number) => setCredentials(c => c.filter((_, idx) => idx !== i))
-  const updateCredential = (i: number, field: string, val: string) =>
-    setCredentials(c => c.map((item, idx) => idx === i ? { ...item, [field]: val } : item))
-
-  const updateSocialAccount = (i: number, field: string, val: string) =>
-    setSocialAccounts(a => a.map((item, idx) => idx === i ? { ...item, [field]: val } : item))
+  const validate = () => {
+    const next: { name?: string; domain?: string } = {}
+    if (!form.name.trim()) next.name = 'Project name is required'
+    if (!normalizeDomain(form.domain)) next.domain = 'Domain is required'
+    setErrors(next)
+    return Object.keys(next).length === 0
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
+    if (!validate()) return
     setSaving(true)
     try {
       const res = await fetch(`/api/clients/${params.id}/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, tracking_tools: trackingTools, credentials, social_accounts: socialAccounts }),
+        body: JSON.stringify({
+          ...form,
+          domain: normalizeDomain(form.domain),
+          start_date: form.start_date || null,
+          end_date: form.end_date || null,
+        }),
       })
       if (res.ok) {
         const data = await res.json()
-        setSuccess({ id: data.id, domain: form.domain })
-        setTimeout(() => router.push(`/clients/${params.id}/projects/${data.id}`), 2000)
+        setSuccess({ id: data.id, name: form.name || normalizeDomain(form.domain) })
+        setTimeout(() => router.push(`/clients/${params.id}/projects/${data.id}`), 1500)
       } else {
-        alert('Error saving project.')
+        const data = await res.json().catch(() => null)
+        setError(data?.error || 'Something went wrong while creating the project. Please try again.')
       }
+    } catch {
+      setError('Network error — please check your connection and try again.')
     } finally {
       setSaving(false)
     }
   }
+
+  const company = client?.display_name || client?.company_name || 'this client'
 
   if (success) {
     return (
@@ -112,11 +161,11 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
               <CheckCircle className="h-10 w-10 text-emerald-400" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Project Created Successfully!</h2>
-          <p className="text-slate-300 font-medium mb-1">{success.domain}</p>
+          <h2 className="text-2xl font-bold text-white mb-2">Project Created!</h2>
+          <p className="text-slate-300 font-medium mb-1">{success.name}</p>
           <p className="text-slate-400 text-sm flex items-center justify-center gap-2 mt-4">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Taking you to the project dashboard...
+            Taking you to the project…
           </p>
           <button
             onClick={() => router.push(`/clients/${params.id}/projects/${success.id}`)}
@@ -131,28 +180,54 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="p-4 lg:p-8 max-w-4xl mx-auto">
-      <div className="flex items-center gap-3 mb-8 animate-float-up">
+      <div className="flex items-center gap-3 mb-6 animate-float-up">
         <Link href={`/clients/${params.id}`} className="p-2 hover:bg-white/[0.06] rounded-xl transition-colors">
           <ChevronLeft className="h-5 w-5 text-slate-400" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-white">Add New Project</h1>
-          <p className="text-sm text-slate-400">Create a new project for this client</p>
+          <h1 className="text-2xl font-bold text-white">New Project</h1>
+          <p className="text-sm text-slate-400">Just a few details — we've prefilled what we can from the client.</p>
+        </div>
+      </div>
+
+      {/* Linked customer banner */}
+      <div className="glass-card p-5 mb-6 animate-float-up flex items-center gap-4">
+        <div className="h-14 w-14 rounded-xl bg-white/[0.06] border border-white/[0.12] flex items-center justify-center overflow-hidden shrink-0">
+          {client?.logo_url && logoOk ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={client.logo_url} alt={company} className="h-full w-full object-contain" onError={() => setLogoOk(false)} />
+          ) : (
+            <Building2 className="h-7 w-7 text-sky-400" />
+          )}
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">New project for</p>
+          <p className="text-lg font-semibold text-white truncate">{loading ? 'Loading…' : company}</p>
+          {client?.website && <p className="text-sm text-sky-400 truncate">{client.website}</p>}
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Project Info */}
+        {/* The essentials */}
         <div className="glass-card p-6 animate-float-up animate-delay-100">
-          <SectionHeader title="Project Information" subtitle="Domain and service details for this project" />
+          <div className="mb-6 pb-4 border-b border-white/[0.08]">
+            <h2 className="text-lg font-semibold text-white">Project Details</h2>
+            <p className="text-sm text-slate-400 mt-0.5">The essentials for {company}.</p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Domain Name <span className="text-red-400">*</span></label>
-              <input className="input-glass" value={form.domain} onChange={setField('domain')} placeholder="example.com" required />
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Project Name <span className="text-red-400">*</span></label>
+              <input className="input-glass" value={form.name} onChange={setField('name')} placeholder="e.g. Acme Co — SEO (Local)" />
+              {errors.name && <p className="text-xs text-red-400 mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{errors.name}</p>}
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Status <span className="text-red-400">*</span></label>
-              <select className={selectGlass} value={form.status} onChange={setField('status')} required>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Domain <span className="text-red-400">*</span></label>
+              <input className="input-glass" value={form.domain} onChange={setField('domain')} placeholder="example.com" />
+              {errors.domain && <p className="text-xs text-red-400 mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{errors.domain}</p>}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Status</label>
+              <select className={selectGlass} value={form.status} onChange={setField('status')}>
                 <option value="active">Active</option>
                 <option value="prospect">Prospect</option>
                 <option value="in_onboarding">In Onboarding</option>
@@ -162,92 +237,70 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Services Provided <span className="text-red-400">*</span></label>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Industry</label>
+              <input className="input-glass" value={form.industry} onChange={setField('industry')} placeholder="e.g. Home Services" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Services</label>
               <MultiSelect options={SERVICES} value={form.services} onChange={v => setForm(f => ({ ...f, services: v }))} />
             </div>
           </div>
         </div>
 
-        {/* Tracking Tools */}
+        {/* Team + timeline */}
         <div className="glass-card p-6 animate-float-up animate-delay-200">
-          <SectionHeader title="Tracking Tools" subtitle="Analytics and tracking accounts for this project" />
-          <div className="space-y-3">
-            {trackingTools.map((tool, i) => (
-              <div key={i} className="flex gap-3 items-start">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
-                  <select className={selectGlass} value={tool.tool_name} onChange={e => updateTrackingTool(i, 'tool_name', e.target.value)}>
-                    <option value="">Select tool…</option>
-                    {TRACKING_TOOLS.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                  <input className="input-glass" placeholder="Profile / Property ID" value={tool.profile_id} onChange={e => updateTrackingTool(i, 'profile_id', e.target.value)} />
-                  <input className="input-glass" placeholder="Account email" type="email" value={tool.account_email} onChange={e => updateTrackingTool(i, 'account_email', e.target.value)} />
-                </div>
-                {trackingTools.length > 1 && (
-                  <button type="button" onClick={() => removeTrackingTool(i)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors mt-0.5">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            ))}
-            <button type="button" onClick={addTrackingTool} className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300 font-medium transition-colors mt-1">
-              <Plus className="h-4 w-4" /> Add Tracking Tool
-            </button>
+          <div className="mb-6 pb-4 border-b border-white/[0.08]">
+            <h2 className="text-lg font-semibold text-white">Team &amp; Timeline</h2>
+            <p className="text-sm text-slate-400 mt-0.5">Optional — defaults come from the client's assigned managers.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Sales Manager</label>
+              <select className={selectGlass} value={form.sales_manager_id} onChange={setField('sales_manager_id')}>
+                <option value="">Unassigned</option>
+                {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Development Manager</label>
+              <select className={selectGlass} value={form.dm_manager_id} onChange={setField('dm_manager_id')}>
+                <option value="">Unassigned</option>
+                {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Start Date</label>
+              <input type="date" className={selectGlass} value={form.start_date} onChange={setField('start_date')} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">End Date</label>
+              <input type="date" className={selectGlass} value={form.end_date} onChange={setField('end_date')} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Notes</label>
+              <textarea className="input-glass min-h-[90px]" value={form.notes} onChange={setField('notes')} placeholder="Anything the team should know about this project…" />
+            </div>
           </div>
         </div>
 
-        {/* Login Credentials */}
-        <div className="glass-card p-6 animate-float-up animate-delay-300">
-          <SectionHeader title="Login Credentials" subtitle="Passwords are encrypted with AES-256-GCM before storage" />
-          <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-            <Lock className="h-4 w-4 text-emerald-400 shrink-0" />
-            <p className="text-xs text-emerald-400">All passwords are encrypted end-to-end — never stored as plaintext</p>
+        {error && (
+          <div className="flex items-center gap-2 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {error}
           </div>
-          <div className="space-y-3">
-            {credentials.map((cred, i) => (
-              <div key={i} className="flex gap-3 items-start">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
-                  <input className="input-glass" placeholder="Site name (e.g. WordPress)" value={cred.site_name} onChange={e => updateCredential(i, 'site_name', e.target.value)} />
-                  <input className="input-glass" placeholder="Username / Email" value={cred.username} onChange={e => updateCredential(i, 'username', e.target.value)} />
-                  <input className="input-glass" type="password" placeholder="Password" value={cred.password} onChange={e => updateCredential(i, 'password', e.target.value)} />
-                </div>
-                {credentials.length > 1 && (
-                  <button type="button" onClick={() => removeCredential(i)} className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors mt-0.5">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            ))}
-            <button type="button" onClick={addCredential} className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300 font-medium transition-colors mt-1">
-              <Plus className="h-4 w-4" /> Add Another Credential
-            </button>
-          </div>
-        </div>
-
-        {/* Social Media Accounts */}
-        <div className="glass-card p-6 animate-float-up animate-delay-400">
-          <SectionHeader title="Social Media Accounts" subtitle="Enter credentials for each platform" />
-          <div className="space-y-2">
-            {socialAccounts.map((acct, i) => (
-              <div key={acct.platform} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-center py-3 border-b border-white/[0.05] last:border-0">
-                <span className="text-sm font-medium text-slate-300">{acct.platform}</span>
-                <input className="input-glass" placeholder="@username" value={acct.username} onChange={e => updateSocialAccount(i, 'username', e.target.value)} />
-                <input className="input-glass" type="password" placeholder="Password" value={acct.password} onChange={e => updateSocialAccount(i, 'password', e.target.value)} />
-                <input className="input-glass" placeholder="Profile URL" value={acct.profile_url} onChange={e => updateSocialAccount(i, 'profile_url', e.target.value)} />
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
 
         {/* Submit */}
         <div className="flex gap-4 justify-end pb-8">
           <Link href={`/clients/${params.id}`} className="px-6 py-2.5 border border-white/[0.08] rounded-xl text-sm font-medium text-slate-300 hover:bg-white/[0.05] transition-colors">
             Cancel
           </Link>
-          <button type="submit" disabled={saving}
-            className="btn-brand flex items-center gap-2 px-6 py-2.5 rounded-xl disabled:opacity-60">
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {saving ? 'Creating…' : 'Create Project'}
-          </button>
+          <AddButton
+            type="submit"
+            disabled={saving}
+            label={saving ? 'Creating…' : 'Create Project'}
+            icon={saving ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+          />
         </div>
       </form>
     </div>
