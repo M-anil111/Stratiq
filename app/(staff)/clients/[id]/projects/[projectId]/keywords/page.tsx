@@ -201,8 +201,8 @@ export default function KeywordsPage({ params }: { params: { id: string; project
       </div>
 
       <div className="glass-card">
-        <div className="flex items-center justify-between gap-3 p-4 border-b border-white/[0.06]">
-          <div className="flex items-center gap-3 flex-1">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-white/[0.06]">
+          <div className="flex flex-wrap items-center gap-3 flex-1">
             <h2 className="font-semibold text-white whitespace-nowrap">Keywords ({total})</h2>
             <div className="relative max-w-xs w-full">
               <Search className="h-4 w-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />

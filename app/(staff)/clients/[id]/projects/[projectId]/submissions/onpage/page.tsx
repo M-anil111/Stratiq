@@ -183,7 +183,7 @@ export default function OnPagePage({ params }: { params: { id: string; projectId
   return (
     <div>
       <div className="glass-card">
-        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-white/[0.06]">
           <h2 className="font-semibold text-white">OnPage Details ({entries.length})</h2>
           <button
             onClick={openAdd}
@@ -195,12 +195,12 @@ export default function OnPagePage({ params }: { params: { id: string; projectId
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex gap-1 px-4 pt-3 border-b border-white/[0.06] pb-0">
+        <div className="flex gap-1 px-4 pt-3 border-b border-white/[0.06] pb-0 overflow-x-auto">
           {TABS.map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-3 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-all ${
+              className={`px-3 py-2 text-sm font-medium rounded-t-lg border-b-2 whitespace-nowrap transition-all ${
                 activeTab === tab.key
                   ? 'border-sky-500 text-sky-400'
                   : 'border-transparent text-slate-400 hover:text-slate-300'

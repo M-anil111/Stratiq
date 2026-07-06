@@ -201,7 +201,7 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
   return (
     <div>
       <div className="glass-card">
-        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-white/[0.06]">
           <h2 className="font-semibold text-white">Directory Citations ({entries.length})</h2>
           <button onClick={openAdd} className="btn-brand flex items-center gap-2 px-3 py-1.5 text-sm font-medium">
             <Plus className="h-4 w-4" />

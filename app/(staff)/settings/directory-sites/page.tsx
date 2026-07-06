@@ -201,12 +201,12 @@ export default function DirectorySitesPage() {
 
   return (
     <div className="p-4 lg:p-8 max-w-4xl">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white">Directory Sites</h1>
           <p className="text-slate-400 text-sm mt-1">Manage websites used in off-page submission dropdowns</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button onClick={openImport} className="flex items-center gap-2 px-4 py-2 text-sm rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] transition-all">
             <Upload className="h-4 w-4" /> Import CSV
           </button>

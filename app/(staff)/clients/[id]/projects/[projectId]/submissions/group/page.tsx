@@ -127,7 +127,7 @@ export default function GroupPage({ params }: { params: { id: string; projectId:
   return (
     <div>
       <div className="glass-card">
-        <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-white/[0.06]">
           <h2 className="font-semibold text-white">Group Postings ({entries.length})</h2>
           <button
             onClick={openAdd}
