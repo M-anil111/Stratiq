@@ -740,6 +740,7 @@ export default function TeamPage() {
                         </button>
                       )}
                       <button onClick={() => openAccess(user)} title="Manage project access" className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06]"><FolderKey className="h-4 w-4" /></button>
+                      <a href={`/team/${user.id}/permissions`} title="Manage permissions" className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06] inline-flex"><Shield className="h-4 w-4" /></a>
                       <button onClick={() => openEdit(user)} className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06]"><Edit2 className="h-4 w-4" /></button>
                       <button onClick={() => openRemove(user)} className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-white/[0.06]"><UserX className="h-4 w-4" /></button>
                     </div>
@@ -929,6 +930,7 @@ export default function TeamPage() {
                           </button>
                         )}
                         <button onClick={() => openAccess(user)} title="Manage project access" className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06]"><FolderKey className="h-4 w-4" /></button>
+                      <a href={`/team/${user.id}/permissions`} title="Manage permissions" className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06] inline-flex"><Shield className="h-4 w-4" /></a>
                         <button onClick={() => openRemove(user)} className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-white/[0.06]"><UserX className="h-4 w-4" /></button>
                       </div>
                     </div>
