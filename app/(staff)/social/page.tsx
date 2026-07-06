@@ -1,0 +1,503 @@
+'use client'
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import {
+  Share2, Send, CalendarClock, Image as ImageIcon, Link2, Megaphone,
+  MessageSquare, CheckCircle2, AlertTriangle, Loader2, Clock, PlugZap,
+} from 'lucide-react'
+
+// NOTE: posts composed here are drafted / scheduled / stored and previewed only.
+// Auto-publishing to each network activates once that platform's credentials are
+// configured in Settings → Social Accounts.
+
+type Account = { id: string; platform: string; account_name: string; account_handle: string | null; status: string }
+type Client = { id: string; company_name: string }
+type Project = { id: string; name?: string | null; domain?: string | null }
+type ScheduledPost = {
+  id: string; platform: string; post_content: string | null; media_url: string | null
+  scheduled_date: string | null; live_link: string | null; comment: string | null
+  status: string | null; project_name: string | null; client_name: string | null
+}
+
+const PLATFORM_META: Record<string, { label: string; color: string; limit: number }> = {
+  facebook: { label: 'Facebook', color: '#1877F2', limit: 2500 },
+  instagram: { label: 'Instagram', color: '#E4405F', limit: 2200 },
+  linkedin: { label: 'LinkedIn', color: '#0A66C2', limit: 3000 },
+  tiktok: { label: 'TikTok', color: '#000000', limit: 2200 },
+  x: { label: 'X', color: '#1DA1F2', limit: 280 },
+  youtube: { label: 'YouTube', color: '#FF0000', limit: 5000 },
+}
+function meta(platform: string) {
+  return PLATFORM_META[platform?.toLowerCase()] || { label: platform || 'Unknown', color: '#64748b', limit: 5000 }
+}
+
+const DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const
+
+const inputClass = 'w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 placeholder:text-slate-500'
+const labelClass = 'block text-xs font-medium text-slate-400 mb-1.5'
+
+function PlatformBadge({ platform }: { platform: string }) {
+  const m = meta(platform)
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold text-white"
+      style={{ backgroundColor: m.color }}
+    >
+      {m.label}
+    </span>
+  )
+}
+
+export default function SocialPage() {
+  const [tab, setTab] = useState<'compose' | 'scheduled'>('compose')
+
+  // data
+  const [accounts, setAccounts] = useState<Account[] | null>(null)
+  const [accountsUnavailable, setAccountsUnavailable] = useState(false)
+  const [clients, setClients] = useState<Client[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
+  const [savedTimes, setSavedTimes] = useState<Record<string, string[]>>({})
+
+  // composer state
+  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]) // account ids
+  const [clientId, setClientId] = useState('')
+  const [projectId, setProjectId] = useState('')
+  const [contentType, setContentType] = useState<'post' | 'story' | 'reel'>('post')
+  const [caption, setCaption] = useState('')
+  const [mediaUrl, setMediaUrl] = useState('')
+  const [link, setLink] = useState('')
+  const [campaign, setCampaign] = useState('')
+  const [firstComment, setFirstComment] = useState('')
+  const [perNetwork, setPerNetwork] = useState<Record<string, { caption?: string; first_comment?: string }>>({})
+  const [activeNetworkTab, setActiveNetworkTab] = useState<string>('')
+  const [scheduleMode, setScheduleMode] = useState<'now' | 'later'>('now')
+  const [datetime, setDatetime] = useState('')
+
+  const [submitting, setSubmitting] = useState(false)
+  const [result, setResult] = useState<{ created: number; skipped: number } | null>(null)
+  const [error, setError] = useState('')
+
+  // scheduled list
+  const [posts, setPosts] = useState<ScheduledPost[] | null>(null)
+  const [postsUnavailable, setPostsUnavailable] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/social-accounts').then(r => r.json()).then((d) => {
+      if (d?.__unavailable) { setAccountsUnavailable(true); setAccounts([]); return }
+      setAccounts(Array.isArray(d) ? d : [])
+    }).catch(() => setAccounts([]))
+
+    fetch('/api/clients').then(r => r.json()).then((d) => {
+      setClients(d?.clients || (Array.isArray(d) ? d : []))
+    }).catch(() => {})
+
+    fetch('/api/settings/social-schedule').then(r => r.json()).then((d) => {
+      setSavedTimes(d?.schedule?.times || {})
+    }).catch(() => {})
+  }, [])
+
+  // Load projects when client changes.
+  useEffect(() => {
+    if (!clientId) { setProjects([]); setProjectId(''); return }
+    fetch(`/api/projects?client_id=${encodeURIComponent(clientId)}`).then(r => r.json()).then((d) => {
+      const list: Project[] = d?.projects || (Array.isArray(d) ? d : [])
+      setProjects(list)
+    }).catch(() => setProjects([]))
+    setProjectId('')
+  }, [clientId])
+
+  function loadScheduled() {
+    setPosts(null)
+    setPostsUnavailable(false)
+    fetch('/api/social/scheduled').then(r => r.json()).then((d) => {
+      if (d?.__unavailable) { setPostsUnavailable(true); setPosts([]); return }
+      setPosts(Array.isArray(d?.posts) ? d.posts : [])
+    }).catch(() => setPosts([]))
+  }
+
+  useEffect(() => { if (tab === 'scheduled' && posts === null) loadScheduled() }, [tab]) // eslint-disable-line
+
+  // Selected platforms derived from selected accounts.
+  const selectedPlatforms = useMemo(() => {
+    const set = new Set<string>()
+    for (const id of selectedAccounts) {
+      const a = accounts?.find(x => x.id === id)
+      if (a) set.add(a.platform.toLowerCase())
+    }
+    return Array.from(set)
+  }, [selectedAccounts, accounts])
+
+  // Keep the active per-network tab valid.
+  useEffect(() => {
+    if (selectedPlatforms.length && !selectedPlatforms.includes(activeNetworkTab)) {
+      setActiveNetworkTab(selectedPlatforms[0])
+    }
+  }, [selectedPlatforms]) // eslint-disable-line
+
+  // Group accounts by platform.
+  const grouped = useMemo(() => {
+    const g: Record<string, Account[]> = {}
+    for (const a of accounts || []) {
+      const key = a.platform.toLowerCase()
+      ;(g[key] = g[key] || []).push(a)
+    }
+    return g
+  }, [accounts])
+
+  function toggleAccount(id: string) {
+    setSelectedAccounts(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
+  // "Your saved times" → fill datetime with next matching day/time.
+  function fillNextSlot(dayIdx: number, time: string) {
+    const [hh, mm] = time.split(':').map(Number)
+    const now = new Date()
+    for (let add = 0; add < 8; add++) {
+      const d = new Date(now)
+      d.setDate(now.getDate() + add)
+      if (d.getDay() !== dayIdx) continue
+      d.setHours(hh, mm, 0, 0)
+      if (d.getTime() <= now.getTime()) continue
+      // Format as local datetime-local value.
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const val = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+      setScheduleMode('later')
+      setDatetime(val)
+      return
+    }
+  }
+
+  async function submit() {
+    setError('')
+    setResult(null)
+    if (selectedAccounts.length === 0) { setError('Select at least one connected account.'); return }
+    if (!projectId) { setError('Pick the client and project these posts belong to.'); return }
+    if (!caption.trim()) { setError('Write a caption.'); return }
+    if (scheduleMode === 'later' && !datetime) { setError('Choose a date and time to schedule.'); return }
+
+    const chosen = (accounts || []).filter(a => selectedAccounts.includes(a.id))
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/social/compose', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: projectId,
+          accounts: chosen.map(a => ({ platform: a.platform, account_name: a.account_name })),
+          content_type: contentType,
+          caption,
+          per_network: perNetwork,
+          media_url: mediaUrl || undefined,
+          link: link || undefined,
+          campaign: campaign || undefined,
+          first_comment: firstComment || undefined,
+          schedule: { mode: scheduleMode, datetime: scheduleMode === 'later' ? datetime : undefined },
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data?.error || 'Failed to compose posts.'); return }
+      setResult({ created: data.created || 0, skipped: data.skipped || 0 })
+      // reset content but keep account/project selection
+      setCaption(''); setMediaUrl(''); setLink(''); setCampaign(''); setFirstComment('')
+      setPerNetwork({}); setDatetime(''); setScheduleMode('now')
+      setPosts(null) // force refresh of scheduled list next time
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="p-4 lg:p-8 max-w-[1400px] mx-auto">
+      <div className="mb-6 flex items-start gap-3">
+        <div className="p-2.5 bg-sky-500/10 rounded-xl text-sky-400 shrink-0">
+          <Share2 className="h-6 w-6" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-white">Social</h1>
+          <p className="text-slate-400 text-sm mt-0.5">Compose, schedule and preview posts across your connected networks.</p>
+        </div>
+      </div>
+
+      {/* Honest capability note */}
+      <div className="glass-card p-3 mb-6 flex items-start gap-2.5 text-xs text-slate-300 border border-amber-500/20">
+        <PlugZap className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+        <p>Posts are drafted, scheduled, stored and previewed here. Auto-publishing to each network turns on once that platform&apos;s credentials are configured in <Link href="/settings/social-accounts" className="text-sky-400 hover:underline">Settings → Social Accounts</Link>.</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 bg-white/[0.04] p-1 rounded-xl w-fit">
+        {([['compose', 'Create post'], ['scheduled', 'Scheduled posts']] as const).map(([k, l]) => (
+          <button
+            key={k}
+            onClick={() => setTab(k)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === k ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'}`}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'compose' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+          {/* ---- Composer ---- */}
+          <div className="space-y-5 min-w-0">
+            {/* Accounts */}
+            <div className="glass-card p-5">
+              <h2 className="font-semibold text-white mb-3">Accounts</h2>
+              {accounts === null ? (
+                <div className="h-16 rounded-lg bg-white/[0.04] animate-pulse" />
+              ) : accountsUnavailable || accounts.length === 0 ? (
+                <p className="text-sm text-slate-400">
+                  No connected accounts yet.{' '}
+                  <Link href="/settings/social-accounts" className="text-sky-400 hover:underline">Connect one in Settings → Social Accounts</Link>.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {Object.entries(grouped).map(([platform, accts]) => (
+                    <div key={platform}>
+                      <div className="mb-2"><PlatformBadge platform={platform} /></div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {accts.map(a => (
+                          <label key={a.id} className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${selectedAccounts.includes(a.id) ? 'border-sky-500/60 bg-sky-500/10' : 'border-white/[0.08] hover:border-white/20'}`}>
+                            <input type="checkbox" checked={selectedAccounts.includes(a.id)} onChange={() => toggleAccount(a.id)} className="accent-sky-500" />
+                            <div className="min-w-0">
+                              <div className="text-sm text-white truncate">{a.account_name}</div>
+                              {a.account_handle && <div className="text-xs text-slate-500 truncate">{a.account_handle}</div>}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Destination + content type */}
+            <div className="glass-card p-5 space-y-4">
+              <h2 className="font-semibold text-white">Post details</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Client</label>
+                  <select value={clientId} onChange={e => setClientId(e.target.value)} className={inputClass}>
+                    <option value="">Select client…</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Project</label>
+                  <select value={projectId} onChange={e => setProjectId(e.target.value)} disabled={!clientId} className={inputClass}>
+                    <option value="">{clientId ? 'Select project…' : 'Pick a client first'}</option>
+                    {projects.map(p => <option key={p.id} value={p.id}>{p.name || p.domain || p.id}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Content type</label>
+                <div className="flex gap-1 bg-white/[0.04] p-1 rounded-xl w-fit">
+                  {(['post', 'story', 'reel'] as const).map(t => (
+                    <button key={t} onClick={() => setContentType(t)} className={`px-4 py-1.5 rounded-lg text-sm capitalize transition-colors ${contentType === t ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'}`}>{t}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Caption */}
+            <div className="glass-card p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-white">Caption</h2>
+              </div>
+              <textarea value={caption} onChange={e => setCaption(e.target.value)} rows={5} placeholder="Write your post…" className={inputClass} />
+              {selectedPlatforms.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedPlatforms.map(p => {
+                    const m = meta(p)
+                    const used = (perNetwork[p]?.caption?.trim() || caption).length
+                    const over = used > m.limit
+                    return (
+                      <span key={p} className={`text-[11px] px-2 py-0.5 rounded-md ${over ? 'bg-red-500/15 text-red-400' : 'bg-white/[0.06] text-slate-400'}`}>
+                        {m.label}: {used}/{m.limit}
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                <div>
+                  <label className={labelClass}><ImageIcon className="inline h-3.5 w-3.5 mr-1" />Media URL</label>
+                  <input value={mediaUrl} onChange={e => setMediaUrl(e.target.value)} placeholder="https://…" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}><Link2 className="inline h-3.5 w-3.5 mr-1" />Link (optional)</label>
+                  <input value={link} onChange={e => setLink(e.target.value)} placeholder="https://…" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}><Megaphone className="inline h-3.5 w-3.5 mr-1" />Campaign (optional)</label>
+                  <input value={campaign} onChange={e => setCampaign(e.target.value)} placeholder="Campaign name" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}><MessageSquare className="inline h-3.5 w-3.5 mr-1" />First comment (optional)</label>
+                  <input value={firstComment} onChange={e => setFirstComment(e.target.value)} placeholder="Auto first comment" className={inputClass} />
+                </div>
+              </div>
+            </div>
+
+            {/* Per-network customization */}
+            {selectedPlatforms.length > 0 && (
+              <div className="glass-card p-5 space-y-3">
+                <h2 className="font-semibold text-white">Customize per network <span className="text-xs font-normal text-slate-500">(optional)</span></h2>
+                <div className="flex flex-wrap gap-1">
+                  {selectedPlatforms.map(p => (
+                    <button key={p} onClick={() => setActiveNetworkTab(p)} className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${activeNetworkTab === p ? 'bg-sky-500 text-white' : 'bg-white/[0.06] text-slate-400 hover:text-white'}`}>{meta(p).label}</button>
+                  ))}
+                </div>
+                {activeNetworkTab && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className={labelClass}>Override caption</label>
+                      <textarea
+                        value={perNetwork[activeNetworkTab]?.caption ?? ''}
+                        onChange={e => setPerNetwork(prev => ({ ...prev, [activeNetworkTab]: { ...prev[activeNetworkTab], caption: e.target.value } }))}
+                        rows={3} placeholder="Leave blank to use the base caption" className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Override first comment</label>
+                      <input
+                        value={perNetwork[activeNetworkTab]?.first_comment ?? ''}
+                        onChange={e => setPerNetwork(prev => ({ ...prev, [activeNetworkTab]: { ...prev[activeNetworkTab], first_comment: e.target.value } }))}
+                        placeholder="Leave blank to use the base first comment" className={inputClass}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Schedule */}
+            <div className="glass-card p-5 space-y-4">
+              <h2 className="font-semibold text-white">Schedule</h2>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                  <input type="radio" checked={scheduleMode === 'now'} onChange={() => setScheduleMode('now')} className="accent-sky-500" />
+                  <Send className="h-4 w-4" /> Publish now
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                  <input type="radio" checked={scheduleMode === 'later'} onChange={() => setScheduleMode('later')} className="accent-sky-500" />
+                  <CalendarClock className="h-4 w-4" /> Schedule for later
+                </label>
+              </div>
+              {scheduleMode === 'later' && (
+                <div>
+                  <input type="datetime-local" value={datetime} onChange={e => setDatetime(e.target.value)} className={inputClass} />
+                  {Object.values(savedTimes).some(arr => arr.length > 0) && (
+                    <div className="mt-3">
+                      <p className="text-xs text-slate-400 mb-2 flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Your saved times — click to fill the next matching slot</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {DAYS.map((d, idx) => (savedTimes[d] || []).map(t => (
+                          <button key={d + t} onClick={() => fillNextSlot(idx, t)} className="text-[11px] px-2 py-1 rounded-md bg-white/[0.06] text-slate-300 hover:bg-sky-500/20 hover:text-sky-300 transition-colors capitalize">
+                            {d} {t}
+                          </button>
+                        )))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Submit */}
+            <div className="flex flex-wrap items-center gap-3">
+              <button onClick={submit} disabled={submitting} className="btn-brand inline-flex items-center gap-2 disabled:opacity-50">
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {scheduleMode === 'later' ? 'Schedule posts' : 'Create posts'}
+              </button>
+              {error && <span className="text-sm text-red-400 flex items-center gap-1"><AlertTriangle className="h-4 w-4" /> {error}</span>}
+              {result && (
+                <span className="text-sm text-emerald-400 flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4" /> {result.created} post{result.created !== 1 ? 's' : ''} saved{result.skipped ? `, ${result.skipped} skipped` : ''}.
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* ---- Live preview ---- */}
+          <div className="space-y-4 min-w-0">
+            <h2 className="font-semibold text-white">Live preview</h2>
+            {selectedPlatforms.length === 0 ? (
+              <div className="glass-card p-6 text-sm text-slate-500 text-center">Select accounts to preview your post.</div>
+            ) : (
+              selectedPlatforms.map(p => {
+                const m = meta(p)
+                const acct = (accounts || []).find(a => a.platform.toLowerCase() === p)
+                const text = perNetwork[p]?.caption?.trim() || caption
+                return (
+                  <div key={p} className="glass-card p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: m.color }}>
+                        {(acct?.account_name || m.label).charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm text-white truncate">{acct?.account_name || m.label}</div>
+                        <div className="text-xs text-slate-500 truncate">{acct?.account_handle || m.label}</div>
+                      </div>
+                      <div className="ml-auto"><PlatformBadge platform={p} /></div>
+                    </div>
+                    <p className="text-sm text-slate-200 whitespace-pre-wrap break-words">{text || <span className="text-slate-500">Your caption will appear here…</span>}</p>
+                    {mediaUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={mediaUrl} alt="media preview" className="mt-3 rounded-lg w-full max-h-56 object-cover border border-white/[0.08]" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                    )}
+                    {link && <div className="mt-2 text-xs text-sky-400 truncate flex items-center gap-1"><Link2 className="h-3 w-3" /> {link}</div>}
+                    {firstComment && <div className="mt-2 text-xs text-slate-500 border-t border-white/[0.06] pt-2">First comment: {firstComment}</div>}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+      ) : (
+        /* ---- Scheduled posts ---- */
+        <div>
+          {posts === null ? (
+            <div className="space-y-3">
+              {[0, 1, 2].map(i => <div key={i} className="glass-card h-20 animate-pulse" />)}
+            </div>
+          ) : postsUnavailable ? (
+            <div className="glass-card p-8 text-center text-sm text-slate-400">
+              Scheduled posts are unavailable. Apply the latest database migrations to enable this view.
+            </div>
+          ) : posts.length === 0 ? (
+            <div className="glass-card p-8 text-center text-sm text-slate-400">
+              No scheduled or recent posts yet. Create one from the Create post tab.
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {posts.map(p => (
+                <div key={p.id} className="glass-card p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="flex items-center gap-2 shrink-0">
+                    <PlatformBadge platform={p.platform} />
+                    {p.status && (
+                      <span className={`text-[11px] px-2 py-0.5 rounded-md ${p.status === 'scheduled' ? 'bg-sky-500/15 text-sky-300' : p.status === 'live' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/[0.06] text-slate-400'}`}>{p.status}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-white truncate">{p.post_content || <span className="text-slate-500">No caption</span>}</p>
+                    <p className="text-xs text-slate-500 truncate">{p.client_name || 'Unknown client'}{p.project_name ? ` · ${p.project_name}` : ''}</p>
+                  </div>
+                  <div className="text-xs text-slate-400 shrink-0">
+                    {p.scheduled_date ? new Date(p.scheduled_date).toLocaleString() : '—'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
