@@ -18,7 +18,20 @@ export async function GET() {
     .eq('id', effectiveId)
     .single()
 
-  const base = data || {}
+  const base: Record<string, any> = data || {}
+
+  // Theme preference lives in an optionally-present column (migration 040).
+  // Fetch it separately so a missing column (42703) can't break this route.
+  try {
+    const { data: pref, error } = await supabase
+      .from('users')
+      .select('theme_preference')
+      .eq('id', effectiveId)
+      .single()
+    if (!error && pref) base.theme_preference = (pref as any).theme_preference
+  } catch {
+    /* column may not exist yet — ignore */
+  }
 
   if (acting?.impersonating) {
     // Real user's name for the banner / "return to your account" affordance.
@@ -44,4 +57,34 @@ export async function GET() {
   }
 
   return NextResponse.json({ ...base, impersonating: false })
+}
+
+export async function PATCH(request: Request) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const acting = await getActingUser(supabase)
+  const effectiveId = acting?.id || user.id
+
+  let body: any = {}
+  try { body = await request.json() } catch { body = {} }
+
+  // Currently the only user-editable field here is the theme preference.
+  const theme = body?.theme_preference
+  if (theme !== undefined) {
+    if (theme !== 'light' && theme !== 'dark' && theme !== 'system') {
+      return NextResponse.json({ error: 'Invalid theme_preference' }, { status: 400 })
+    }
+    const { error } = await supabase
+      .from('users')
+      .update({ theme_preference: theme })
+      .eq('id', effectiveId)
+    // Tolerate a missing column (42703) so the client can still persist locally.
+    if (error && error.code !== '42703') {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+  }
+
+  return NextResponse.json({ ok: true })
 }

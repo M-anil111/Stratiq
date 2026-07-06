@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Shield, Loader2 } from 'lucide-react'
+import { Shield, Loader2, Palette } from 'lucide-react'
+import { ThemeSegmentedControl } from '@/components/theme/theme-toggle'
 
 export default function SecuritySettingsPage() {
   const [form, setForm] = useState({ current_password: '', new_password: '', confirm_password: '' })
@@ -43,6 +44,16 @@ export default function SecuritySettingsPage() {
       <div className="flex items-center gap-3 mb-6">
         <Shield className="h-6 w-6 text-sky-400" />
         <h1 className="text-2xl font-bold text-white">Security & Sessions</h1>
+      </div>
+
+      {/* Appearance */}
+      <div className="glass-card p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Palette className="h-5 w-5 text-sky-500 dark:text-sky-400" />
+          <h2 className="font-semibold text-slate-900 dark:text-white">Appearance</h2>
+        </div>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Choose how Stratiq looks. System follows your device setting.</p>
+        <ThemeSegmentedControl />
       </div>
 
       {/* Active Sessions */}

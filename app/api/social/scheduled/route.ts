@@ -23,6 +23,8 @@ export async function GET(request: Request) {
   // Try the richest join first; fall back to bare rows if the relationship or
   // columns aren't present yet.
   const selects = [
+    'id, platform, post_content, media_url, scheduled_date, submission_date, live_link, comment, status, failed_reason, project_id, project:projects!project_id(id, name, domain, client:clients!client_id(company_name))',
+    'id, platform, post_content, media_url, scheduled_date, submission_date, live_link, comment, status, failed_reason, project_id',
     'id, platform, post_content, media_url, scheduled_date, submission_date, live_link, comment, status, project_id, project:projects!project_id(id, name, domain, client:clients!client_id(company_name))',
     'id, platform, post_content, media_url, scheduled_date, submission_date, live_link, comment, status, project_id',
     '*',
@@ -68,6 +70,7 @@ export async function GET(request: Request) {
     live_link: p.live_link,
     comment: p.comment,
     status: p.status,
+    failed_reason: p.failed_reason ?? null,
     project_id: p.project_id,
     project_name: p.project?.name || p.project?.domain || null,
     client_name: p.project?.client?.company_name || null,

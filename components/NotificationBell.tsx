@@ -8,9 +8,18 @@ interface Notification {
   title: string
   body?: string
   type: string
+  severity?: string
   url?: string
+  link?: string
   created_at: string
   is_read: boolean
+}
+
+const SEVERITY_DOT: Record<string, string> = {
+  success: 'bg-green-400',
+  warning: 'bg-yellow-400',
+  error: 'bg-red-400',
+  info: 'bg-indigo-400',
 }
 
 function timeAgo(dateStr: string): string {
@@ -95,7 +104,8 @@ export function NotificationBell() {
   async function handleNotificationClick(n: Notification) {
     await markRead(n.id)
     setOpen(false)
-    if (n.url) router.push(n.url)
+    const dest = n.link || n.url
+    if (dest) router.push(dest)
   }
 
   return (
@@ -152,7 +162,8 @@ export function NotificationBell() {
                       onClick={() => handleNotificationClick(n)}
                       className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-white/[0.04] transition-colors border-b border-white/[0.04] last:border-0"
                     >
-                      <NotificationIcon type={n.type} />
+                      <span className={`w-2 h-2 shrink-0 mt-1.5 rounded-full ${SEVERITY_DOT[n.severity || ''] || 'bg-indigo-400'}`} />
+                      <NotificationIcon type={n.severity || n.type} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white truncate">{n.title}</p>
                         {n.body && (
@@ -165,6 +176,16 @@ export function NotificationBell() {
                 ))}
               </ul>
             )}
+          </div>
+
+          {/* Footer */}
+          <div className="border-t border-white/[0.06]">
+            <button
+              onClick={() => { setOpen(false); router.push('/notifications') }}
+              className="w-full px-4 py-3 text-center text-xs font-medium text-indigo-400 hover:text-indigo-300 hover:bg-white/[0.04] transition-colors"
+            >
+              View all
+            </button>
           </div>
         </div>
       )}

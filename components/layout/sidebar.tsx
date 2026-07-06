@@ -26,7 +26,7 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="hidden lg:flex flex-col h-screen w-20 glass-sidebar text-slate-100 fixed left-0 top-0 z-30">
+    <aside className="hidden lg:flex flex-col h-screen w-20 glass-sidebar text-slate-700 dark:text-slate-100 fixed left-0 top-0 z-30">
       {/* Logo */}
       <div className="flex flex-col items-center justify-center h-16 shrink-0">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/30">
@@ -48,15 +48,15 @@ export function Sidebar() {
               className={cn(
                 'flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl text-[10px] font-medium transition-all duration-200 relative group',
                 isActive
-                  ? 'nav-active text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                  ? 'nav-active text-slate-900 dark:text-white'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.05] dark:hover:bg-white/[0.06]'
               )}
             >
               {isActive && (
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-gradient-to-b from-sky-400 to-blue-500 rounded-r-full" style={{ boxShadow: '0 0 8px rgba(14,165,233,0.8)' }} />
               )}
               <item.icon
-                className={cn('transition-all duration-200', isActive ? 'text-sky-400' : 'text-slate-500 group-hover:text-slate-300')}
+                className={cn('transition-all duration-200', isActive ? 'text-sky-500 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300')}
                 style={{ width: '1.25rem', height: '1.25rem' }}
               />
               <span className="leading-none text-center">{item.label}</span>

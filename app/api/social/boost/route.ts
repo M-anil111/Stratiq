@@ -64,7 +64,6 @@ export async function POST(req: NextRequest) {
   })
 
   return NextResponse.json({
-    ok: true,
     ...result,
     note: 'Campaign, ad set and ad were created PAUSED. Review targeting/budget in Meta Ads Manager, then set them ACTIVE to start spending.',
   })

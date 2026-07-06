@@ -22,6 +22,7 @@ type ScheduledPost = {
   id: string; platform: string; post_content: string | null; media_url: string | null
   scheduled_date: string | null; live_link: string | null; comment: string | null
   status: string | null; project_name: string | null; client_name: string | null
+  failed_reason?: string | null
 }
 
 const PLATFORM_META: Record<string, { label: string; color: string; limit: number }> = {
@@ -107,8 +108,9 @@ function PlatformBadge({ platform }: { platform: string }) {
 }
 
 export default function SocialPage() {
-  const [tab, setTab] = useState<'compose' | 'calendar' | 'scheduled'>('compose')
+  const [tab, setTab] = useState<'compose' | 'calendar' | 'scheduled' | 'approvals'>('compose')
   const [showReview, setShowReview] = useState(false)
+  const [actioningId, setActioningId] = useState<string | null>(null)
 
   // data
   const [accounts, setAccounts] = useState<Account[] | null>(null)
@@ -177,7 +179,29 @@ export default function SocialPage() {
     }).catch(() => setPosts([]))
   }
 
-  useEffect(() => { if (tab === 'scheduled' && posts === null) loadScheduled() }, [tab]) // eslint-disable-line
+  useEffect(() => { if ((tab === 'scheduled' || tab === 'approvals') && posts === null) loadScheduled() }, [tab]) // eslint-disable-line
+
+  // Approve / reject / retry a post via PATCH /api/social/[id].
+  async function actionPost(id: string, action: 'approve' | 'reject' | 'retry') {
+    setActioningId(id)
+    try {
+      const res = await fetch(`/api/social/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+      if (res.ok) {
+        loadScheduled()
+      }
+    } catch {
+      /* noop */
+    } finally {
+      setActioningId(null)
+    }
+  }
+
+  const pendingPosts = useMemo(() => (posts || []).filter(p => p.status === 'pending_approval'), [posts])
+  const failedPosts = useMemo(() => (posts || []).filter(p => p.status === 'failed'), [posts])
 
   // Selected platforms derived from selected accounts.
   const selectedPlatforms = useMemo(() => {
@@ -298,7 +322,7 @@ export default function SocialPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-white/[0.04] p-1 rounded-xl w-fit">
-        {([['compose', 'Create post'], ['calendar', 'Calendar'], ['scheduled', 'Scheduled posts']] as const).map(([k, l]) => (
+        {([['compose', 'Create post'], ['calendar', 'Calendar'], ['scheduled', 'Scheduled posts'], ['approvals', 'Approvals']] as const).map(([k, l]) => (
           <button
             key={k}
             onClick={() => setTab(k)}
@@ -563,7 +587,7 @@ export default function SocialPage() {
             )}
           </div>
         </div>
-      ) : (
+      ) : tab === 'scheduled' ? (
         /* ---- Scheduled posts ---- */
         <div>
           {posts === null ? (
@@ -598,6 +622,100 @@ export default function SocialPage() {
                 </div>
               ))}
             </div>
+          )}
+        </div>
+      ) : (
+        /* ---- Approvals ---- */
+        <div className="space-y-8">
+          {posts === null ? (
+            <div className="space-y-3">
+              {[0, 1, 2].map(i => <div key={i} className="glass-card h-20 animate-pulse" />)}
+            </div>
+          ) : postsUnavailable ? (
+            <div className="glass-card p-8 text-center text-sm text-slate-400">
+              Approvals are unavailable. Apply the latest database migrations to enable this view.
+            </div>
+          ) : (
+            <>
+              {/* Pending approval */}
+              <div>
+                <h2 className="font-semibold text-white mb-3 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-amber-400" /> Pending approval
+                  {pendingPosts.length > 0 && <span className="text-xs text-slate-500">({pendingPosts.length})</span>}
+                </h2>
+                {pendingPosts.length === 0 ? (
+                  <div className="glass-card p-6 text-center text-sm text-slate-400">No posts awaiting approval.</div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {pendingPosts.map(p => (
+                      <div key={p.id} className="glass-card p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                        <div className="flex items-center gap-2 shrink-0"><PlatformBadge platform={p.platform} /></div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-white truncate">{p.post_content || <span className="text-slate-500">No caption</span>}</p>
+                          <p className="text-xs text-slate-500 truncate">
+                            {p.client_name || 'Unknown client'}{p.project_name ? ` · ${p.project_name}` : ''}
+                            {p.scheduled_date ? ` · ${new Date(p.scheduled_date).toLocaleString()}` : ''}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => actionPost(p.id, 'approve')}
+                            disabled={actioningId === p.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 transition-colors disabled:opacity-50"
+                          >
+                            {actioningId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => actionPost(p.id, 'reject')}
+                            disabled={actioningId === p.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-red-300 bg-red-500/15 hover:bg-red-500/25 transition-colors disabled:opacity-50"
+                          >
+                            <X className="h-3.5 w-3.5" /> Reject
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Failed posts */}
+              <div>
+                <h2 className="font-semibold text-white mb-3 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-400" /> Failed posts
+                  {failedPosts.length > 0 && <span className="text-xs text-slate-500">({failedPosts.length})</span>}
+                </h2>
+                {failedPosts.length === 0 ? (
+                  <div className="glass-card p-6 text-center text-sm text-slate-400">No failed posts.</div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {failedPosts.map(p => (
+                      <div key={p.id} className="glass-card p-4 flex flex-col sm:flex-row sm:items-center gap-3 border border-red-500/20">
+                        <div className="flex items-center gap-2 shrink-0"><PlatformBadge platform={p.platform} /></div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-white truncate">{p.post_content || <span className="text-slate-500">No caption</span>}</p>
+                          <p className="text-xs text-slate-500 truncate">
+                            {p.client_name || 'Unknown client'}{p.project_name ? ` · ${p.project_name}` : ''}
+                          </p>
+                          {p.failed_reason && (
+                            <p className="text-xs text-red-400 mt-1 flex items-center gap-1"><AlertTriangle className="h-3 w-3 shrink-0" /> {p.failed_reason}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => actionPost(p.id, 'retry')}
+                          disabled={actioningId === p.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-sky-300 bg-sky-500/15 hover:bg-sky-500/25 transition-colors disabled:opacity-50 shrink-0"
+                        >
+                          {actioningId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlugZap className="h-3.5 w-3.5" />}
+                          Retry
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
       )}

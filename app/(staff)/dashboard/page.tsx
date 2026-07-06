@@ -5,7 +5,12 @@ import {
   Users, FolderOpen, Activity, TrendingUp, Plus, ArrowRight,
   Sparkles, GripVertical, Search, X, DollarSign, AlertCircle,
   CheckCircle, FileText, BarChart2, Clock,
+  ChevronUp, ChevronDown, EyeOff, Settings2, Check,
 } from 'lucide-react'
+import {
+  FailedPostsWidget, AwaitingApprovalWidget, ScheduledTodayWidget,
+  ScheduledWeekWidget, RecentlyPublishedWidget, SocialData,
+} from '@/components/dashboard/SocialWidgets'
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
   useSensor, useSensors, DragEndEvent,
@@ -28,6 +33,8 @@ interface Stats {
   invoice_revenue_this_month?: number
   invoice_outstanding?: number
 }
+
+type StatsWithSocial = Stats & SocialData
 
 interface ActivityItem {
   type: string
@@ -93,20 +100,31 @@ function SortableSection({ id, children }: { id: string; children: (handleProps:
   )
 }
 
-const SECTION_IDS = ['kpi', 'dashboard-stats', 'quick-actions', 'top-clients', 'activity']
-const SECTION_STORAGE_KEY = 'dashboard_section_order'
+// Ordered widget keys. Social widgets (migration 040) join the grid.
+const DEFAULT_ORDER = [
+  'kpi', 'dashboard-stats',
+  'social-failed', 'social-awaiting', 'social-scheduled-today',
+  'social-scheduled-week', 'social-recently-published',
+  'quick-actions', 'top-clients', 'activity',
+]
 
-function loadOrder(): string[] {
-  if (typeof window === 'undefined') return SECTION_IDS
-  try {
-    const saved = localStorage.getItem(SECTION_STORAGE_KEY)
-    if (saved) {
-      const parsed = JSON.parse(saved)
-      const missing = SECTION_IDS.filter(id => !parsed.includes(id))
-      return [...parsed.filter((id: string) => SECTION_IDS.includes(id)), ...missing]
-    }
-  } catch { /* ignore */ }
-  return SECTION_IDS
+const WIDGET_META: Record<string, string> = {
+  kpi: 'Overview',
+  'dashboard-stats': 'Billing & Clients',
+  'social-failed': 'Failed posts',
+  'social-awaiting': 'Awaiting approval',
+  'social-scheduled-today': 'Scheduled today',
+  'social-scheduled-week': 'Scheduled this week',
+  'social-recently-published': 'Recently published',
+  'quick-actions': 'Quick Actions',
+  'top-clients': 'Top Clients',
+  activity: 'Recent Activity',
+}
+
+function reconcileOrder(order: string[]): string[] {
+  const known = order.filter(id => DEFAULT_ORDER.includes(id))
+  const missing = DEFAULT_ORDER.filter(id => !known.includes(id))
+  return [...known, ...missing]
 }
 
 function getGreeting() {
@@ -121,18 +139,28 @@ function formatDate(date: Date) {
 }
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<Stats | null>(null)
+  const [stats, setStats] = useState<StatsWithSocial | null>(null)
   const [activity, setActivity] = useState<ActivityItem[]>([])
   const [activityLoading, setActivityLoading] = useState(true)
   const [clients, setClients] = useState<ClientItem[]>([])
   const [clientsLoading, setClientsLoading] = useState(true)
-  const [sectionOrder, setSectionOrder] = useState<string[]>(SECTION_IDS)
+  const [sectionOrder, setSectionOrder] = useState<string[]>(DEFAULT_ORDER)
+  const [hidden, setHidden] = useState<string[]>([])
+  const [editMode, setEditMode] = useState(false)
+  const [layoutReady, setLayoutReady] = useState(false)
   const [search, setSearch] = useState('')
   const [searchFocus, setSearchFocus] = useState(false)
   const [userName, setUserName] = useState<string | null>(null)
 
   useEffect(() => {
-    setSectionOrder(loadOrder())
+    fetch('/api/dashboard/layout')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data?.order)) setSectionOrder(reconcileOrder(data.order))
+        if (Array.isArray(data?.hidden)) setHidden(data.hidden.filter((id: string) => DEFAULT_ORDER.includes(id)))
+      })
+      .catch(() => {})
+      .finally(() => setLayoutReady(true))
     fetch('/api/dashboard/stats').then(r => r.json()).then(setStats)
     fetch('/api/dashboard/activity')
       .then(r => r.json())
@@ -157,16 +185,47 @@ export default function DashboardPage() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
+  const persistLayout = useCallback((order: string[], hiddenIds: string[]) => {
+    fetch('/api/dashboard/layout', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order, hidden: hiddenIds }),
+    }).catch(() => {})
+  }, [])
+
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event
     if (over && active.id !== over.id) {
       setSectionOrder(prev => {
         const next = arrayMove(prev, prev.indexOf(String(active.id)), prev.indexOf(String(over.id)))
-        localStorage.setItem(SECTION_STORAGE_KEY, JSON.stringify(next))
+        persistLayout(next, hidden)
         return next
       })
     }
-  }, [])
+  }, [hidden, persistLayout])
+
+  const moveSection = useCallback((id: string, dir: -1 | 1) => {
+    setSectionOrder(prev => {
+      const visible = prev.filter(s => !hidden.includes(s))
+      const vi = visible.indexOf(id)
+      const target = vi + dir
+      if (vi < 0 || target < 0 || target >= visible.length) return prev
+      // swap positions within the full order array
+      const fromIdx = prev.indexOf(id)
+      const toIdx = prev.indexOf(visible[target])
+      const next = arrayMove(prev, fromIdx, toIdx)
+      persistLayout(next, hidden)
+      return next
+    })
+  }, [hidden, persistLayout])
+
+  const toggleHidden = useCallback((id: string) => {
+    setHidden(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+      persistLayout(sectionOrder, next)
+      return next
+    })
+  }, [sectionOrder, persistLayout])
 
   const kpiCards = [
     {
@@ -295,6 +354,71 @@ export default function DashboardPage() {
             </Link>
           ))}
         </div>
+      </div>
+    ),
+
+    'social-failed': (handle) => (
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <button {...handle.listeners} {...handle.attributes}
+            className="cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 transition-colors touch-none p-1"
+            title="Drag to reorder">
+            <GripVertical className="h-4 w-4" />
+          </button>
+        </div>
+        <FailedPostsWidget data={(stats || {}) as SocialData} />
+      </div>
+    ),
+
+    'social-awaiting': (handle) => (
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <button {...handle.listeners} {...handle.attributes}
+            className="cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 transition-colors touch-none p-1"
+            title="Drag to reorder">
+            <GripVertical className="h-4 w-4" />
+          </button>
+        </div>
+        <AwaitingApprovalWidget data={(stats || {}) as SocialData} />
+      </div>
+    ),
+
+    'social-scheduled-today': (handle) => (
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <button {...handle.listeners} {...handle.attributes}
+            className="cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 transition-colors touch-none p-1"
+            title="Drag to reorder">
+            <GripVertical className="h-4 w-4" />
+          </button>
+        </div>
+        <ScheduledTodayWidget data={(stats || {}) as SocialData} />
+      </div>
+    ),
+
+    'social-scheduled-week': (handle) => (
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <button {...handle.listeners} {...handle.attributes}
+            className="cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 transition-colors touch-none p-1"
+            title="Drag to reorder">
+            <GripVertical className="h-4 w-4" />
+          </button>
+        </div>
+        <ScheduledWeekWidget data={(stats || {}) as SocialData} />
+      </div>
+    ),
+
+    'social-recently-published': (handle) => (
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <button {...handle.listeners} {...handle.attributes}
+            className="cursor-grab active:cursor-grabbing text-slate-600 hover:text-slate-400 transition-colors touch-none p-1"
+            title="Drag to reorder">
+            <GripVertical className="h-4 w-4" />
+          </button>
+        </div>
+        <RecentlyPublishedWidget data={(stats || {}) as SocialData} />
       </div>
     ),
 
@@ -494,27 +618,93 @@ export default function DashboardPage() {
             {getGreeting()}{userName ? `, ${userName}!` : '!'}
           </h1>
           <p className="text-slate-500 text-sm mt-0.5">
-            {formatDate(new Date())} · Drag the <GripVertical className="h-3 w-3 inline text-slate-600" /> handles to rearrange sections
+            {formatDate(new Date())} · {editMode ? 'Add, remove and reorder your widgets' : 'Drag the '}
+            {!editMode && <GripVertical className="h-3 w-3 inline text-slate-600" />}
+            {!editMode && ' handles to rearrange sections'}
           </p>
         </div>
-        <Link href="/clients/new" className="btn-brand flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm">
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">New Client</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setEditMode(m => !m)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border transition-colors ${
+              editMode
+                ? 'bg-sky-500/15 border-sky-500/30 text-sky-300'
+                : 'border-white/[0.1] bg-white/[0.04] text-slate-300 hover:bg-white/[0.07]'
+            }`}>
+            {editMode ? <Check className="h-4 w-4" /> : <Settings2 className="h-4 w-4" />}
+            <span className="hidden sm:inline">{editMode ? 'Done' : 'Edit dashboard'}</span>
+          </button>
+          <Link href="/clients/new" className="btn-brand flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">New Client</span>
+          </Link>
+        </div>
       </div>
 
-      {/* Draggable sections */}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
-          <div className="space-y-8">
-            {sectionOrder.map(id => (
-              <SortableSection key={id} id={id}>
-                {(handle) => sections[id]?.(handle)}
-              </SortableSection>
-            ))}
+      {/* Widget picker (edit mode): re-add hidden widgets */}
+      {editMode && (
+        <div className="glass-card p-4 mb-8 animate-float-up">
+          <div className="flex items-center gap-2 mb-3">
+            <Settings2 className="h-4 w-4 text-sky-400" />
+            <span className="text-sm font-semibold text-white">Add widgets</span>
           </div>
-        </SortableContext>
-      </DndContext>
+          {hidden.length === 0 ? (
+            <p className="text-xs text-slate-500">All widgets are visible. Use the <EyeOff className="h-3 w-3 inline" /> button on a widget to hide it.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {DEFAULT_ORDER.filter(id => hidden.includes(id)).map(id => (
+                <button key={id} onClick={() => toggleHidden(id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-white/[0.1] bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:border-sky-500/30 transition-colors">
+                  <Plus className="h-3.5 w-3.5" />
+                  {WIDGET_META[id] || id}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Draggable sections */}
+      {(() => {
+        const visibleOrder = sectionOrder.filter(id => !hidden.includes(id) && sections[id])
+        return (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={visibleOrder} strategy={verticalListSortingStrategy}>
+              <div className="space-y-8">
+                {visibleOrder.map((id, idx) => (
+                  <SortableSection key={id} id={id}>
+                    {(handle) => (
+                      <div>
+                        {editMode && (
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <span className="text-xs font-semibold text-slate-400 mr-1">{WIDGET_META[id] || id}</span>
+                            <button onClick={() => moveSection(id, -1)} disabled={idx === 0}
+                              className="p-1 rounded-lg border border-white/[0.1] bg-white/[0.04] text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                              title="Move up">
+                              <ChevronUp className="h-3.5 w-3.5" />
+                            </button>
+                            <button onClick={() => moveSection(id, 1)} disabled={idx === visibleOrder.length - 1}
+                              className="p-1 rounded-lg border border-white/[0.1] bg-white/[0.04] text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                              title="Move down">
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            </button>
+                            <button onClick={() => toggleHidden(id)}
+                              className="flex items-center gap-1 p-1 px-2 rounded-lg border border-white/[0.1] bg-white/[0.04] text-slate-400 hover:text-rose-300 hover:border-rose-500/30 transition-colors"
+                              title="Hide widget">
+                              <EyeOff className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
+                        {sections[id]?.(handle)}
+                      </div>
+                    )}
+                  </SortableSection>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )
+      })()}
     </div>
   )
 }

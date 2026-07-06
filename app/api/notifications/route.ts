@@ -7,20 +7,27 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data, error } = await supabase
+  // ?all=1 returns the full list (read + unread) for the notifications page;
+  // default returns only unread for the bell dropdown.
+  const includeAll = new URL(req.url).searchParams.get('all') === '1'
+
+  let query = supabase
     .from('notifications')
     .select('*')
     .eq('user_id', user.id)
-    .eq('is_read', false)
     .order('created_at', { ascending: false })
-    .limit(20)
+    .limit(includeAll ? 100 : 20)
+  if (!includeAll) query = query.eq('is_read', false)
+
+  const { data, error } = await query
 
   if (error?.code === '42P01') return NextResponse.json({ notifications: [], unread_count: 0 })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  const list = data || []
   return NextResponse.json({
-    notifications: data || [],
-    unread_count: (data || []).length
+    notifications: list,
+    unread_count: includeAll ? list.filter((n: any) => !n.is_read).length : list.length,
   })
 }
 

@@ -28,11 +28,27 @@ export async function GET(request: NextRequest) {
   if (!organizationId) return NextResponse.json({ error: 'No organization' }, { status: 403 })
 
   // Never select raw tokens — only surface safe, display-only columns.
-  const { data, error } = await supabase
+  // Try the richer select (needs_reconnect/last_error from migration 040) first,
+  // and fall back to the base columns if those aren't present yet.
+  const baseCols = 'id, platform, account_name, account_handle, external_id, status, token_expires_at, created_at, connected_by'
+  const rich = await supabase
     .from('social_accounts')
-    .select('id, platform, account_name, account_handle, external_id, status, token_expires_at, created_at, connected_by')
+    .select(`${baseCols}, needs_reconnect, last_error`)
     .eq('organization_id', organizationId)
     .order('created_at', { ascending: false })
+
+  let data: any = rich.data
+  let error: any = rich.error
+
+  if (error && /Could not find|does not exist|schema cache|column/i.test(error.message || '')) {
+    const bare = await supabase
+      .from('social_accounts')
+      .select(baseCols)
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false })
+    data = bare.data
+    error = bare.error
+  }
 
   if (error) {
     // 42P01 = undefined_table — migration 039 not applied in this environment.

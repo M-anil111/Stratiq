@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
-  Share2, Plus, Trash2, Loader2, CheckCircle, AlertCircle, X, Info,
+  Share2, Plus, Trash2, Loader2, CheckCircle, AlertCircle, X, Info, RefreshCw, AlertTriangle,
 } from 'lucide-react'
 
 type Platform = 'facebook' | 'instagram' | 'linkedin' | 'tiktok' | 'x' | 'youtube'
@@ -38,6 +38,8 @@ type Account = {
   status: string | null
   token_expires_at: string | null
   created_at: string
+  needs_reconnect?: boolean | null
+  last_error?: string | null
 }
 
 function fmtDate(iso: string) {
@@ -294,30 +296,57 @@ function SocialAccountsInner() {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {accounts.map((acc) => (
-              <div key={acc.id} className="glass-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <Badge platform={acc.platform} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-white truncate">
-                      {acc.account_name || acc.account_handle || 'Account'}
-                    </p>
-                    <p className="text-xs text-slate-500 truncate">
-                      {acc.account_handle ? `${acc.account_handle} · ` : ''}
-                      {acc.status === 'manual' ? 'Manual record' : 'Connected'} · {fmtDate(acc.created_at)}
-                    </p>
+            {accounts.map((acc) => {
+              const needsReconnect = Boolean(acc.needs_reconnect) || acc.status === 'expired'
+              const isManual = acc.status === 'manual'
+              return (
+              <div
+                key={acc.id}
+                className={`glass-card rounded-2xl p-4 flex flex-col gap-3 ${needsReconnect ? 'border border-red-500/30' : ''}`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <Badge platform={acc.platform} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white truncate">
+                        {acc.account_name || acc.account_handle || 'Account'}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">
+                        {acc.account_handle ? `${acc.account_handle} · ` : ''}
+                        {needsReconnect ? (
+                          <span className="text-red-400 font-medium">Reconnect needed</span>
+                        ) : isManual ? 'Manual record' : 'Connected'} · {fmtDate(acc.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {needsReconnect && !isManual && (
+                      <a
+                        href={`/api/auth/social/${acc.platform}/connect`}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-sky-300 bg-sky-500/15 hover:bg-sky-500/25 transition-colors"
+                      >
+                        <RefreshCw className="h-4 w-4" /> Reconnect
+                      </a>
+                    )}
+                    <button
+                      onClick={() => disconnect(acc)}
+                      disabled={deletingId === acc.id}
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-50 shrink-0"
+                    >
+                      {deletingId === acc.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      Disconnect
+                    </button>
                   </div>
                 </div>
-                <button
-                  onClick={() => disconnect(acc)}
-                  disabled={deletingId === acc.id}
-                  className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-50 shrink-0"
-                >
-                  {deletingId === acc.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                  Disconnect
-                </button>
+                {needsReconnect && acc.last_error && (
+                  <p className="flex items-start gap-1.5 text-xs text-red-400 border-t border-red-500/15 pt-2.5">
+                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <span className="min-w-0">{acc.last_error}</span>
+                  </p>
+                )}
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </section>
