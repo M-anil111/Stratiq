@@ -84,3 +84,35 @@ Confirm the Vercel Cron Jobs from `vercel.json` are registered (weekly targets, 
 - Log out/in → email OTP verification screen appears.
 
 ## 7. Merge PR #3 into `main` once verified.
+
+---
+
+## Social Publishing Suite (added)
+
+### Database
+Migration `040_social_suite.sql` is included in **Settings → Database** (APPLY_ALL_PENDING.sql). It adds the scheduling lifecycle, `posting_slots`, `social_published_posts`, the `notifications` table, `social_accounts` reconnect fields, and `users.dashboard_layout`/`theme_preference`. Apply it before using scheduling.
+
+### Publishing cadence (important)
+`/api/cron/publish-social` drives the queue. Vercel **Hobby** allows only **once-daily** crons, so `vercel.json` schedules it daily. For real near-real-time publishing choose one:
+- **Vercel Pro** — change the schedule back to `*/5 * * * *`.
+- **Free external pinger** — point cron-job.org (or any scheduler) at
+  `https://<app>/api/cron/publish-social` every 5 min with header
+  `Authorization: Bearer $CRON_SECRET`.
+
+### Per-platform env vars (OAuth app credentials)
+Publishing/boosting only activates once the platform's app credentials are set. Nothing is stored in the repo.
+- Facebook/Instagram/Threads: `META_APP_ID`, `META_APP_SECRET` (or `FACEBOOK_*`, `INSTAGRAM_*`). Boost also needs `META_AD_ACCOUNT_ID` and an `ads_management` token.
+- LinkedIn: `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`.
+- X: `X_CLIENT_ID`, `X_CLIENT_SECRET`.
+- TikTok: `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`.
+- YouTube: `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`.
+- Pinterest: `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`.
+- Bluesky: connect with an app password (stored encrypted); no app registration needed.
+
+### App-review gotchas (from platform docs)
+- TikTok & YouTube force content to **private** until the app passes their audit/verification.
+- Meta (FB/IG/Threads) and LinkedIn need App Review + Business Verification; LinkedIn tokens expire every 60 days (auto-refresh handled when a refresh token is present, else a reconnect notification fires).
+- Instagram publish cap is ~25–100 posts / rolling 24h.
+
+### Space management
+After a post publishes successfully, its heavy `social_media_postings` row and any Google Drive media are **deleted**; a lightweight `social_published_posts` reference (platform + external id + permalink + snippet) is kept, and live metrics are re-fetched from the platform API. This keeps storage flat as volume grows.
