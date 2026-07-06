@@ -4,8 +4,8 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import {
   Building2, Plug, Bell, Sliders, Shield, Globe,
-  ShieldCheck, ListChecks, Users, CreditCard, Mail,
-  Search, History, Menu, X, Database, Share2, CalendarClock,
+  ShieldCheck, ListChecks, Users, Mail,
+  Search, History, Menu, X, Share2, CalendarClock,
 } from 'lucide-react'
 
 type NavItem = { href: string; icon: React.ComponentType<{ className?: string }>; label: string }
@@ -16,10 +16,8 @@ const NAV_GROUPS: NavGroup[] = [
     title: 'Account',
     items: [
       { href: '/settings/company', icon: Building2, label: 'Account Defaults' },
-      { href: '/settings/billing', icon: CreditCard, label: 'Billing' },
       { href: '/settings/audit-log', icon: ShieldCheck, label: 'Audit Log' },
       { href: '/settings/changelog', icon: History, label: 'Changelog' },
-      { href: '/settings/database', icon: Database, label: 'Database' },
     ],
   },
   {
