@@ -613,3 +613,10 @@ ALTER TABLE user_notification_prefs
 
 ALTER TABLE user_notification_prefs
   ADD COLUMN IF NOT EXISTS organization_id UUID;
+
+-- ============================================================
+-- 038_user_permissions.sql
+-- HubSpot-style granular per-user permissions: per-user JSON
+-- overrides. NULL = use role defaults (see lib/permissions.ts).
+-- ============================================================
+ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions jsonb;

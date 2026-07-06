@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { logAudit } from '@/lib/audit'
+import { can } from '@/lib/permissions'
 
 async function getOrgClient(supabase: any, userId: string) {
-  const { data } = await supabase.from('users').select('organization_id, role').eq('id', userId).single()
-  return data
+  // Select `permissions` too (migration 038) so we can apply granular gates.
+  // Tolerant of the column not existing yet on the live DB.
+  const res = await supabase.from('users').select('organization_id, role, permissions').eq('id', userId).single()
+  if (res.error && (res.error.code === '42703' || /permissions/.test(res.error.message || ''))) {
+    const fb = await supabase.from('users').select('organization_id, role').eq('id', userId).single()
+    return fb.data
+  }
+  return res.data
 }
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -123,6 +130,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   const userData = await getOrgClient(supabase, user.id)
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
   if (!['super_admin', 'admin'].includes(userData.role)) {
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  }
+  // Granular per-user permission gate (enforced core) on top of the role check.
+  if (!can(userData, 'clients', 'delete')) {
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
   }
 

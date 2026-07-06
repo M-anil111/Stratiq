@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole, ADMIN_ROLES, BILLING_ROLES } from '@/lib/authz'
 import { logAudit } from '@/lib/audit'
+import { can } from '@/lib/permissions'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -120,6 +121,18 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
 
   const authz = await requireRole(supabase, user.id, ADMIN_ROLES)
   if (!authz.ok) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+
+  // Granular per-user permission gate (enforced core) on top of the role check.
+  // Load the acting user's permissions (migration 038), tolerant of the column
+  // not existing yet on the live DB.
+  let actingUser: any = { role: authz.role, permissions: null }
+  {
+    const res = await supabase.from('users').select('role, permissions').eq('id', user.id).single()
+    if (!res.error && res.data) actingUser = res.data
+  }
+  if (!can(actingUser, 'invoices', 'delete')) {
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  }
 
   const { error } = await supabase
     .from('invoices')

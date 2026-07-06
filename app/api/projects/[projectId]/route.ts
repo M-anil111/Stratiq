@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { logAudit } from '@/lib/audit'
+import { can } from '@/lib/permissions'
 
 export async function GET(request: NextRequest, { params }: { params: { projectId: string } }) {
   const supabase = await createClient()
@@ -132,8 +133,23 @@ export async function DELETE(request: NextRequest, { params }: { params: { proje
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: userData } = await supabase.from('users').select('organization_id, role').eq('id', user.id).single()
+  // Select `permissions` too (migration 038) for the granular gate; tolerant
+  // of the column not existing yet on the live DB.
+  let userData: any = null
+  {
+    const res = await supabase.from('users').select('organization_id, role, permissions').eq('id', user.id).single()
+    if (res.error && (res.error.code === '42703' || /permissions/.test(res.error.message || ''))) {
+      const fb = await supabase.from('users').select('organization_id, role').eq('id', user.id).single()
+      userData = fb.data
+    } else {
+      userData = res.data
+    }
+  }
   if (!userData || !['super_admin', 'admin'].includes(userData.role)) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  // Granular per-user permission gate (enforced core) on top of the role check.
+  if (!can(userData, 'projects', 'delete')) {
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  }
 
   const { error } = await supabase
     .from('projects')
