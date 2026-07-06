@@ -41,6 +41,7 @@
     "lucide-react": "^0.446.0",
     "next": "^14.2.35",
     "next-auth": "^5.0.0-beta.20",
+    "pg": "^8.22.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.0",
@@ -53,6 +54,7 @@
   "devDependencies": {
     "@playwright/test": "1.56.1",
     "@types/node": "^20.16.10",
+    "@types/pg": "^8.20.0",
     "@types/react": "^18.3.9",
     "@types/react-dom": "^18.3.0",
     "eslint": "^8.57.1",
