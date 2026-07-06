@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Plus, X, Target, AlertTriangle, UserPlus, ExternalLink, Download, CheckSquare, Square } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { downloadCsv } from '@/lib/csv'
+import SlideOver from '@/components/SlideOver'
 
 type Lead = {
   id: string
@@ -521,39 +522,33 @@ export default function LeadsPage() {
         </div>
       )}
 
-      {/* New / Edit Lead modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
-          <div className="relative glass-card rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{editingLead ? 'Edit Lead' : 'New Lead'}</h2>
-              <button onClick={() => setModalOpen(false)} className="p-2 rounded-xl bg-slate-900/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <form onSubmit={saveLead} className="space-y-4">
-              <LeadFormFields form={form} setForm={setForm} />
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-900/[0.04] dark:bg-white/[0.06] hover:bg-slate-900/[0.08] dark:hover:bg-white/[0.1] transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving || !form.company_name.trim()}
-                  className="btn-brand px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-                >
-                  {saving ? 'Saving…' : editingLead ? 'Save Changes' : 'Create Lead'}
-                </button>
-              </div>
-            </form>
-          </div>
+      {/* New / Edit Lead slide-over */}
+      <SlideOver
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editingLead ? 'Edit Lead' : 'New Lead'}
+      >
+        <form id="lead-form" onSubmit={saveLead} className="space-y-4">
+          <LeadFormFields form={form} setForm={setForm} />
+        </form>
+        <div className="flex justify-end gap-2 pt-4">
+          <button
+            type="button"
+            onClick={() => setModalOpen(false)}
+            className="px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-900/[0.04] dark:bg-white/[0.06] hover:bg-slate-900/[0.08] dark:hover:bg-white/[0.1] transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="lead-form"
+            disabled={saving || !form.company_name.trim()}
+            className="btn-brand px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : editingLead ? 'Save Changes' : 'Create Lead'}
+          </button>
         </div>
-      )}
+      </SlideOver>
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (

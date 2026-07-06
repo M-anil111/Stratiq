@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Plus, Download, RefreshCw, Loader2, Search, ExternalLink, Send, CheckCircle2, AlertCircle, FileText, Ban, DollarSign, Printer } from 'lucide-react'
 import Link from 'next/link'
 import { downloadCsv } from '@/lib/csv'
+import SlideOver from '@/components/SlideOver'
 
 interface Client { id: string; company_name: string }
 interface Invoice {
@@ -333,7 +334,7 @@ export default function InvoicesPage() {
           <button onClick={openImport} className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all whitespace-nowrap">
             <Download className="h-4 w-4" /> Import from QuickBooks
           </button>
-          <button onClick={() => setShowForm(v => !v)} className="btn-brand flex items-center gap-1.5 px-4 py-2.5 text-sm">
+          <button onClick={() => setShowForm(true)} className="btn-brand flex items-center gap-1.5 px-4 py-2.5 text-sm">
             <Plus className="h-4 w-4" /> New Invoice
           </button>
         </div>
@@ -353,10 +354,23 @@ export default function InvoicesPage() {
         ))}
       </div>
 
-      {/* New Invoice Form */}
-      {showForm && (
-        <div className="glass-card p-5 mb-6">
-          <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Create Invoice</h2>
+      {/* New Invoice slide-over */}
+      <SlideOver
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        title="Create Invoice"
+        widthClass="w-[720px]"
+        footer={
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => setShowForm(false)} className="px-4 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl transition-colors">
+              Cancel
+            </button>
+            <button onClick={saveInvoice} disabled={savingInvoice || !newInvoice.client_id} className="btn-brand px-5 py-2.5 text-sm disabled:opacity-50">
+              {savingInvoice ? <><Loader2 className="h-4 w-4 animate-spin inline mr-1" />Saving…</> : 'Save Invoice'}
+            </button>
+          </div>
+        }
+      >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Client *</label>
@@ -455,21 +469,11 @@ export default function InvoicesPage() {
             </div>
           </div>
 
-          <div className="mb-4">
+          <div className="mb-2">
             <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Notes</label>
             <textarea value={newInvoice.notes} onChange={e => setNewInvoice(p => ({ ...p, notes: e.target.value }))} rows={2} placeholder="Optional notes for the client" className="input-glass resize-none" />
           </div>
-
-          <div className="flex gap-2">
-            <button onClick={saveInvoice} disabled={savingInvoice || !newInvoice.client_id} className="btn-brand px-5 py-2.5 text-sm disabled:opacity-50">
-              {savingInvoice ? <><Loader2 className="h-4 w-4 animate-spin inline mr-1" />Saving…</> : 'Save Invoice'}
-            </button>
-            <button onClick={() => setShowForm(false)} className="px-4 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl transition-colors">
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      </SlideOver>
 
       {/* Filters */}
       <div className="flex gap-3 mb-4 flex-wrap">
