@@ -54,9 +54,10 @@ export async function POST(req: NextRequest) {
     .eq('organization_id', userData.organization_id)
   const invoiceNumber = `INV-${String((count || 0) + 1).padStart(4, '0')}`
 
-  const { data, error } = await supabase.from('invoices').insert({
+  const payload: Record<string, any> = {
     organization_id: userData.organization_id,
     client_id: body.client_id,
+    project_id: body.project_id || null,
     invoice_number: invoiceNumber,
     status: body.status || 'draft',
     issue_date: body.issue_date || new Date().toISOString().slice(0, 10),
@@ -68,7 +69,23 @@ export async function POST(req: NextRequest) {
     amount_paid: 0,
     notes: body.notes || null,
     created_by: user.id,
-  }).select().single()
+  }
+
+  // `project_id` (migration 028) may not exist on the live DB yet — retry
+  // without it if the column is missing so invoice creation never breaks.
+  let data: any = null
+  let error: any = null
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await supabase.from('invoices').insert(payload).select().single()
+    data = res.data
+    error = res.error
+    if (!error) break
+    if (error.code === '42703' && 'project_id' in payload) {
+      delete payload.project_id
+      continue
+    }
+    break
+  }
 
   if (error) {
     if (error.code === '42P01') return NextResponse.json({ error: 'Invoices table not set up yet. Please contact support.' }, { status: 503 })

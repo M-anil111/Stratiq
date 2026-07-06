@@ -16,6 +16,14 @@ export function MobileNav() {
   const [moreOpen, setMoreOpen] = useState(false)
   const pathname = usePathname()
 
+  async function handleLogout() {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } finally {
+      window.location.href = '/login'
+    }
+  }
+
   return (
     <>
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center"
@@ -103,7 +111,9 @@ export function MobileNav() {
                 <span className="font-medium">Settings</span>
               </Link>
               <div className="divider-glass my-3" />
-              <button className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 w-full transition-all duration-200">
+              <button
+                onClick={() => { setMoreOpen(false); handleLogout() }}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 w-full transition-all duration-200">
                 <LogOut className="h-5 w-5" />
                 <span className="font-medium">Sign Out</span>
               </button>

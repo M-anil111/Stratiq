@@ -83,12 +83,14 @@ export default function InvoicesPage() {
   const [importResult, setImportResult] = useState<{ imported: number; skipped: number; linked: number } | null>(null)
   const [newInvoice, setNewInvoice] = useState({
     client_id: '',
+    project_id: '',
     issue_date: new Date().toISOString().slice(0, 10),
     due_date: '',
     tax_amount: '',
     notes: '',
     line_items: [{ description: '', qty: 1, unit_price: '', amount: '' }] as any[],
   })
+  const [clientProjects, setClientProjects] = useState<{ id: string; domain?: string; services?: any }[]>([])
 
   const loadInvoices = useCallback(() => {
     setLoading(true)
@@ -110,6 +112,15 @@ export default function InvoicesPage() {
   }, [])
 
   useEffect(() => { loadInvoices() }, [loadInvoices])
+
+  // Load the selected client's projects so an invoice can be attributed to one.
+  useEffect(() => {
+    if (!newInvoice.client_id) { setClientProjects([]); return }
+    fetch(`/api/clients/${newInvoice.client_id}/projects`)
+      .then(r => r.ok ? r.json() : [])
+      .then(d => setClientProjects(Array.isArray(d) ? d : (d?.projects || [])))
+      .catch(() => setClientProjects([]))
+  }, [newInvoice.client_id])
 
   const filtered = invoices.filter(inv => {
     const name = inv.client?.company_name?.toLowerCase() || ''
@@ -161,6 +172,7 @@ export default function InvoicesPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         client_id: newInvoice.client_id,
+        project_id: newInvoice.project_id || null,
         issue_date: newInvoice.issue_date,
         due_date: newInvoice.due_date || null,
         tax_amount: taxAmt,
@@ -178,7 +190,7 @@ export default function InvoicesPage() {
     if (res.ok) {
       setShowForm(false)
       setNewInvoice({
-        client_id: '', issue_date: new Date().toISOString().slice(0, 10),
+        client_id: '', project_id: '', issue_date: new Date().toISOString().slice(0, 10),
         due_date: '', tax_amount: '', notes: '',
         line_items: [{ description: '', qty: 1, unit_price: '', amount: '' }],
       })
@@ -348,11 +360,20 @@ export default function InvoicesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-xs text-slate-400 mb-1">Client *</label>
-              <select value={newInvoice.client_id} onChange={e => setNewInvoice(p => ({ ...p, client_id: e.target.value }))} className={selectClass}>
+              <select value={newInvoice.client_id} onChange={e => setNewInvoice(p => ({ ...p, client_id: e.target.value, project_id: '' }))} className={selectClass}>
                 <option value="">Select client…</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
               </select>
             </div>
+            {clientProjects.length > 0 && (
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Project</label>
+                <select value={newInvoice.project_id} onChange={e => setNewInvoice(p => ({ ...p, project_id: e.target.value }))} className={selectClass}>
+                  <option value="">No specific project</option>
+                  {clientProjects.map(p => <option key={p.id} value={p.id}>{p.domain || 'Project'}</option>)}
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-xs text-slate-400 mb-1">Issue Date</label>
               <input type="date" value={newInvoice.issue_date} onChange={e => setNewInvoice(p => ({ ...p, issue_date: e.target.value }))} className="input-glass" />
