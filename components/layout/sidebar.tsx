@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Users, BarChart3, Target, Settings,
-  FolderKanban, Sparkles, FileText, BookUser, Magnet, Share2,
+  FolderKanban, Sparkles, FileText, BookUser, Magnet, Share2, ListChecks,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +13,7 @@ const navItems = [
   { href: '/clients', label: 'Clients', icon: Users },
   { href: '/contacts', label: 'Contacts', icon: BookUser },
   { href: '/projects', label: 'Projects', icon: FolderKanban },
+  { href: '/tasks', label: 'Tasks', icon: ListChecks },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
   { href: '/social', label: 'Social', icon: Share2 },
   { href: '/invoices', label: 'Invoices', icon: FileText },

@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { LayoutDashboard, Users, BarChart3, Target, MoreHorizontal, Settings, LogOut, X, Sparkles, FileText, BookUser } from 'lucide-react'
+import { LayoutDashboard, Users, BarChart3, Target, MoreHorizontal, Settings, LogOut, X, Sparkles, FileText, BookUser, ListChecks } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const tabs = [
@@ -92,6 +92,11 @@ export function MobileNav() {
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.05] dark:hover:bg-white/[0.06] transition-all duration-200">
                 <BookUser className="h-5 w-5 text-slate-400 dark:text-slate-400" />
                 <span className="font-medium">Contacts</span>
+              </Link>
+              <Link href="/tasks" onClick={() => setMoreOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.05] dark:hover:bg-white/[0.06] transition-all duration-200">
+                <ListChecks className="h-5 w-5 text-slate-400 dark:text-slate-400" />
+                <span className="font-medium">Tasks</span>
               </Link>
               <Link href="/invoices" onClick={() => setMoreOpen(false)}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.05] dark:hover:bg-white/[0.06] transition-all duration-200">
