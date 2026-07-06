@@ -101,16 +101,16 @@ function ReportPreview({
   return (
     <div className="glass-card p-6 space-y-6">
       {/* Header */}
-      <div className="border-b border-white/[0.08] pb-4">
+      <div className="border-b border-slate-900/10 dark:border-white/[0.08] pb-4">
         <p className="text-xs text-sky-400 font-semibold uppercase tracking-wider mb-1">Monthly Report</p>
-        <h2 className="text-xl font-bold text-white">{clientName}</h2>
-        <p className="text-sm text-slate-400">{monthLabel(month)}</p>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">{clientName}</h2>
+        <p className="text-sm text-slate-600 dark:text-slate-400">{monthLabel(month)}</p>
       </div>
 
       {/* Meta Ads */}
       {sections.has('meta_ads') && (
         <section>
-          <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
             Meta Ads
           </h3>
@@ -126,9 +126,9 @@ function ReportPreview({
                 ['Revenue', fmt(meta.revenue, 'currency'), 'currency'],
                 ['Reach', fmt(meta.reach), 'number'],
               ] as [string, string, string][]).map(([label, value]) => (
-                <div key={label} className="bg-white/[0.04] rounded-xl p-3">
+                <div key={label} className="bg-slate-900/[0.04] dark:bg-white/[0.04] rounded-xl p-3">
                   <p className="text-xs text-slate-500 mb-1">{label}</p>
-                  <p className="text-sm font-semibold text-white">{value}</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{value}</p>
                 </div>
               ))}
             </div>
@@ -141,7 +141,7 @@ function ReportPreview({
       {/* Google Ads */}
       {sections.has('google_ads') && (
         <section>
-          <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
             Google Ads
           </h3>
@@ -156,9 +156,9 @@ function ReportPreview({
                 ['Conversions', fmt(google.conversions)],
                 ['Revenue', fmt(google.revenue, 'currency')],
               ] as [string, string][]).map(([label, value]) => (
-                <div key={label} className="bg-white/[0.04] rounded-xl p-3">
+                <div key={label} className="bg-slate-900/[0.04] dark:bg-white/[0.04] rounded-xl p-3">
                   <p className="text-xs text-slate-500 mb-1">{label}</p>
-                  <p className="text-sm font-semibold text-white">{value}</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{value}</p>
                 </div>
               ))}
             </div>
@@ -171,7 +171,7 @@ function ReportPreview({
       {/* SEO Summary */}
       {sections.has('seo_summary') && (
         <section>
-          <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-purple-400 inline-block" />
             SEO Summary
           </h3>
@@ -181,9 +181,9 @@ function ReportPreview({
               ['Blog Posts', data.seo_blog_count],
               ['Onpage Changes', data.seo_onpage_count],
             ] as [string, number | null | undefined][]).map(([label, value]) => (
-              <div key={label} className="bg-white/[0.04] rounded-xl p-3">
+              <div key={label} className="bg-slate-900/[0.04] dark:bg-white/[0.04] rounded-xl p-3">
                 <p className="text-xs text-slate-500 mb-1">{label}</p>
-                <p className="text-sm font-semibold text-white">{fmt(value)}</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">{fmt(value)}</p>
               </div>
             ))}
           </div>
@@ -193,7 +193,7 @@ function ReportPreview({
       {/* Revenue Overview */}
       {sections.has('revenue_overview') && (
         <section>
-          <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
             Revenue Overview
           </h3>
@@ -208,9 +208,9 @@ function ReportPreview({
                 return fmt(m + g, 'currency')
               })()],
             ].map(([label, value]) => (
-              <div key={label} className="bg-white/[0.04] rounded-xl p-3">
+              <div key={label} className="bg-slate-900/[0.04] dark:bg-white/[0.04] rounded-xl p-3">
                 <p className="text-xs text-slate-500 mb-1">{label}</p>
-                <p className="text-sm font-semibold text-white">{value}</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">{value}</p>
               </div>
             ))}
           </div>
@@ -220,12 +220,12 @@ function ReportPreview({
       {/* Custom Text Block */}
       {sections.has('custom_text') && customText && (
         <section>
-          <h3 className="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-orange-400 inline-block" />
             Notes
           </h3>
-          <div className="bg-white/[0.04] rounded-xl p-4">
-            <p className="text-sm text-slate-300 whitespace-pre-wrap">{customText}</p>
+          <div className="bg-slate-900/[0.04] dark:bg-white/[0.04] rounded-xl p-4">
+            <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{customText}</p>
           </div>
         </section>
       )}
@@ -360,7 +360,7 @@ export default function ReportBuilderPage() {
 
   return (
     <div className="p-4 lg:p-8 max-w-4xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-white">Report Builder</h1>
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Report Builder</h1>
 
       {/* Step 1 — Client */}
       <div className="glass-card p-5">
@@ -402,9 +402,9 @@ export default function ReportBuilderPage() {
                 type="checkbox"
                 checked={enabledSections.has(key)}
                 onChange={() => toggleSection(key)}
-                className="rounded border-white/[0.12] text-sky-500 focus:ring-sky-500 bg-white/[0.06]"
+                className="rounded border-slate-900/10 dark:border-white/[0.12] text-sky-500 focus:ring-sky-500 bg-slate-900/[0.04] dark:bg-white/[0.06]"
               />
-              <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
+              <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                 {SECTION_LABELS[key]}
               </span>
             </label>
@@ -414,7 +414,7 @@ export default function ReportBuilderPage() {
         {/* Custom text block input */}
         {enabledSections.has('custom_text') && (
           <div className="mt-4">
-            <label className="block text-xs text-slate-400 mb-2">Custom Text / Notes</label>
+            <label className="block text-xs text-slate-600 dark:text-slate-400 mb-2">Custom Text / Notes</label>
             <textarea
               value={customText}
               onChange={e => setCustomText(e.target.value)}
@@ -439,7 +439,7 @@ export default function ReportBuilderPage() {
           />
           <button
             onClick={saveTemplate}
-            className="px-4 py-2 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] transition-all text-sm whitespace-nowrap"
+            className="px-4 py-2 rounded-xl border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all text-sm whitespace-nowrap"
           >
             Save as Template
           </button>
@@ -451,21 +451,21 @@ export default function ReportBuilderPage() {
           <div className="space-y-2">
             <p className="text-xs text-slate-500 mb-2">Saved Templates</p>
             {savedTemplates.map(tmpl => (
-              <div key={tmpl.name} className="flex items-center justify-between bg-white/[0.04] rounded-xl px-3 py-2">
+              <div key={tmpl.name} className="flex items-center justify-between bg-slate-900/[0.04] dark:bg-white/[0.04] rounded-xl px-3 py-2">
                 <div>
-                  <p className="text-sm text-slate-300 font-medium">{tmpl.name}</p>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{tmpl.name}</p>
                   <p className="text-xs text-slate-500">{tmpl.sections.map(s => SECTION_LABELS[s as SectionKey]).join(', ')}</p>
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => loadTemplate(tmpl)}
-                    className="text-xs text-sky-400 hover:text-sky-300 px-2 py-1 rounded hover:bg-white/[0.06] transition-all"
+                    className="text-xs text-sky-400 hover:text-sky-300 px-2 py-1 rounded hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all"
                   >
                     Load
                   </button>
                   <button
                     onClick={() => deleteTemplate(tmpl.name)}
-                    className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-white/[0.06] transition-all"
+                    className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all"
                   >
                     Delete
                   </button>
@@ -503,7 +503,7 @@ export default function ReportBuilderPage() {
       {/* Report Preview */}
       {!reportLoading && reportData && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-white">Report Preview</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Report Preview</h2>
           <ReportPreview
             data={reportData}
             sections={enabledSections}
@@ -517,7 +517,7 @@ export default function ReportBuilderPage() {
             <h2 className="text-sm font-semibold text-sky-400 mb-4">Send Report</h2>
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
-                <label className="block text-xs text-slate-400 mb-1">Recipient Email (optional override)</label>
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Recipient Email (optional override)</label>
                 <input
                   type="email"
                   value={recipientEmail}

@@ -88,9 +88,9 @@ export default function NotificationRecipientsPage() {
     <div className="p-4 lg:p-8 max-w-2xl">
       <div className="flex items-center gap-3 mb-2">
         <Mail className="h-6 w-6 text-sky-400" />
-        <h1 className="text-2xl font-bold text-white">Notification Recipients</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Notification Recipients</h1>
       </div>
-      <p className="text-sm text-slate-400 mb-6">
+      <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
         These email addresses receive report send notifications and lead alerts for your organization.
       </p>
 
@@ -123,15 +123,15 @@ export default function NotificationRecipientsPage() {
         {/* Email list */}
         {loading ? (
           <div className="flex justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+            <Loader2 className="h-5 w-5 animate-spin text-slate-600 dark:text-slate-400" />
           </div>
         ) : emails.length === 0 ? (
           <p className="text-sm text-slate-500 text-center py-6">No recipients added yet. Add an email above.</p>
         ) : (
           <ul className="space-y-2">
             {emails.map(email => (
-              <li key={email} className="flex items-center justify-between gap-2 bg-white/[0.04] rounded-xl px-4 py-2.5">
-                <span className="text-sm text-slate-200 truncate">{email}</span>
+              <li key={email} className="flex items-center justify-between gap-2 bg-slate-900/[0.04] dark:bg-white/[0.04] rounded-xl px-4 py-2.5">
+                <span className="text-sm text-slate-900 dark:text-slate-200 truncate">{email}</span>
                 <button
                   type="button"
                   onClick={() => removeEmail(email)}

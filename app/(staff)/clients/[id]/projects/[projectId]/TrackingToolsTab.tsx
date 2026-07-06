@@ -26,7 +26,7 @@ const TOOL_OPTIONS = [
 const ACCESS_TYPES = ['view only', 'editor', 'owner'] as const
 
 const selectClass =
-  'w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
+  'w-full bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
 
 interface TrackingTool {
   id: string
@@ -158,7 +158,7 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-5">
-        <h3 className="text-sm font-medium text-slate-300">Tracking &amp; Analytics Tools</h3>
+        <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">Tracking &amp; Analytics Tools</h3>
         <button onClick={openAdd} className="btn-brand flex items-center gap-2 text-sm">
           <Plus className="h-4 w-4" />
           Add Tool
@@ -186,28 +186,28 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/[0.06]">
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Tool</th>
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Property / Profile ID</th>
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Account Email</th>
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Access</th>
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Notes / URL</th>
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Date Added</th>
-                <th className="text-right px-3 py-2 text-slate-400 font-medium">Actions</th>
+              <tr className="border-b border-slate-900/10 dark:border-white/[0.06]">
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Tool</th>
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Property / Profile ID</th>
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Account Email</th>
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Access</th>
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Notes / URL</th>
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Date Added</th>
+                <th className="text-right px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {tools.map(tool => (
-                <tr key={tool.id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
-                  <td className="px-3 py-3 text-white font-medium">{tool.tool_name}</td>
-                  <td className="px-3 py-3 text-slate-300 font-mono text-xs">{tool.profile_id || <span className="text-slate-600 italic">—</span>}</td>
-                  <td className="px-3 py-3 text-slate-300 text-xs">{tool.account_email || <span className="text-slate-600 italic">—</span>}</td>
-                  <td className="px-3 py-3 text-xs capitalize text-slate-300">{tool.access_type || <span className="text-slate-600 italic">—</span>}</td>
+                <tr key={tool.id} className="border-b border-slate-900/10 dark:border-white/[0.04] hover:bg-white/[0.02] transition-colors">
+                  <td className="px-3 py-3 text-slate-900 dark:text-white font-medium">{tool.tool_name}</td>
+                  <td className="px-3 py-3 text-slate-700 dark:text-slate-300 font-mono text-xs">{tool.profile_id || <span className="text-slate-600 italic">—</span>}</td>
+                  <td className="px-3 py-3 text-slate-700 dark:text-slate-300 text-xs">{tool.account_email || <span className="text-slate-600 italic">—</span>}</td>
+                  <td className="px-3 py-3 text-xs capitalize text-slate-700 dark:text-slate-300">{tool.access_type || <span className="text-slate-600 italic">—</span>}</td>
                   <td className="px-3 py-3 text-xs max-w-[180px]">
                     {tool.url ? (
                       <a href={tool.url} target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline block truncate">{tool.url}</a>
                     ) : tool.notes ? (
-                      <span className="text-slate-400 truncate block">{tool.notes}</span>
+                      <span className="text-slate-600 dark:text-slate-400 truncate block">{tool.notes}</span>
                     ) : (
                       <span className="text-slate-600 italic">—</span>
                     )}
@@ -229,7 +229,7 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
                           </button>
                           <button
                             onClick={() => setConfirmDeleteId(null)}
-                            className="px-2 py-1 rounded text-xs text-slate-400 hover:bg-white/[0.06] transition-colors"
+                            className="px-2 py-1 rounded text-xs text-slate-600 dark:text-slate-400 hover:bg-white/[0.06] transition-colors"
                           >
                             Cancel
                           </button>
@@ -238,14 +238,14 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
                         <>
                           <button
                             onClick={() => openEdit(tool)}
-                            className="p-1.5 rounded hover:bg-white/[0.08] text-slate-400 hover:text-sky-400 transition-colors"
+                            className="p-1.5 rounded hover:bg-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-sky-400 transition-colors"
                             title="Edit"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => setConfirmDeleteId(tool.id)}
-                            className="p-1.5 rounded hover:bg-white/[0.08] text-slate-400 hover:text-red-400 transition-colors"
+                            className="p-1.5 rounded hover:bg-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-red-400 transition-colors"
                             title="Delete"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -265,10 +265,10 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="glass-card w-full max-w-md p-6 relative">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-semibold text-white">
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white">
                 {editingId ? 'Edit Tracking Tool' : 'Add Tracking Tool'}
               </h2>
-              <button onClick={closeModal} className="p-1.5 rounded hover:bg-white/[0.08] text-slate-400 hover:text-white transition-colors">
+              <button onClick={closeModal} className="p-1.5 rounded hover:bg-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-white transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -281,7 +281,7 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                   Tool <span className="text-red-400">*</span>
                 </label>
                 <select
@@ -295,7 +295,7 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Property / Profile ID</label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Property / Profile ID</label>
                 <input
                   className="input-glass w-full"
                   placeholder="e.g. G-XXXXXXXXXX or UA-123456789"
@@ -304,7 +304,7 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Account Email</label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Account Email</label>
                 <input
                   className="input-glass w-full"
                   type="email"
@@ -314,7 +314,7 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Access Type</label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Access Type</label>
                 <select
                   className={selectClass}
                   value={form.access_type}
@@ -327,7 +327,7 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">URL</label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">URL</label>
                 <input
                   className="input-glass w-full"
                   type="url"
@@ -337,7 +337,7 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Notes</label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Notes</label>
                 <textarea
                   className="input-glass w-full resize-none"
                   rows={2}
@@ -349,7 +349,7 @@ export default function TrackingToolsTab({ projectId }: { projectId: string }) {
             </div>
 
             <div className="flex items-center justify-end gap-3 mt-6">
-              <button onClick={closeModal} className="px-4 py-2 rounded-lg text-sm text-slate-400 hover:bg-white/[0.06] transition-colors">
+              <button onClick={closeModal} className="px-4 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-white/[0.06] transition-colors">
                 Cancel
               </button>
               <button

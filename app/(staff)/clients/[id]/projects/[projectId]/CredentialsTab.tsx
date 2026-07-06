@@ -185,11 +185,11 @@ export default function CredentialsTab({ projectId }: { projectId: string }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/[0.06]">
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Site Name</th>
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Username</th>
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Password</th>
-                <th className="text-right px-3 py-2 text-slate-400 font-medium">Actions</th>
+              <tr className="border-b border-slate-900/10 dark:border-white/[0.06]">
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Site Name</th>
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Username</th>
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Password</th>
+                <th className="text-right px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -197,20 +197,20 @@ export default function CredentialsTab({ projectId }: { projectId: string }) {
                 const isRevealed = cred.id in revealed
                 const isRevealing = revealing.has(cred.id)
                 return (
-                  <tr key={cred.id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
-                    <td className="px-3 py-3 text-white font-medium">{cred.site_name}</td>
-                    <td className="px-3 py-3 text-slate-300 font-mono text-xs">{cred.username}</td>
+                  <tr key={cred.id} className="border-b border-slate-900/10 dark:border-white/[0.04] hover:bg-white/[0.02] transition-colors">
+                    <td className="px-3 py-3 text-slate-900 dark:text-white font-medium">{cred.site_name}</td>
+                    <td className="px-3 py-3 text-slate-700 dark:text-slate-300 font-mono text-xs">{cred.username}</td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
                         {cred.has_password ? (
                           <>
-                            <span className={isRevealed ? 'text-emerald-400 font-mono text-sm' : 'text-slate-400 tracking-widest text-xs'}>
+                            <span className={isRevealed ? 'text-emerald-400 font-mono text-sm' : 'text-slate-600 dark:text-slate-400 tracking-widest text-xs'}>
                               {isRevealed ? revealed[cred.id] : '••••••••'}
                             </span>
                             <button
                               onClick={() => toggleReveal(cred.id)}
                               disabled={isRevealing}
-                              className="p-1 rounded hover:bg-white/[0.08] text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+                              className="p-1 rounded hover:bg-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-white transition-colors disabled:opacity-50"
                               title={isRevealed ? 'Hide' : 'Reveal'}
                             >
                               {isRevealing ? (
@@ -241,7 +241,7 @@ export default function CredentialsTab({ projectId }: { projectId: string }) {
                             </button>
                             <button
                               onClick={() => setConfirmDeleteId(null)}
-                              className="px-2 py-1 rounded text-xs text-slate-400 hover:bg-white/[0.06] transition-colors"
+                              className="px-2 py-1 rounded text-xs text-slate-600 dark:text-slate-400 hover:bg-white/[0.06] transition-colors"
                             >
                               Cancel
                             </button>
@@ -250,14 +250,14 @@ export default function CredentialsTab({ projectId }: { projectId: string }) {
                           <>
                             <button
                               onClick={() => openEdit(cred)}
-                              className="p-1.5 rounded hover:bg-white/[0.08] text-slate-400 hover:text-sky-400 transition-colors"
+                              className="p-1.5 rounded hover:bg-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-sky-400 transition-colors"
                               title="Edit"
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button
                               onClick={() => setConfirmDeleteId(cred.id)}
-                              className="p-1.5 rounded hover:bg-white/[0.08] text-slate-400 hover:text-red-400 transition-colors"
+                              className="p-1.5 rounded hover:bg-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-red-400 transition-colors"
                               title="Delete"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -279,10 +279,10 @@ export default function CredentialsTab({ projectId }: { projectId: string }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="glass-card w-full max-w-md p-6 relative">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-semibold text-white">
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white">
                 {editingId ? 'Edit Credential' : 'Add Credential'}
               </h2>
-              <button onClick={closeModal} className="p-1.5 rounded hover:bg-white/[0.08] text-slate-400 hover:text-white transition-colors">
+              <button onClick={closeModal} className="p-1.5 rounded hover:bg-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-white transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -295,7 +295,7 @@ export default function CredentialsTab({ projectId }: { projectId: string }) {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Site Name <span className="text-red-400">*</span></label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Site Name <span className="text-red-400">*</span></label>
                 <input
                   className="input-glass w-full"
                   placeholder="e.g. WordPress Admin, Google Ads"
@@ -305,7 +305,7 @@ export default function CredentialsTab({ projectId }: { projectId: string }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Username / Email <span className="text-red-400">*</span></label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Username / Email <span className="text-red-400">*</span></label>
                 <input
                   className="input-glass w-full"
                   placeholder="username or email"
@@ -314,7 +314,7 @@ export default function CredentialsTab({ projectId }: { projectId: string }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                   Password {editingId && <span className="text-slate-500">(leave blank to keep existing)</span>}
                 </label>
                 <div className="relative">
@@ -328,7 +328,7 @@ export default function CredentialsTab({ projectId }: { projectId: string }) {
                   <button
                     type="button"
                     onClick={() => setShowFormPassword(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-400 hover:text-white transition-colors"
                   >
                     {showFormPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -341,7 +341,7 @@ export default function CredentialsTab({ projectId }: { projectId: string }) {
             </div>
 
             <div className="flex items-center justify-end gap-3 mt-6">
-              <button onClick={closeModal} className="px-4 py-2 rounded-lg text-sm text-slate-400 hover:bg-white/[0.06] transition-colors">
+              <button onClick={closeModal} className="px-4 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-white/[0.06] transition-colors">
                 Cancel
               </button>
               <button

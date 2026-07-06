@@ -13,7 +13,7 @@ const SERVICES = [
   'Graphic Design', 'Website Maintenance',
 ]
 
-const selectGlass = "w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+const selectGlass = "w-full bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 // Strip protocol / path / www so the NOT NULL domain column gets a clean value.
 function normalizeDomain(raw: string): string {
@@ -35,7 +35,7 @@ function MultiSelect({ options, value, onChange }: { options: string[], value: s
     <div className="flex flex-wrap gap-2">
       {options.map(opt => (
         <button key={opt} type="button" onClick={() => toggle(opt)}
-          className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${value.includes(opt) ? 'bg-sky-500 border-sky-500 text-white' : 'bg-white/[0.05] border-white/[0.12] text-slate-300 hover:border-sky-400'}`}>
+          className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${value.includes(opt) ? 'bg-sky-500 border-sky-500 text-white' : 'bg-slate-900/[0.04] dark:bg-white/[0.05] border-slate-900/10 dark:border-white/[0.12] text-slate-700 dark:text-slate-300 hover:border-sky-400'}`}>
           {opt}
         </button>
       ))}
@@ -161,9 +161,9 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
               <CheckCircle className="h-10 w-10 text-emerald-400" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Project Created!</h2>
-          <p className="text-slate-300 font-medium mb-1">{success.name}</p>
-          <p className="text-slate-400 text-sm flex items-center justify-center gap-2 mt-4">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Project Created!</h2>
+          <p className="text-slate-700 dark:text-slate-300 font-medium mb-1">{success.name}</p>
+          <p className="text-slate-600 dark:text-slate-400 text-sm flex items-center justify-center gap-2 mt-4">
             <Loader2 className="h-4 w-4 animate-spin" />
             Taking you to the project…
           </p>
@@ -182,17 +182,17 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
     <div className="p-4 lg:p-8 max-w-4xl mx-auto">
       <div className="flex items-center gap-3 mb-6 animate-float-up">
         <Link href={`/clients/${params.id}`} className="p-2 hover:bg-white/[0.06] rounded-xl transition-colors">
-          <ChevronLeft className="h-5 w-5 text-slate-400" />
+          <ChevronLeft className="h-5 w-5 text-slate-600 dark:text-slate-400" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-white">New Project</h1>
-          <p className="text-sm text-slate-400">Just a few details — we've prefilled what we can from the client.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">New Project</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Just a few details — we've prefilled what we can from the client.</p>
         </div>
       </div>
 
       {/* Linked customer banner */}
       <div className="glass-card p-5 mb-6 animate-float-up flex items-center gap-4">
-        <div className="h-14 w-14 rounded-xl bg-white/[0.06] border border-white/[0.12] flex items-center justify-center overflow-hidden shrink-0">
+        <div className="h-14 w-14 rounded-xl bg-slate-900/[0.04] dark:bg-white/[0.06] border border-slate-900/10 dark:border-white/[0.12] flex items-center justify-center overflow-hidden shrink-0">
           {client?.logo_url && logoOk ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={client.logo_url} alt={company} className="h-full w-full object-contain" onError={() => setLogoOk(false)} />
@@ -201,8 +201,8 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
           )}
         </div>
         <div className="min-w-0">
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">New project for</p>
-          <p className="text-lg font-semibold text-white truncate">{loading ? 'Loading…' : company}</p>
+          <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">New project for</p>
+          <p className="text-lg font-semibold text-slate-900 dark:text-white truncate">{loading ? 'Loading…' : company}</p>
           {client?.website && <p className="text-sm text-sky-400 truncate">{client.website}</p>}
         </div>
       </div>
@@ -210,23 +210,23 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* The essentials */}
         <div className="glass-card p-6 animate-float-up animate-delay-100">
-          <div className="mb-6 pb-4 border-b border-white/[0.08]">
-            <h2 className="text-lg font-semibold text-white">Project Details</h2>
-            <p className="text-sm text-slate-400 mt-0.5">The essentials for {company}.</p>
+          <div className="mb-6 pb-4 border-b border-slate-900/10 dark:border-white/[0.08]">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Project Details</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">The essentials for {company}.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Project Name <span className="text-red-400">*</span></label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Project Name <span className="text-red-400">*</span></label>
               <input className="input-glass" value={form.name} onChange={setField('name')} placeholder="e.g. Acme Co — SEO (Local)" />
               {errors.name && <p className="text-xs text-red-400 mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{errors.name}</p>}
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Domain <span className="text-red-400">*</span></label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Domain <span className="text-red-400">*</span></label>
               <input className="input-glass" value={form.domain} onChange={setField('domain')} placeholder="example.com" />
               {errors.domain && <p className="text-xs text-red-400 mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{errors.domain}</p>}
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Status</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Status</label>
               <select className={selectGlass} value={form.status} onChange={setField('status')}>
                 <option value="active">Active</option>
                 <option value="prospect">Prospect</option>
@@ -237,11 +237,11 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Industry</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Industry</label>
               <input className="input-glass" value={form.industry} onChange={setField('industry')} placeholder="e.g. Home Services" />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Services</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Services</label>
               <MultiSelect options={SERVICES} value={form.services} onChange={v => setForm(f => ({ ...f, services: v }))} />
             </div>
           </div>
@@ -249,35 +249,35 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
 
         {/* Team + timeline */}
         <div className="glass-card p-6 animate-float-up animate-delay-200">
-          <div className="mb-6 pb-4 border-b border-white/[0.08]">
-            <h2 className="text-lg font-semibold text-white">Team &amp; Timeline</h2>
-            <p className="text-sm text-slate-400 mt-0.5">Optional — defaults come from the client's assigned managers.</p>
+          <div className="mb-6 pb-4 border-b border-slate-900/10 dark:border-white/[0.08]">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Team &amp; Timeline</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Optional — defaults come from the client's assigned managers.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Sales Manager</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Sales Manager</label>
               <select className={selectGlass} value={form.sales_manager_id} onChange={setField('sales_manager_id')}>
                 <option value="">Unassigned</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Development Manager</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Development Manager</label>
               <select className={selectGlass} value={form.dm_manager_id} onChange={setField('dm_manager_id')}>
                 <option value="">Unassigned</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Start Date</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Start Date</label>
               <input type="date" className={selectGlass} value={form.start_date} onChange={setField('start_date')} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">End Date</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">End Date</label>
               <input type="date" className={selectGlass} value={form.end_date} onChange={setField('end_date')} />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Notes</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Notes</label>
               <textarea className="input-glass min-h-[90px]" value={form.notes} onChange={setField('notes')} placeholder="Anything the team should know about this project…" />
             </div>
           </div>
@@ -292,7 +292,7 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
 
         {/* Submit */}
         <div className="flex gap-4 justify-end pb-8">
-          <Link href={`/clients/${params.id}`} className="px-6 py-2.5 border border-white/[0.08] rounded-xl text-sm font-medium text-slate-300 hover:bg-white/[0.05] transition-colors">
+          <Link href={`/clients/${params.id}`} className="px-6 py-2.5 border border-slate-900/10 dark:border-white/[0.08] rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-white/[0.05] transition-colors">
             Cancel
           </Link>
           <AddButton

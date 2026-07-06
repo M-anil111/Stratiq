@@ -10,7 +10,7 @@ const ENGINES = ['google', 'bing']
 
 const emptyForm = () => ({ keyword: '', search_engine: 'google', location: '', target_url: '' })
 
-const selectClass = "w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+const selectClass = "w-full bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 type Keyword = {
   id: string
@@ -49,7 +49,7 @@ function Sparkline({ points }: { points: (number | null)[] }) {
 function PositionChange({ latest, previous }: { latest: number | null; previous: number | null }) {
   if (latest == null || previous == null) return <span className="text-slate-600">—</span>
   const diff = previous - latest // positive = improved (rank number decreased)
-  if (diff === 0) return <span className="inline-flex items-center gap-1 text-slate-400 text-xs"><Minus className="h-3 w-3" />0</span>
+  if (diff === 0) return <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-400 text-xs"><Minus className="h-3 w-3" />0</span>
   if (diff > 0) return <span className="inline-flex items-center gap-1 text-emerald-400 text-xs"><TrendingUp className="h-3 w-3" />{diff}</span>
   return <span className="inline-flex items-center gap-1 text-red-400 text-xs"><TrendingDown className="h-3 w-3" />{Math.abs(diff)}</span>
 }
@@ -177,10 +177,10 @@ export default function KeywordsPage({ params }: { params: { id: string; project
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <Link href={`/clients/${params.id}/projects/${params.projectId}`} className="p-2 hover:bg-white/[0.06] rounded-lg">
-          <ChevronLeft className="h-5 w-5 text-slate-400" />
+          <ChevronLeft className="h-5 w-5 text-slate-600 dark:text-slate-400" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-white">Keyword Rank Tracking</h1>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Keyword Rank Tracking</h1>
           <p className="text-sm text-slate-500">Track keyword positions over time</p>
         </div>
       </div>
@@ -194,16 +194,16 @@ export default function KeywordsPage({ params }: { params: { id: string; project
           { label: 'Improved', value: improved },
         ].map(tile => (
           <div key={tile.label} className="glass-card p-4">
-            <div className="text-2xl font-bold text-white">{tile.value}</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{tile.value}</div>
             <div className="text-xs text-slate-500 mt-1">{tile.label}</div>
           </div>
         ))}
       </div>
 
       <div className="glass-card">
-        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-white/[0.06]">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-slate-900/10 dark:border-white/[0.06]">
           <div className="flex flex-wrap items-center gap-3 flex-1">
-            <h2 className="font-semibold text-white whitespace-nowrap">Keywords ({total})</h2>
+            <h2 className="font-semibold text-slate-900 dark:text-white whitespace-nowrap">Keywords ({total})</h2>
             <div className="relative max-w-xs w-full">
               <Search className="h-4 w-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -220,16 +220,16 @@ export default function KeywordsPage({ params }: { params: { id: string; project
         {loading ? (
           <div className="p-4 space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-10 rounded-lg bg-white/[0.04] animate-pulse" />
+              <div key={i} className="h-10 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.04] animate-pulse" />
             ))}
           </div>
         ) : unavailable ? (
-          <div className="p-12 text-center text-slate-400">
+          <div className="p-12 text-center text-slate-600 dark:text-slate-400">
             <p className="font-medium">Rank tracking not enabled</p>
             <p className="text-sm mt-1">Run migration 035 to enable rank tracking</p>
           </div>
         ) : keywords.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">
+          <div className="p-12 text-center text-slate-600 dark:text-slate-400">
             <p className="font-medium">No keywords tracked yet</p>
             <p className="text-sm mt-1">Click &quot;Add keyword&quot; to start tracking rankings</p>
           </div>
@@ -243,12 +243,12 @@ export default function KeywordsPage({ params }: { params: { id: string; project
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.06]">
+              <tbody className="divide-y divide-slate-900/10 dark:divide-white/[0.06]">
                 {keywords.map(kw => (
                   <tr key={kw.id} className="hover:bg-white/[0.03]">
-                    <td className="px-4 py-3 font-medium text-white max-w-[200px] truncate">{kw.keyword}</td>
-                    <td className="px-4 py-3 text-slate-400 capitalize">{kw.search_engine || 'google'}</td>
-                    <td className="px-4 py-3 text-slate-400">{kw.location || '—'}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white max-w-[200px] truncate">{kw.keyword}</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 capitalize">{kw.search_engine || 'google'}</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{kw.location || '—'}</td>
                     <td className="px-4 py-3">
                       {rankRowId === kw.id ? (
                         <div className="flex items-center gap-1">
@@ -256,7 +256,7 @@ export default function KeywordsPage({ params }: { params: { id: string; project
                             type="number"
                             min="1"
                             autoFocus
-                            className="w-16 bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+                            className="w-16 bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
                             value={rankValue}
                             onChange={e => setRankValue(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') saveRank(kw); if (e.key === 'Escape') setRankRowId(null) }}
@@ -264,10 +264,10 @@ export default function KeywordsPage({ params }: { params: { id: string; project
                           <button onClick={() => saveRank(kw)} disabled={savingRank} className="p-1 text-emerald-400 hover:text-emerald-300 disabled:opacity-50">
                             {savingRank ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                           </button>
-                          <button onClick={() => setRankRowId(null)} className="p-1 text-slate-400 hover:text-white"><X className="h-4 w-4" /></button>
+                          <button onClick={() => setRankRowId(null)} className="p-1 text-slate-600 dark:text-slate-400 hover:text-white"><X className="h-4 w-4" /></button>
                         </div>
                       ) : (
-                        <span className="text-white font-medium">{kw.latest_position != null ? kw.latest_position : '—'}</span>
+                        <span className="text-slate-900 dark:text-white font-medium">{kw.latest_position != null ? kw.latest_position : '—'}</span>
                       )}
                     </td>
                     <td className="px-4 py-3"><PositionChange latest={kw.latest_position} previous={kw.previous_position} /></td>
@@ -283,16 +283,16 @@ export default function KeywordsPage({ params }: { params: { id: string; project
                       {deleteId === kw.id ? (
                         <div className="flex items-center gap-1.5 text-xs bg-red-500/10 border border-red-500/20 rounded-xl px-2 py-1">
                           <span className="text-red-400">Delete?</span>
-                          <button onClick={() => setDeleteId(null)} className="px-2 py-0.5 border border-white/[0.10] rounded text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all">Cancel</button>
+                          <button onClick={() => setDeleteId(null)} className="px-2 py-0.5 border border-slate-900/10 dark:border-white/[0.10] rounded text-slate-600 dark:text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all">Cancel</button>
                           <button onClick={handleDelete} disabled={deleting} className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded disabled:opacity-60">
                             {deleting ? '...' : 'Delete'}
                           </button>
                         </div>
                       ) : (
                         <div className="flex gap-1">
-                          <button onClick={() => openRank(kw)} title="Update rank" className="px-2 py-1 text-xs rounded border border-white/[0.10] text-slate-300 hover:text-white hover:bg-white/[0.06] transition-all whitespace-nowrap">Update rank</button>
-                          <button onClick={() => openEdit(kw)} title="Edit" className="p-1 text-slate-400 hover:text-sky-400"><Edit2 className="h-4 w-4" /></button>
-                          <button onClick={() => setDeleteId(kw.id)} title="Delete" className="p-1 text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
+                          <button onClick={() => openRank(kw)} title="Update rank" className="px-2 py-1 text-xs rounded border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:text-white hover:bg-white/[0.06] transition-all whitespace-nowrap">Update rank</button>
+                          <button onClick={() => openEdit(kw)} title="Edit" className="p-1 text-slate-600 dark:text-slate-400 hover:text-sky-400"><Edit2 className="h-4 w-4" /></button>
+                          <button onClick={() => setDeleteId(kw.id)} title="Delete" className="p-1 text-slate-600 dark:text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
                         </div>
                       )}
                     </td>
@@ -308,32 +308,32 @@ export default function KeywordsPage({ params }: { params: { id: string; project
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="glass w-full max-w-lg rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-lg font-semibold text-white">{editKw ? 'Edit Keyword' : 'Add Keyword'}</h3>
-              <button onClick={closeModal}><X className="h-5 w-5 text-slate-400" /></button>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{editKw ? 'Edit Keyword' : 'Add Keyword'}</h3>
+              <button onClick={closeModal}><X className="h-5 w-5 text-slate-600 dark:text-slate-400" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Keyword <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Keyword <span className="text-red-400">*</span></label>
                 <input className="input-glass" value={form.keyword} onChange={set('keyword')} placeholder="e.g. best running shoes" required />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Search Engine</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Search Engine</label>
                   <select className={selectClass} value={form.search_engine} onChange={set('search_engine')}>
                     {ENGINES.map(e => <option key={e} value={e}>{e.charAt(0).toUpperCase() + e.slice(1)}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Location</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Location</label>
                   <input className="input-glass" value={form.location} onChange={set('location')} placeholder="e.g. United States" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Target URL</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Target URL</label>
                 <input className="input-glass" type="url" value={form.target_url} onChange={set('target_url')} placeholder="https://..." />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={closeModal} className="flex-1 py-2.5 rounded-lg border border-white/[0.10] text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Cancel</button>
+                <button type="button" onClick={closeModal} className="flex-1 py-2.5 rounded-lg border border-slate-900/10 dark:border-white/[0.10] text-slate-600 dark:text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Cancel</button>
                 <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-2.5 btn-brand disabled:opacity-60 text-sm font-medium">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   {saving ? 'Saving...' : editKw ? 'Update' : 'Save'}

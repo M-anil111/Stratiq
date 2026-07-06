@@ -86,7 +86,7 @@ export default function SearchConsoleTab({ clientId }: { clientId: string }) {
     if (res.ok) { setUnlinked(false); load() }
   }
 
-  const sel = 'bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
+  const sel = 'bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
 
   if (loading && !data && !unlinked) {
     return <div className="space-y-4"><div className="h-10 w-64 skeleton rounded-lg" /><div className="grid grid-cols-2 lg:grid-cols-4 gap-3">{[...Array(4)].map((_, i) => <div key={i} className="h-24 skeleton rounded-xl" />)}</div><div className="h-64 skeleton rounded-xl" /></div>
@@ -99,8 +99,8 @@ export default function SearchConsoleTab({ clientId }: { clientId: string }) {
           <div className="flex items-center gap-3 mb-4">
             <div className="h-9 w-9 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400"><Search className="h-5 w-5" /></div>
             <div>
-              <h2 className="font-semibold text-white">Connect Search Console</h2>
-              <p className="text-xs text-slate-400">Link a verified GSC site to view this client&apos;s search performance</p>
+              <h2 className="font-semibold text-slate-900 dark:text-white">Connect Search Console</h2>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Link a verified GSC site to view this client&apos;s search performance</p>
             </div>
           </div>
           {notConnected ? (
@@ -110,7 +110,7 @@ export default function SearchConsoleTab({ clientId }: { clientId: string }) {
           ) : sitesLoading ? (
             <div className="h-10 skeleton rounded-lg" />
           ) : sites.length === 0 ? (
-            <p className="text-sm text-slate-400">No verified Search Console sites found for the connected Google account.</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">No verified Search Console sites found for the connected Google account.</p>
           ) : (
             <div className="flex gap-2">
               <select value={selected} onChange={e => setSelected(e.target.value)} className={`flex-1 ${sel}`}>
@@ -156,7 +156,7 @@ export default function SearchConsoleTab({ clientId }: { clientId: string }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
         {PRESETS.map(p => (
-          <button key={p} onClick={() => setPreset(p)} className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${preset === p ? 'bg-sky-500/20 border-sky-500/40 text-sky-300' : 'border-white/[0.08] text-slate-400 hover:text-white'}`}>{p}</button>
+          <button key={p} onClick={() => setPreset(p)} className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${preset === p ? 'bg-sky-500/20 border-sky-500/40 text-sky-300' : 'border-slate-900/10 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-white'}`}>{p}</button>
         ))}
         {preset === 'Custom' && (
           <div className="flex items-center gap-2">
@@ -173,14 +173,14 @@ export default function SearchConsoleTab({ clientId }: { clientId: string }) {
         {tiles.map(t => (
           <div key={t.label} className="glass-card p-4">
             <p className="text-xs text-slate-500 mb-1">{t.label}</p>
-            <p className="text-2xl font-bold text-white truncate">{t.value}</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white truncate">{t.value}</p>
           </div>
         ))}
       </div>
 
       {/* Daily clicks */}
       <div className="glass-card p-5">
-        <h3 className="font-semibold text-white text-sm mb-4">Clicks over time</h3>
+        <h3 className="font-semibold text-slate-900 dark:text-white text-sm mb-4">Clicks over time</h3>
         {(!data?.timeseries || data.timeseries.length === 0) ? (
           <p className="text-sm text-slate-500 py-8 text-center">No data for this range</p>
         ) : (
@@ -196,15 +196,15 @@ export default function SearchConsoleTab({ clientId }: { clientId: string }) {
 
       {/* Tabbed table */}
       <div className="glass-card overflow-hidden">
-        <div className="flex border-b border-white/[0.08]">
+        <div className="flex border-b border-slate-900/10 dark:border-white/[0.08]">
           {DIMS.map(d => (
-            <button key={d} onClick={() => setDim(d)} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${dim === d ? 'text-white border-sky-400' : 'border-transparent text-slate-400 hover:text-white'}`}>{DIM_LABEL[d]}</button>
+            <button key={d} onClick={() => setDim(d)} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${dim === d ? 'text-slate-900 dark:text-white border-sky-400' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-white'}`}>{DIM_LABEL[d]}</button>
           ))}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/[0.08]">
+              <tr className="border-b border-slate-900/10 dark:border-white/[0.08]">
                 <SortHead k="key" label={COL_LABEL[dim]} align="left" />
                 <SortHead k="clicks" label="Clicks" />
                 <SortHead k="impressions" label="Impressions" />
@@ -216,12 +216,12 @@ export default function SearchConsoleTab({ clientId }: { clientId: string }) {
               {rows.length === 0 ? (
                 <tr><td colSpan={5} className="py-8 text-center text-slate-500 text-sm">No data</td></tr>
               ) : rows.map((r, i) => (
-                <tr key={`${r.key}-${i}`} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02]">
+                <tr key={`${r.key}-${i}`} className="border-b border-slate-900/10 dark:border-white/[0.04] last:border-0 hover:bg-white/[0.02]">
                   <td className="py-2.5 px-3 text-slate-200 max-w-[280px] truncate" title={r.key}>{r.key || '(not set)'}</td>
-                  <td className="py-2.5 px-3 text-right text-slate-300">{r.clicks.toLocaleString()}</td>
-                  <td className="py-2.5 px-3 text-right text-slate-400">{r.impressions.toLocaleString()}</td>
-                  <td className="py-2.5 px-3 text-right text-slate-400">{(r.ctr * 100).toFixed(2)}%</td>
-                  <td className="py-2.5 px-3 text-right text-slate-400">{r.position.toFixed(1)}</td>
+                  <td className="py-2.5 px-3 text-right text-slate-700 dark:text-slate-300">{r.clicks.toLocaleString()}</td>
+                  <td className="py-2.5 px-3 text-right text-slate-600 dark:text-slate-400">{r.impressions.toLocaleString()}</td>
+                  <td className="py-2.5 px-3 text-right text-slate-600 dark:text-slate-400">{(r.ctr * 100).toFixed(2)}%</td>
+                  <td className="py-2.5 px-3 text-right text-slate-600 dark:text-slate-400">{r.position.toFixed(1)}</td>
                 </tr>
               ))}
             </tbody>

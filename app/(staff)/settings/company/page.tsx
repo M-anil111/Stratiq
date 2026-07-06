@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Loader2, Building2 } from 'lucide-react'
 
-const labelClass = "block text-sm font-medium text-slate-300 mb-1"
+const labelClass = "block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
 
 const INITIAL_FORM = {
   name: '',
@@ -68,13 +68,13 @@ export default function CompanySettingsPage() {
     <div className="p-4 lg:p-8 max-w-2xl">
       <div className="flex items-center gap-3 mb-6">
         <Building2 className="h-6 w-6 text-sky-400" />
-        <h1 className="text-2xl font-bold text-white">Company Profile</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Company Profile</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Organization Details */}
         <div className="glass-card p-5 space-y-4">
-          <h2 className="font-semibold text-white">Organization Details</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white">Organization Details</h2>
           <div>
             <label className={labelClass}>Organization Name *</label>
             <input className="input-glass" value={form.name} onChange={set('name')} required placeholder="Mindshare Consulting Inc." />
@@ -90,7 +90,7 @@ export default function CompanySettingsPage() {
           <div>
             <label className={labelClass}>Logo URL</label>
             <input className="input-glass" value={form.logo_url} onChange={set('logo_url')} placeholder="https://..." />
-            <p className="text-xs text-slate-400 mt-1">Paste a direct image URL or a Google Drive image link</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Paste a direct image URL or a Google Drive image link</p>
           </div>
           <div>
             <label className={labelClass}>Brand Color</label>
@@ -99,7 +99,7 @@ export default function CompanySettingsPage() {
                 type="color"
                 value={/^#[0-9a-fA-F]{6}$/.test(form.brand_color) ? form.brand_color : '#0ea5e9'}
                 onChange={set('brand_color')}
-                className="h-10 w-14 rounded-lg border border-white/[0.12] bg-transparent cursor-pointer p-1"
+                className="h-10 w-14 rounded-lg border border-slate-900/10 dark:border-white/[0.12] bg-transparent cursor-pointer p-1"
                 aria-label="Pick brand color"
               />
               <input
@@ -110,12 +110,12 @@ export default function CompanySettingsPage() {
                 pattern="^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"
               />
             </div>
-            <p className="text-xs text-slate-400 mt-1">Used as the accent color in your client portal. Leave blank for the default.</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Used as the accent color in your client portal. Leave blank for the default.</p>
           </div>
           <div>
             <label className={labelClass}>Timezone</label>
             <select
-              className="bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 w-full"
+              className="bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 w-full"
               value={form.timezone}
               onChange={set('timezone')}
             >
@@ -126,7 +126,7 @@ export default function CompanySettingsPage() {
 
         {/* Address */}
         <div className="glass-card p-5 space-y-4">
-          <h2 className="font-semibold text-white">Address</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white">Address</h2>
           <div>
             <label className={labelClass}>Street Address</label>
             <input className="input-glass" value={form.address} onChange={set('address')} placeholder="123 Main St" />
@@ -155,7 +155,7 @@ export default function CompanySettingsPage() {
 
         {/* Contact Emails */}
         <div className="glass-card p-5 space-y-4">
-          <h2 className="font-semibold text-white">Contact Emails</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white">Contact Emails</h2>
           <div>
             <label className={labelClass}>Primary Contact Email</label>
             <input className="input-glass" type="email" value={form.contact_email} onChange={set('contact_email')} placeholder="contact@youragency.com" />

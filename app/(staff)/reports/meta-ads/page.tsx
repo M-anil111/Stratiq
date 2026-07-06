@@ -18,7 +18,7 @@ interface Report {
   meta_period_start: string | null
 }
 
-const selectClass = "bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+const selectClass = "bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 function fmt(val: number | null | undefined, prefix = '', suffix = '', decimals = 0) {
   if (val == null) return '—'
@@ -118,8 +118,8 @@ export default function MetaAdsReportPage() {
     <div className="p-4 lg:p-8">
       <div className="flex items-start justify-between mb-6 flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Meta Ads Report</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Monthly performance metrics from Facebook &amp; Instagram</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Meta Ads Report</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">Monthly performance metrics from Facebook &amp; Instagram</p>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
           <select value={clientId} onChange={e => setClientId(e.target.value)} className={`${selectClass} min-w-[180px]`}>
@@ -133,13 +133,13 @@ export default function MetaAdsReportPage() {
             {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           {clientId && (
-            <button onClick={handleSync} disabled={syncing} className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50">
+            <button onClick={handleSync} disabled={syncing} className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50">
               {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               {syncing ? 'Syncing…' : syncMsg || 'Sync Now'}
             </button>
           )}
           <button onClick={() => exportCSV(selectedClient, month, year, report)} disabled={!report}
-            className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50 whitespace-nowrap">
+            className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50 whitespace-nowrap">
             <Download className="h-4 w-4" /> Export CSV
           </button>
         </div>
@@ -151,12 +151,12 @@ export default function MetaAdsReportPage() {
         </div>
       )}
 
-      {loading && <div className="flex items-center justify-center py-16 text-slate-400 text-sm"><Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading report…</div>}
+      {loading && <div className="flex items-center justify-center py-16 text-slate-600 dark:text-slate-400 text-sm"><Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading report…</div>}
 
       {clientId && !loading && (
         <>
-          <p className="text-slate-400 text-sm mb-4">
-            Showing data for <span className="text-white font-medium">{selectedClient?.company_name}</span> — {MONTHS[month]} {year}
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
+            Showing data for <span className="text-slate-900 dark:text-white font-medium">{selectedClient?.company_name}</span> — {MONTHS[month]} {year}
             {report?.meta_period_start && <span className="ml-2 text-slate-500">({report.meta_period_start})</span>}
           </p>
 
@@ -175,8 +175,8 @@ export default function MetaAdsReportPage() {
                     <Icon className={`h-4 w-4 ${kpi.color}`} />
                   </div>
                   <div>
-                    <p className="text-xl font-bold text-white">{kpi.value}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{kpi.label}</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white">{kpi.value}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{kpi.label}</p>
                   </div>
                 </div>
               )
@@ -186,27 +186,27 @@ export default function MetaAdsReportPage() {
           {/* Summary stats */}
           {report && (
             <div className="glass-card p-5 mb-4">
-              <h2 className="font-semibold text-white mb-3">Performance Summary</h2>
+              <h2 className="font-semibold text-slate-900 dark:text-white mb-3">Performance Summary</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <p className="text-slate-400 text-xs">Revenue attributed</p>
-                  <p className="text-white font-semibold mt-0.5">{fmt(report.meta_revenue, '$', '', 2)}</p>
+                  <p className="text-slate-600 dark:text-slate-400 text-xs">Revenue attributed</p>
+                  <p className="text-slate-900 dark:text-white font-semibold mt-0.5">{fmt(report.meta_revenue, '$', '', 2)}</p>
                 </div>
                 <div>
-                  <p className="text-slate-400 text-xs">Conversions</p>
-                  <p className="text-white font-semibold mt-0.5">{fmt(report.meta_conversions)}</p>
+                  <p className="text-slate-600 dark:text-slate-400 text-xs">Conversions</p>
+                  <p className="text-slate-900 dark:text-white font-semibold mt-0.5">{fmt(report.meta_conversions)}</p>
                 </div>
                 <div>
-                  <p className="text-slate-400 text-xs">Cost per conversion</p>
-                  <p className="text-white font-semibold mt-0.5">
+                  <p className="text-slate-600 dark:text-slate-400 text-xs">Cost per conversion</p>
+                  <p className="text-slate-900 dark:text-white font-semibold mt-0.5">
                     {report.meta_conversions && report.meta_spend
                       ? `$${(report.meta_spend / report.meta_conversions).toFixed(2)}`
                       : '—'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-400 text-xs">Cost per click</p>
-                  <p className="text-white font-semibold mt-0.5">
+                  <p className="text-slate-600 dark:text-slate-400 text-xs">Cost per click</p>
+                  <p className="text-slate-900 dark:text-white font-semibold mt-0.5">
                     {report.meta_clicks && report.meta_spend
                       ? `$${(report.meta_spend / report.meta_clicks).toFixed(2)}`
                       : '—'}
@@ -217,20 +217,20 @@ export default function MetaAdsReportPage() {
           )}
 
           <div className="glass-card">
-            <div className="p-5 border-b border-white/[0.06]">
-              <h2 className="font-semibold text-white">Ad Account Summary</h2>
-              <p className="text-sm text-slate-400 mt-0.5">Account-level data (ad-set breakdown requires Meta Marketing API advanced access)</p>
+            <div className="p-5 border-b border-slate-900/10 dark:border-white/[0.06]">
+              <h2 className="font-semibold text-slate-900 dark:text-white">Ad Account Summary</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Account-level data (ad-set breakdown requires Meta Marketing API advanced access)</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/[0.06]">
+                  <tr className="border-b border-slate-900/10 dark:border-white/[0.06]">
                     {['Metric', 'Value'].map(h => (
-                      <th key={h} className="text-left text-xs font-medium text-slate-400 px-5 py-3">{h}</th>
+                      <th key={h} className="text-left text-xs font-medium text-slate-600 dark:text-slate-400 px-5 py-3">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.04]">
+                <tbody className="divide-y divide-slate-900/[0.06] dark:divide-white/[0.04]">
                   {report ? [
                     ['Reach', fmt(report.meta_reach)],
                     ['Impressions', fmt(report.meta_impressions)],
@@ -241,9 +241,9 @@ export default function MetaAdsReportPage() {
                     ['Revenue', fmt(report.meta_revenue, '$', '', 2)],
                     ['ROAS', fmt(report.meta_roas, '', 'x', 2)],
                   ].map(([label, value]) => (
-                    <tr key={label} className="hover:bg-white/[0.02]">
-                      <td className="px-5 py-3 text-slate-400 font-medium">{label}</td>
-                      <td className="px-5 py-3 text-white tabular-nums">{value}</td>
+                    <tr key={label} className="hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.02]">
+                      <td className="px-5 py-3 text-slate-600 dark:text-slate-400 font-medium">{label}</td>
+                      <td className="px-5 py-3 text-slate-900 dark:text-white tabular-nums">{value}</td>
                     </tr>
                   )) : (
                     <tr>

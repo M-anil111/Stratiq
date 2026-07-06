@@ -40,17 +40,17 @@ export default function DatabaseSettingsPage() {
             <Database className="h-5 w-5 text-sky-300" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-white">Database Updates</h1>
-            <p className="text-sm text-slate-400">Apply pending schema updates (migrations 010–034)</p>
+            <h1 className="text-lg font-semibold text-slate-900 dark:text-white">Database Updates</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Apply pending schema updates (migrations 010–034)</p>
           </div>
         </div>
 
-        <p className="text-sm text-slate-300 leading-relaxed mb-2">
+        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-2">
           This applies all pending database schema updates directly to your database. The updates are
-          idempotent — every statement uses <code className="text-slate-200">IF NOT EXISTS</code> or an
+          idempotent — every statement uses <code className="text-slate-800 dark:text-slate-200">IF NOT EXISTS</code> or an
           equivalent guard, so nothing is duplicated or destroyed.
         </p>
-        <p className="text-sm text-slate-400 leading-relaxed mb-6">
+        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
           It is completely safe to run this multiple times. If the schema is already up to date, running
           it again has no effect.
         </p>

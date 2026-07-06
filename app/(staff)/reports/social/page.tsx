@@ -54,7 +54,7 @@ function fmtDate(d: string | null) {
   return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-const selectClass = "bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+const selectClass = "bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 function PlatformBadge({ platform }: { platform: string }) {
   return (
@@ -70,11 +70,11 @@ function PlatformBadge({ platform }: { platform: string }) {
 function Tile({ label, value, icon: Icon, tone }: { label: string; value: string; icon: any; tone?: string }) {
   return (
     <div className="glass-card p-4">
-      <div className={`flex items-center gap-2 mb-2 ${tone || 'text-slate-400'}`}>
+      <div className={`flex items-center gap-2 mb-2 ${tone || 'text-slate-600 dark:text-slate-400'}`}>
         <Icon className="h-4 w-4" />
         <p className="text-xs font-medium uppercase tracking-wide">{label}</p>
       </div>
-      <p className="text-2xl font-bold text-white">{value}</p>
+      <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
     </div>
   )
 }
@@ -126,24 +126,24 @@ export default function SocialPublishingReportPage() {
   return (
     <div className="p-4 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Social Publishing Report</h1>
-        <p className="text-slate-400 text-sm mt-0.5">Publishing success, failures, and recent launches</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Social Publishing Report</h1>
+        <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">Publishing success, failures, and recent launches</p>
       </div>
 
       {/* Filter bar */}
       <div className="glass-card p-4 mb-6 flex flex-wrap gap-3 items-end">
         <div>
-          <label className="block text-xs text-slate-400 mb-1">From</label>
+          <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">From</label>
           <input type="date" value={start} onChange={e => setStart(e.target.value)} className={selectClass} />
         </div>
         <div>
-          <label className="block text-xs text-slate-400 mb-1">To</label>
+          <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">To</label>
           <input type="date" value={end} onChange={e => setEnd(e.target.value)} className={selectClass} />
         </div>
         {(start || end) && (
           <button
             onClick={() => { setStart(''); setEnd('') }}
-            className="text-sm text-slate-400 hover:text-white px-3 py-2.5"
+            className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white px-3 py-2.5"
           >
             Clear
           </button>
@@ -155,8 +155,8 @@ export default function SocialPublishingReportPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="glass-card p-4 animate-pulse">
-                <div className="h-3 w-16 bg-white/10 rounded mb-3" />
-                <div className="h-6 w-12 bg-white/10 rounded" />
+                <div className="h-3 w-16 bg-slate-900/10 dark:bg-white/10 rounded mb-3" />
+                <div className="h-6 w-12 bg-slate-900/10 dark:bg-white/10 rounded" />
               </div>
             ))}
           </div>
@@ -178,7 +178,7 @@ export default function SocialPublishingReportPage() {
           {/* Per-platform breakdown */}
           <div className="glass-card p-5 mb-6">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <h2 className="font-semibold text-white">Per-Platform Breakdown</h2>
+              <h2 className="font-semibold text-slate-900 dark:text-white">Per-Platform Breakdown</h2>
               <button
                 onClick={exportPlatforms}
                 disabled={!data.by_platform.length}
@@ -210,16 +210,16 @@ export default function SocialPublishingReportPage() {
                   </thead>
                   <tbody>
                     {data.by_platform.map(p => (
-                      <tr key={p.platform} className="border-t border-white/[0.06]">
+                      <tr key={p.platform} className="border-t border-slate-900/10 dark:border-white/[0.08]">
                         <td className="py-2.5"><PlatformBadge platform={p.platform} /></td>
                         <td className="py-2.5 text-right text-emerald-300">{fmt(p.published)}</td>
                         <td className="py-2.5 text-right text-rose-300">{fmt(p.failed)}</td>
-                        <td className="py-2.5 text-right text-slate-300">{fmt(p.engagement.likes)}</td>
-                        <td className="py-2.5 text-right text-slate-300">{fmt(p.engagement.comments_count)}</td>
-                        <td className="py-2.5 text-right text-slate-300">{fmt(p.engagement.shares)}</td>
-                        <td className="py-2.5 text-right text-slate-300">{fmt(p.engagement.impressions)}</td>
-                        <td className="py-2.5 text-right text-slate-300">{fmt(p.engagement.reach)}</td>
-                        <td className="py-2.5 text-right text-slate-300">{fmt(p.engagement.clicks)}</td>
+                        <td className="py-2.5 text-right text-slate-700 dark:text-slate-300">{fmt(p.engagement.likes)}</td>
+                        <td className="py-2.5 text-right text-slate-700 dark:text-slate-300">{fmt(p.engagement.comments_count)}</td>
+                        <td className="py-2.5 text-right text-slate-700 dark:text-slate-300">{fmt(p.engagement.shares)}</td>
+                        <td className="py-2.5 text-right text-slate-700 dark:text-slate-300">{fmt(p.engagement.impressions)}</td>
+                        <td className="py-2.5 text-right text-slate-700 dark:text-slate-300">{fmt(p.engagement.reach)}</td>
+                        <td className="py-2.5 text-right text-slate-700 dark:text-slate-300">{fmt(p.engagement.clicks)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -231,7 +231,7 @@ export default function SocialPublishingReportPage() {
           {/* Failures */}
           <div className="glass-card p-5 mb-6">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <h2 className="font-semibold text-white flex items-center gap-2">
+              <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-rose-400" /> Failures
               </h2>
               <button
@@ -261,16 +261,16 @@ export default function SocialPublishingReportPage() {
                   </thead>
                   <tbody>
                     {data.failures.map(f => (
-                      <tr key={f.id} className="border-t border-white/[0.06] align-top">
+                      <tr key={f.id} className="border-t border-slate-900/10 dark:border-white/[0.08] align-top">
                         <td className="py-3 pr-3"><PlatformBadge platform={f.platform} /></td>
-                        <td className="py-3 pr-3 text-slate-300 max-w-[360px]">
+                        <td className="py-3 pr-3 text-slate-700 dark:text-slate-300 max-w-[360px]">
                           <span className="text-rose-300">{f.failed_reason || 'Unknown error'}</span>
                           {f.content_preview && (
                             <span className="block text-slate-500 text-xs mt-0.5 line-clamp-1">{f.content_preview}</span>
                           )}
                         </td>
-                        <td className="py-3 text-right text-slate-300">{fmt(f.retry_count)}</td>
-                        <td className="py-3 pr-3 text-slate-400 whitespace-nowrap">{fmtDate(f.scheduled_date)}</td>
+                        <td className="py-3 text-right text-slate-700 dark:text-slate-300">{fmt(f.retry_count)}</td>
+                        <td className="py-3 pr-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{fmtDate(f.scheduled_date)}</td>
                         <td className="py-3">
                           <Link
                             href="/social"
@@ -289,7 +289,7 @@ export default function SocialPublishingReportPage() {
 
           {/* Launches */}
           <div className="glass-card p-5">
-            <h2 className="font-semibold text-white flex items-center gap-2 mb-4">
+            <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 mb-4">
               <Rocket className="h-4 w-4 text-emerald-400" /> Launches
             </h2>
             {data.launches.length === 0 ? (
@@ -298,12 +298,12 @@ export default function SocialPublishingReportPage() {
                 <p className="text-sm">No published posts in this range</p>
               </div>
             ) : (
-              <ul className="divide-y divide-white/[0.06]">
+              <ul className="divide-y divide-slate-900/10 dark:divide-white/[0.06]">
                 {data.launches.map(l => (
                   <li key={l.id} className="py-3 flex items-start gap-3">
                     <div className="pt-0.5"><PlatformBadge platform={l.platform} /></div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-slate-300 text-sm line-clamp-2">{l.content_snippet || '—'}</p>
+                      <p className="text-slate-700 dark:text-slate-300 text-sm line-clamp-2">{l.content_snippet || '—'}</p>
                       <p className="text-xs text-slate-500 mt-0.5">{fmtDate(l.published_at)}</p>
                     </div>
                     {l.permalink && (

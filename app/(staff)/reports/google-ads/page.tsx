@@ -19,7 +19,7 @@ interface Report {
   google_period_start: string | null
 }
 
-const selectClass = "bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+const selectClass = "bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 function fmt(val: number | null | undefined, prefix = '', suffix = '', decimals = 0) {
   if (val == null || val === 0 && suffix === 'x') return '—'
@@ -122,8 +122,8 @@ export default function GoogleAdsReportPage() {
     <div className="p-4 lg:p-8">
       <div className="flex items-start justify-between mb-6 flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Google Ads Report</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Monthly performance metrics from Google Ads</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Google Ads Report</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">Monthly performance metrics from Google Ads</p>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
           <select value={clientId} onChange={e => setClientId(e.target.value)} className={`${selectClass} min-w-[180px]`}>
@@ -137,13 +137,13 @@ export default function GoogleAdsReportPage() {
             {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           {clientId && (
-            <button onClick={handleSync} disabled={syncing} className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50">
+            <button onClick={handleSync} disabled={syncing} className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50">
               {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               {syncing ? 'Syncing…' : syncMsg || 'Sync Now'}
             </button>
           )}
           <button onClick={() => exportCSV(selectedClient, month, year, report, campaigns)} disabled={!report}
-            className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50 whitespace-nowrap">
+            className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50 whitespace-nowrap">
             <Download className="h-4 w-4" /> Export CSV
           </button>
         </div>
@@ -155,12 +155,12 @@ export default function GoogleAdsReportPage() {
         </div>
       )}
 
-      {loading && <div className="flex items-center justify-center py-16 text-slate-400 text-sm"><Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading report…</div>}
+      {loading && <div className="flex items-center justify-center py-16 text-slate-600 dark:text-slate-400 text-sm"><Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading report…</div>}
 
       {clientId && !loading && (
         <>
-          <p className="text-slate-400 text-sm mb-4">
-            Showing data for <span className="text-white font-medium">{selectedClient?.company_name}</span> — {MONTHS[month]} {year}
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
+            Showing data for <span className="text-slate-900 dark:text-white font-medium">{selectedClient?.company_name}</span> — {MONTHS[month]} {year}
             {report?.google_period_start && <span className="ml-2 text-slate-500">({report.google_period_start})</span>}
           </p>
 
@@ -180,8 +180,8 @@ export default function GoogleAdsReportPage() {
                     <Icon className={`h-4 w-4 ${kpi.color}`} />
                   </div>
                   <div>
-                    <p className="text-xl font-bold text-white">{kpi.value}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{kpi.label}</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white">{kpi.value}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{kpi.label}</p>
                   </div>
                 </div>
               )
@@ -190,20 +190,20 @@ export default function GoogleAdsReportPage() {
 
           {/* Campaigns table */}
           <div className="glass-card">
-            <div className="p-5 border-b border-white/[0.06]">
-              <h2 className="font-semibold text-white">Campaigns</h2>
-              <p className="text-sm text-slate-400 mt-0.5">Breakdown by campaign for this period</p>
+            <div className="p-5 border-b border-slate-900/10 dark:border-white/[0.06]">
+              <h2 className="font-semibold text-slate-900 dark:text-white">Campaigns</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Breakdown by campaign for this period</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/[0.06]">
+                  <tr className="border-b border-slate-900/10 dark:border-white/[0.06]">
                     {['Campaign', 'Impressions', 'Clicks', 'CTR', 'Conversions', 'Spend'].map(h => (
-                      <th key={h} className="text-left text-xs font-medium text-slate-400 px-5 py-3">{h}</th>
+                      <th key={h} className="text-left text-xs font-medium text-slate-600 dark:text-slate-400 px-5 py-3">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.04]">
+                <tbody className="divide-y divide-slate-900/[0.06] dark:divide-white/[0.04]">
                   {campaigns.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-5 py-10 text-center text-slate-500 text-sm">
@@ -211,13 +211,13 @@ export default function GoogleAdsReportPage() {
                       </td>
                     </tr>
                   ) : campaigns.map((c, i) => (
-                    <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-5 py-3 text-slate-200 font-medium">{c.name}</td>
-                      <td className="px-5 py-3 text-slate-300 tabular-nums">{(c.impressions || 0).toLocaleString()}</td>
-                      <td className="px-5 py-3 text-slate-300 tabular-nums">{(c.clicks || 0).toLocaleString()}</td>
-                      <td className="px-5 py-3 text-slate-300 tabular-nums">{c.ctr != null ? `${c.ctr}%` : '—'}</td>
-                      <td className="px-5 py-3 text-slate-300 tabular-nums">{(c.conversions || 0).toLocaleString()}</td>
-                      <td className="px-5 py-3 text-slate-300 tabular-nums">${(c.spend || 0).toFixed(2)}</td>
+                    <tr key={i} className="hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.02] transition-colors">
+                      <td className="px-5 py-3 text-slate-900 dark:text-slate-200 font-medium">{c.name}</td>
+                      <td className="px-5 py-3 text-slate-700 dark:text-slate-300 tabular-nums">{(c.impressions || 0).toLocaleString()}</td>
+                      <td className="px-5 py-3 text-slate-700 dark:text-slate-300 tabular-nums">{(c.clicks || 0).toLocaleString()}</td>
+                      <td className="px-5 py-3 text-slate-700 dark:text-slate-300 tabular-nums">{c.ctr != null ? `${c.ctr}%` : '—'}</td>
+                      <td className="px-5 py-3 text-slate-700 dark:text-slate-300 tabular-nums">{(c.conversions || 0).toLocaleString()}</td>
+                      <td className="px-5 py-3 text-slate-700 dark:text-slate-300 tabular-nums">${(c.spend || 0).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -43,8 +43,8 @@ export default function SettingsPage() {
   return (
     <div className="p-4 lg:p-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Settings</h1>
-        <p className="text-slate-400 text-sm">Configure Stratiq for your organization</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Settings</h1>
+        <p className="text-slate-600 dark:text-slate-400 text-sm">Configure Stratiq for your organization</p>
       </div>
 
       <div className="space-y-8">
@@ -54,12 +54,12 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {group.items.map(item => (
                 <Link key={item.href} href={item.href} className="flex items-start gap-4 p-5 glass-card hover:shadow-md transition-shadow group">
-                  <div className="p-3 bg-white/[0.05] rounded-xl text-slate-400 group-hover:bg-sky-500/10 group-hover:text-sky-400 transition-colors shrink-0">
+                  <div className="p-3 bg-slate-900/[0.04] dark:bg-white/[0.05] rounded-xl text-slate-600 dark:text-slate-400 group-hover:bg-sky-500/10 group-hover:text-sky-400 transition-colors shrink-0">
                     <item.icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">{item.label}</h3>
-                    <p className="text-sm text-slate-400 mt-0.5">{item.description}</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-white">{item.label}</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{item.description}</p>
                   </div>
                 </Link>
               ))}

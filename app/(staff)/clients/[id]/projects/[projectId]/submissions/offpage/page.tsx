@@ -12,7 +12,7 @@ const statusColors: Record<string, string> = {
   deleted: 'bg-red-500/15 text-red-400 border border-red-500/25',
 }
 
-const selectClass = "w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+const selectClass = "w-full bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 function today() {
   const now = new Date()
@@ -201,8 +201,8 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
   return (
     <div>
       <div className="glass-card">
-        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-white/[0.06]">
-          <h2 className="font-semibold text-white">Directory Citations ({entries.length})</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-slate-900/10 dark:border-white/[0.06]">
+          <h2 className="font-semibold text-slate-900 dark:text-white">Directory Citations ({entries.length})</h2>
           <button onClick={openAdd} className="btn-brand flex items-center gap-2 px-3 py-1.5 text-sm font-medium">
             <Plus className="h-4 w-4" />
             Add Submission
@@ -210,9 +210,9 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-slate-400"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
+          <div className="p-12 text-center text-slate-600 dark:text-slate-400"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
         ) : entries.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">
+          <div className="p-12 text-center text-slate-600 dark:text-slate-400">
             <p className="font-medium">No submissions yet</p>
             <p className="text-sm mt-1">Click &quot;Add Submission&quot; to log your first directory citation</p>
           </div>
@@ -226,11 +226,11 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.06]">
+              <tbody className="divide-y divide-slate-900/10 dark:divide-white/[0.06]">
                 {entries.map((entry, i) => (
-                  <tr key={entry.id} className="hover:bg-white/[0.03]">
+                  <tr key={entry.id} className="hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.03]">
                     <td className="px-4 py-3 text-slate-500">{i + 1}</td>
-                    <td className="px-4 py-3 font-medium text-white max-w-[160px] truncate">{displayDir(entry)}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white max-w-[160px] truncate">{displayDir(entry)}</td>
                     <td className="px-4 py-3">
                       {entry.website_url ? (
                         <a href={entry.website_url.startsWith('http') ? entry.website_url : `https://${entry.website_url}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sky-400 hover:text-sky-300 max-w-[140px] truncate">
@@ -243,21 +243,21 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
                         {entry.status?.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-400">{entry.submission_date || '—'}</td>
-                    <td className="px-4 py-3 text-slate-400 max-w-[120px] truncate">{entry.comment || '—'}</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{entry.submission_date || '—'}</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 max-w-[120px] truncate">{entry.comment || '—'}</td>
                     <td className="px-4 py-3">
                       {deleteId === entry.id ? (
                         <div className="flex items-center gap-1.5 text-xs bg-red-500/10 border border-red-500/20 rounded-xl px-2 py-1">
                           <span className="text-red-400">Delete?</span>
-                          <button onClick={() => setDeleteId(null)} className="px-2 py-0.5 border border-white/[0.10] rounded text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all">Cancel</button>
+                          <button onClick={() => setDeleteId(null)} className="px-2 py-0.5 border border-slate-900/10 dark:border-white/[0.10] rounded text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all">Cancel</button>
                           <button onClick={handleDelete} disabled={deleting} className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded disabled:opacity-60">
                             {deleting ? '...' : 'Delete'}
                           </button>
                         </div>
                       ) : (
                         <div className="flex gap-1">
-                          <button onClick={() => openEdit(entry)} className="p-1 text-slate-400 hover:text-sky-400"><Edit2 className="h-4 w-4" /></button>
-                          <button onClick={() => setDeleteId(entry.id)} className="p-1 text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
+                          <button onClick={() => openEdit(entry)} className="p-1 text-slate-600 dark:text-slate-400 hover:text-sky-400"><Edit2 className="h-4 w-4" /></button>
+                          <button onClick={() => setDeleteId(entry.id)} className="p-1 text-slate-600 dark:text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
                         </div>
                       )}
                     </td>
@@ -273,12 +273,12 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="glass w-full max-w-lg rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-lg font-semibold text-white">{editEntry ? 'Edit Directory Submission' : 'Add Directory Submission'}</h3>
-              <button onClick={closeModal}><X className="h-5 w-5 text-slate-400" /></button>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{editEntry ? 'Edit Directory Submission' : 'Add Directory Submission'}</h3>
+              <button onClick={closeModal}><X className="h-5 w-5 text-slate-600 dark:text-slate-400" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Directory <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Directory <span className="text-red-400">*</span></label>
                 <div className="relative" ref={comboRef}>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
@@ -292,15 +292,15 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
                     />
                   </div>
                   {dirOpen && (
-                    <div className="absolute z-10 mt-1 w-full rounded-xl border border-white/[0.12] bg-[#0f1729] shadow-xl max-h-64 overflow-y-auto">
+                    <div className="absolute z-10 mt-1 w-full rounded-xl border border-slate-900/10 dark:border-white/[0.12] bg-white dark:bg-[#0f1729] shadow-xl max-h-64 overflow-y-auto">
                       {addingInline ? (
                         <div className="p-3 space-y-2">
-                          <p className="text-xs text-slate-400">Add a new directory site</p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400">Add a new directory site</p>
                           <input className="input-glass text-sm" placeholder="Name" value={inlineName} onChange={e => setInlineName(e.target.value)} />
                           <input className="input-glass text-sm" placeholder="https://example.com" value={inlineUrl} onChange={e => setInlineUrl(e.target.value)} />
                           {comboError && <p className="text-xs text-red-400">{comboError}</p>}
                           <div className="flex gap-2">
-                            <button type="button" onClick={() => setAddingInline(false)} className="flex-1 px-3 py-1.5 rounded-lg border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] text-xs">Cancel</button>
+                            <button type="button" onClick={() => setAddingInline(false)} className="flex-1 px-3 py-1.5 rounded-lg border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] text-xs">Cancel</button>
                             <button type="button" onClick={createInlineSite} disabled={creatingSite} className="flex-1 btn-brand py-1.5 text-xs disabled:opacity-60 flex items-center justify-center gap-1">
                               {creatingSite ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                               {creatingSite ? 'Adding...' : 'Add & select'}
@@ -314,7 +314,7 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
                               type="button"
                               key={site.id}
                               onClick={() => selectSite(site)}
-                              className="w-full text-left px-3 py-2 text-sm text-white hover:bg-white/[0.06] flex items-center justify-between gap-2"
+                              className="w-full text-left px-3 py-2 text-sm text-slate-900 dark:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] flex items-center justify-between gap-2"
                             >
                               <span className="truncate">{site.domain || site.url}</span>
                               {site.category && <span className="text-xs text-slate-500 flex-shrink-0">{site.category}</span>}
@@ -327,7 +327,7 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
                             <button
                               type="button"
                               onClick={openInlineAdd}
-                              className="w-full text-left px-3 py-2 text-sm text-sky-400 hover:bg-sky-500/10 border-t border-white/[0.06] flex items-center gap-2"
+                              className="w-full text-left px-3 py-2 text-sm text-sky-400 hover:bg-sky-500/10 border-t border-slate-900/10 dark:border-white/[0.06] flex items-center gap-2"
                             >
                               <Plus className="h-4 w-4" /> Add &quot;{dirQuery.trim()}&quot; as a new directory site
                             </button>
@@ -341,27 +341,27 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
                 <input type="hidden" value={form.directory_name} readOnly />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">URL Submitted To <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">URL Submitted To <span className="text-red-400">*</span></label>
                 <input className="input-glass" value={form.website_url} onChange={set('website_url')} placeholder="https://example.com/submit" required />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Status <span className="text-red-400">*</span></label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status <span className="text-red-400">*</span></label>
                   <select className={selectClass} value={form.status} onChange={set('status')} required>
                     {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Date Submitted</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Date Submitted</label>
                   <input className="input-glass" type="date" value={form.submission_date} onChange={set('submission_date')} />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notes</label>
                 <textarea className="input-glass resize-none h-20" value={form.comment} onChange={set('comment')} placeholder="Optional notes..." />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={closeModal} className="flex-1 py-2.5 rounded-lg border border-white/[0.10] text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Cancel</button>
+                <button type="button" onClick={closeModal} className="flex-1 py-2.5 rounded-lg border border-slate-900/10 dark:border-white/[0.10] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all text-sm">Cancel</button>
                 <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-2.5 btn-brand disabled:opacity-60 text-sm font-medium">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   {saving ? 'Saving...' : editEntry ? 'Update' : 'Save'}

@@ -54,8 +54,8 @@ interface RoiSettings {
 
 // ---------- Formatting helpers ----------
 
-const selectClass = 'bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
-const inputClass = 'w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
+const selectClass = 'bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
+const inputClass = 'w-full bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
 
 function fmtCurrency(n: number, decimals = 2) {
   return `$${n.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`
@@ -251,12 +251,12 @@ export default function AdsAnalysisPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6 flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Ads Analysis</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Meta &amp; Google ads performance across all clients</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Ads Analysis</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">Meta &amp; Google ads performance across all clients</p>
         </div>
         <button
           onClick={() => setShowRoiModal(true)}
-          className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all"
+          className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all"
           title="ROI settings"
         >
           <Settings className="h-4 w-4" /> ROI Settings
@@ -294,19 +294,19 @@ export default function AdsAnalysisPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-4 mb-6">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="glass-card p-4 animate-pulse">
-                <div className="w-9 h-9 rounded-lg bg-white/[0.06] mb-3" />
-                <div className="h-5 w-16 bg-white/[0.08] rounded mb-2" />
-                <div className="h-3 w-20 bg-white/[0.05] rounded" />
+                <div className="w-9 h-9 rounded-lg bg-slate-900/[0.06] dark:bg-white/[0.06] mb-3" />
+                <div className="h-5 w-16 bg-slate-900/[0.08] dark:bg-white/[0.08] rounded mb-2" />
+                <div className="h-3 w-20 bg-slate-900/[0.05] dark:bg-white/[0.05] rounded" />
               </div>
             ))}
           </div>
           <div className="glass-card p-6 mb-6 animate-pulse">
-            <div className="h-4 w-40 bg-white/[0.08] rounded mb-6" />
-            <div className="h-48 bg-white/[0.04] rounded" />
+            <div className="h-4 w-40 bg-slate-900/[0.08] dark:bg-white/[0.08] rounded mb-6" />
+            <div className="h-48 bg-slate-900/[0.04] dark:bg-white/[0.04] rounded" />
           </div>
           <div className="glass-card p-6 animate-pulse">
-            <div className="h-4 w-48 bg-white/[0.08] rounded mb-4" />
-            {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-8 bg-white/[0.04] rounded mb-2" />)}
+            <div className="h-4 w-48 bg-slate-900/[0.08] dark:bg-white/[0.08] rounded mb-4" />
+            {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-8 bg-slate-900/[0.04] dark:bg-white/[0.04] rounded mb-2" />)}
           </div>
         </>
       )}
@@ -317,8 +317,8 @@ export default function AdsAnalysisPage() {
           <div className="w-14 h-14 rounded-2xl bg-sky-500/10 flex items-center justify-center mx-auto mb-4">
             <Plug className="h-7 w-7 text-sky-400" />
           </div>
-          <h2 className="text-lg font-semibold text-white mb-2">No ads data yet</h2>
-          <p className="text-sm text-slate-400 max-w-md mx-auto mb-6">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">No ads data yet</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-6">
             Connect your Meta and Google Ads accounts and map ad accounts to clients so Stratiq can sync
             performance data automatically. Once synced, this dashboard aggregates spend, clicks,
             conversions and ROI across every client.
@@ -341,8 +341,8 @@ export default function AdsAnalysisPage() {
                     <Icon className={`h-4 w-4 ${tile.color}`} />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-white truncate" title={tile.value}>{tile.value}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{tile.label}</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white truncate" title={tile.value}>{tile.value}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{tile.label}</p>
                   </div>
                 </div>
               )
@@ -353,10 +353,10 @@ export default function AdsAnalysisPage() {
           <div className="glass-card p-6 mb-6">
             <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
               <div>
-                <h2 className="font-semibold text-white">Spend over time</h2>
-                <p className="text-sm text-slate-400 mt-0.5">Monthly ad spend with {isEstimate ? 'estimated revenue' : 'revenue'} overlay</p>
+                <h2 className="font-semibold text-slate-900 dark:text-white">Spend over time</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Monthly ad spend with {isEstimate ? 'estimated revenue' : 'revenue'} overlay</p>
               </div>
-              <div className="flex items-center gap-4 text-xs text-slate-400">
+              <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
                 <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-sky-500" /> Spend</span>
                 <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/70" /> {isEstimate ? 'Est. Revenue' : 'Revenue'}</span>
               </div>
@@ -389,10 +389,10 @@ export default function AdsAnalysisPage() {
                 <p className="text-xs font-medium text-rose-400 uppercase tracking-wide mb-2">Highest cost per conversion</p>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-white font-semibold truncate">{cpcCallouts.highest.company_name}</span>
+                    <span className="text-slate-900 dark:text-white font-semibold truncate">{cpcCallouts.highest.company_name}</span>
                     <NetworkBadge network={cpcCallouts.highest.network} />
                   </div>
-                  <span className="text-lg font-bold text-white whitespace-nowrap">{fmtCurrency(cpcCallouts.highest.cost_per_conversion)}</span>
+                  <span className="text-lg font-bold text-slate-900 dark:text-white whitespace-nowrap">{fmtCurrency(cpcCallouts.highest.cost_per_conversion)}</span>
                 </div>
                 <p className="text-xs text-slate-500 mt-1.5">{fmtNum(cpcCallouts.highest.conversions)} conversions on {fmtCurrency(cpcCallouts.highest.spend)} spend</p>
               </div>
@@ -400,10 +400,10 @@ export default function AdsAnalysisPage() {
                 <p className="text-xs font-medium text-emerald-400 uppercase tracking-wide mb-2">Lowest cost per conversion</p>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-white font-semibold truncate">{cpcCallouts.lowest.company_name}</span>
+                    <span className="text-slate-900 dark:text-white font-semibold truncate">{cpcCallouts.lowest.company_name}</span>
                     <NetworkBadge network={cpcCallouts.lowest.network} />
                   </div>
-                  <span className="text-lg font-bold text-white whitespace-nowrap">{fmtCurrency(cpcCallouts.lowest.cost_per_conversion)}</span>
+                  <span className="text-lg font-bold text-slate-900 dark:text-white whitespace-nowrap">{fmtCurrency(cpcCallouts.lowest.cost_per_conversion)}</span>
                 </div>
                 <p className="text-xs text-slate-500 mt-1.5">{fmtNum(cpcCallouts.lowest.conversions)} conversions on {fmtCurrency(cpcCallouts.lowest.spend)} spend</p>
               </div>
@@ -412,14 +412,14 @@ export default function AdsAnalysisPage() {
 
           {/* Client x network table */}
           <div className="glass-card">
-            <div className="p-5 border-b border-white/[0.06] flex items-center justify-between flex-wrap gap-3">
+            <div className="p-5 border-b border-slate-900/10 dark:border-white/[0.06] flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h2 className="font-semibold text-white">Performance by client</h2>
-                <p className="text-sm text-slate-400 mt-0.5">One row per client and network for the selected period</p>
+                <h2 className="font-semibold text-slate-900 dark:text-white">Performance by client</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">One row per client and network for the selected period</p>
               </div>
               <button
                 onClick={() => setShowColumnsModal(true)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all"
               >
                 <Columns3 className="h-4 w-4" /> Manage columns
               </button>
@@ -427,22 +427,22 @@ export default function AdsAnalysisPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/[0.06]">
-                    <th className="text-left text-xs font-medium text-slate-400 px-5 py-3">
-                      <button onClick={() => handleSort('company_name')} className="flex items-center gap-1 hover:text-slate-200 transition-colors">
+                  <tr className="border-b border-slate-900/10 dark:border-white/[0.06]">
+                    <th className="text-left text-xs font-medium text-slate-600 dark:text-slate-400 px-5 py-3">
+                      <button onClick={() => handleSort('company_name')} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 transition-colors">
                         Client <SortIcon col="company_name" />
                       </button>
                     </th>
                     {ALL_COLUMNS.filter(c => columns[c.key]).map(c => (
-                      <th key={c.key} className="text-left text-xs font-medium text-slate-400 px-5 py-3 whitespace-nowrap">
-                        <button onClick={() => handleSort(c.key)} className="flex items-center gap-1 hover:text-slate-200 transition-colors">
+                      <th key={c.key} className="text-left text-xs font-medium text-slate-600 dark:text-slate-400 px-5 py-3 whitespace-nowrap">
+                        <button onClick={() => handleSort(c.key)} className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-200 transition-colors">
                           {c.key === 'revenue' && isEstimate ? 'Est. Revenue' : c.label} <SortIcon col={c.key} />
                         </button>
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.04]">
+                <tbody className="divide-y divide-slate-900/[0.06] dark:divide-white/[0.04]">
                   {sortedRows.length === 0 ? (
                     <tr>
                       <td colSpan={1 + ALL_COLUMNS.filter(c => columns[c.key]).length} className="px-5 py-10 text-center text-slate-500 text-sm">
@@ -450,17 +450,17 @@ export default function AdsAnalysisPage() {
                       </td>
                     </tr>
                   ) : sortedRows.map(row => (
-                    <tr key={`${row.client_id}-${row.network}`} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-5 py-3 text-slate-200 font-medium whitespace-nowrap">{row.company_name}</td>
+                    <tr key={`${row.client_id}-${row.network}`} className="hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.02] transition-colors">
+                      <td className="px-5 py-3 text-slate-900 dark:text-slate-200 font-medium whitespace-nowrap">{row.company_name}</td>
                       {columns.network && <td className="px-5 py-3"><NetworkBadge network={row.network} /></td>}
-                      {columns.spend && <td className="px-5 py-3 text-slate-300 tabular-nums">{fmtCurrency(row.spend)}</td>}
-                      {columns.impressions && <td className="px-5 py-3 text-slate-300 tabular-nums">{fmtNum(row.impressions)}</td>}
-                      {columns.clicks && <td className="px-5 py-3 text-slate-300 tabular-nums">{fmtNum(row.clicks)}</td>}
-                      {columns.ctr && <td className="px-5 py-3 text-slate-300 tabular-nums">{row.ctr.toFixed(2)}%</td>}
-                      {columns.conversions && <td className="px-5 py-3 text-slate-300 tabular-nums">{fmtNum(row.conversions)}</td>}
-                      {columns.cost_per_conversion && <td className="px-5 py-3 text-slate-300 tabular-nums">{row.conversions > 0 ? fmtCurrency(row.cost_per_conversion) : '—'}</td>}
-                      {columns.revenue && <td className="px-5 py-3 text-slate-300 tabular-nums">{fmtCurrency(row.revenue)}</td>}
-                      {columns.roas && <td className="px-5 py-3 text-slate-300 tabular-nums">{row.spend > 0 ? `${row.roas.toFixed(2)}x` : '—'}</td>}
+                      {columns.spend && <td className="px-5 py-3 text-slate-700 dark:text-slate-300 tabular-nums">{fmtCurrency(row.spend)}</td>}
+                      {columns.impressions && <td className="px-5 py-3 text-slate-700 dark:text-slate-300 tabular-nums">{fmtNum(row.impressions)}</td>}
+                      {columns.clicks && <td className="px-5 py-3 text-slate-700 dark:text-slate-300 tabular-nums">{fmtNum(row.clicks)}</td>}
+                      {columns.ctr && <td className="px-5 py-3 text-slate-700 dark:text-slate-300 tabular-nums">{row.ctr.toFixed(2)}%</td>}
+                      {columns.conversions && <td className="px-5 py-3 text-slate-700 dark:text-slate-300 tabular-nums">{fmtNum(row.conversions)}</td>}
+                      {columns.cost_per_conversion && <td className="px-5 py-3 text-slate-700 dark:text-slate-300 tabular-nums">{row.conversions > 0 ? fmtCurrency(row.cost_per_conversion) : '—'}</td>}
+                      {columns.revenue && <td className="px-5 py-3 text-slate-700 dark:text-slate-300 tabular-nums">{fmtCurrency(row.revenue)}</td>}
+                      {columns.roas && <td className="px-5 py-3 text-slate-700 dark:text-slate-300 tabular-nums">{row.spend > 0 ? `${row.roas.toFixed(2)}x` : '—'}</td>}
                     </tr>
                   ))}
                 </tbody>
@@ -473,22 +473,22 @@ export default function AdsAnalysisPage() {
       {/* Manage columns modal */}
       {showColumnsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowColumnsModal(false)}>
-          <div className="glass-card w-full max-w-sm p-6 bg-slate-900" onClick={e => e.stopPropagation()}>
+          <div className="glass-card w-full max-w-sm p-6 bg-white dark:bg-slate-900" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-white">Manage columns</h3>
-              <button onClick={() => setShowColumnsModal(false)} className="text-slate-400 hover:text-white transition-colors"><X className="h-4 w-4" /></button>
+              <h3 className="font-semibold text-slate-900 dark:text-white">Manage columns</h3>
+              <button onClick={() => setShowColumnsModal(false)} className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"><X className="h-4 w-4" /></button>
             </div>
             <p className="text-xs text-slate-500 mb-4">Choose which columns appear in the table. Your selection is saved on this device.</p>
             <div className="space-y-2 max-h-72 overflow-y-auto">
               {ALL_COLUMNS.map(c => (
-                <label key={c.key} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.04] cursor-pointer transition-colors">
+                <label key={c.key} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.04] cursor-pointer transition-colors">
                   <input
                     type="checkbox"
                     checked={columns[c.key]}
                     onChange={() => toggleColumn(c.key)}
-                    className="rounded border-white/20 bg-white/[0.06] text-sky-500 focus:ring-sky-500/50"
+                    className="rounded border-slate-900/20 dark:border-white/20 bg-slate-900/[0.04] dark:bg-white/[0.06] text-sky-500 focus:ring-sky-500/50"
                   />
-                  <span className="text-sm text-slate-200">{c.label}</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-200">{c.label}</span>
                 </label>
               ))}
             </div>
@@ -502,16 +502,16 @@ export default function AdsAnalysisPage() {
       {/* ROI settings modal */}
       {showRoiModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowRoiModal(false)}>
-          <div className="glass-card w-full max-w-md p-6 bg-slate-900" onClick={e => e.stopPropagation()}>
+          <div className="glass-card w-full max-w-md p-6 bg-white dark:bg-slate-900" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-white">ROI Settings</h3>
-              <button onClick={() => setShowRoiModal(false)} className="text-slate-400 hover:text-white transition-colors"><X className="h-4 w-4" /></button>
+              <h3 className="font-semibold text-slate-900 dark:text-white">ROI Settings</h3>
+              <button onClick={() => setShowRoiModal(false)} className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"><X className="h-4 w-4" /></button>
             </div>
             <p className="text-xs text-slate-500 mb-4">
               Choose how revenue and ROI are calculated for ads reporting across your organization.
             </p>
             <div className="space-y-3 mb-5">
-              <label className="flex items-start gap-3 p-3 rounded-xl border border-white/[0.08] hover:bg-white/[0.03] cursor-pointer transition-colors">
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-900/10 dark:border-white/[0.08] hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.03] cursor-pointer transition-colors">
                 <input
                   type="radio"
                   name="roi_mode"
@@ -520,11 +520,11 @@ export default function AdsAnalysisPage() {
                   className="mt-0.5"
                 />
                 <span>
-                  <span className="block text-sm font-medium text-slate-200">Revenue from synced data</span>
+                  <span className="block text-sm font-medium text-slate-700 dark:text-slate-200">Revenue from synced data</span>
                   <span className="block text-xs text-slate-500 mt-0.5">Use the conversion values reported by Meta and Google Ads.</span>
                 </span>
               </label>
-              <label className="flex items-start gap-3 p-3 rounded-xl border border-white/[0.08] hover:bg-white/[0.03] cursor-pointer transition-colors">
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-900/10 dark:border-white/[0.08] hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.03] cursor-pointer transition-colors">
                 <input
                   type="radio"
                   name="roi_mode"
@@ -533,7 +533,7 @@ export default function AdsAnalysisPage() {
                   className="mt-0.5"
                 />
                 <span>
-                  <span className="block text-sm font-medium text-slate-200">Estimate</span>
+                  <span className="block text-sm font-medium text-slate-700 dark:text-slate-200">Estimate</span>
                   <span className="block text-xs text-slate-500 mt-0.5">Estimate revenue as conversions × close rate × average sale price.</span>
                 </span>
               </label>
@@ -541,7 +541,7 @@ export default function AdsAnalysisPage() {
             {roiForm.mode === 'estimate' && (
               <div className="grid grid-cols-2 gap-3 mb-5">
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1.5">Average sale price ($)</label>
+                  <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5">Average sale price ($)</label>
                   <input
                     type="number" min="0" step="0.01"
                     value={roiForm.avgSalePrice}
@@ -550,7 +550,7 @@ export default function AdsAnalysisPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1.5">Close rate (0–1)</label>
+                  <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5">Close rate (0–1)</label>
                   <input
                     type="number" min="0" max="1" step="0.01"
                     value={roiForm.conversionRate}
@@ -565,7 +565,7 @@ export default function AdsAnalysisPage() {
             )}
             {roiError && <p className="text-xs text-rose-400 mb-4">{roiError}</p>}
             <div className="flex gap-3">
-              <button onClick={() => setShowRoiModal(false)} className="flex-1 px-4 py-2.5 border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] text-sm rounded-xl transition-all">
+              <button onClick={() => setShowRoiModal(false)} className="flex-1 px-4 py-2.5 border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] text-sm rounded-xl transition-all">
                 Cancel
               </button>
               <button

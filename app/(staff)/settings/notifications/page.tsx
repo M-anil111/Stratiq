@@ -229,14 +229,14 @@ export default function NotificationsPage() {
   if (loading) {
     return (
       <div className="p-4 lg:p-8 max-w-3xl mx-auto">
-        <div className="h-8 w-48 rounded-lg bg-white/[0.06] animate-pulse mb-6" />
-        <div className="h-10 w-full rounded-xl bg-white/[0.06] animate-pulse mb-4" />
+        <div className="h-8 w-48 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.06] animate-pulse mb-6" />
+        <div className="h-10 w-full rounded-xl bg-slate-900/[0.04] dark:bg-white/[0.06] animate-pulse mb-4" />
         <div className="space-y-4">
           {[0, 1, 2].map(i => (
             <div key={i} className="glass-card rounded-2xl p-5 space-y-3">
-              <div className="h-4 w-32 rounded bg-white/[0.08] animate-pulse" />
-              <div className="h-4 w-full rounded bg-white/[0.05] animate-pulse" />
-              <div className="h-4 w-3/4 rounded bg-white/[0.05] animate-pulse" />
+              <div className="h-4 w-32 rounded bg-slate-900/[0.06] dark:bg-white/[0.08] animate-pulse" />
+              <div className="h-4 w-full rounded bg-slate-900/[0.04] dark:bg-white/[0.05] animate-pulse" />
+              <div className="h-4 w-3/4 rounded bg-slate-900/[0.04] dark:bg-white/[0.05] animate-pulse" />
             </div>
           ))}
         </div>
@@ -248,12 +248,12 @@ export default function NotificationsPage() {
     <div className="p-4 lg:p-8 max-w-3xl mx-auto">
       <div className="flex items-start justify-between mb-5 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Bell className="h-6 w-6 text-sky-400" /> Notifications
           </h1>
-          <p className="text-slate-400 text-sm mt-0.5">Choose what you get notified about and where</p>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">Choose what you get notified about and where</p>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-slate-400 shrink-0 h-8">
+        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 shrink-0 h-8">
           {saving ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving…</>)
             : saved ? (<><Check className="h-3.5 w-3.5 text-emerald-400" /> Saved</>)
               : null}
@@ -261,19 +261,19 @@ export default function NotificationsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.06] mb-4 w-full sm:w-auto sm:inline-flex">
+      <div className="flex gap-1 p-1 rounded-xl bg-slate-900/[0.04] dark:bg-white/[0.04] border border-slate-900/10 dark:border-white/[0.06] mb-4 w-full sm:w-auto sm:inline-flex">
         <button onClick={() => setTab('desktop')}
-          className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === 'desktop' ? 'bg-sky-500/20 text-sky-300' : 'text-slate-400 hover:text-slate-200'}`}>
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === 'desktop' ? 'bg-sky-500/20 text-sky-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>
           <Monitor className="h-4 w-4" /> Email & Bell
         </button>
         <button onClick={() => setTab('mobile')}
-          className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === 'mobile' ? 'bg-sky-500/20 text-sky-300' : 'text-slate-400 hover:text-slate-200'}`}>
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === 'mobile' ? 'bg-sky-500/20 text-sky-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>
           <Smartphone className="h-4 w-4" /> Mobile
         </button>
       </div>
 
       {tab === 'mobile' && (
-        <div className="glass-card rounded-xl px-4 py-3 mb-4 text-xs text-slate-400 flex items-start gap-2">
+        <div className="glass-card rounded-xl px-4 py-3 mb-4 text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
           <Smartphone className="h-4 w-4 text-sky-400 shrink-0 mt-0.5" />
           <span>There isn&apos;t a separate mobile app yet — mobile push mirrors your Bell settings below. The &ldquo;Push&rdquo; column controls what would be pushed to your phone once the app ships.</span>
         </div>
@@ -288,11 +288,11 @@ export default function NotificationsPage() {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search notifications…"
-            className="w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 placeholder:text-slate-500"
+            className="w-full bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 placeholder:text-slate-500"
           />
         </div>
         <button onClick={turnOffAll}
-          className="shrink-0 px-4 py-2 rounded-xl text-sm font-medium text-slate-300 bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.08] transition-colors">
+          className="shrink-0 px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-900/[0.04] dark:bg-white/[0.05] border border-slate-900/10 dark:border-white/[0.1] hover:bg-slate-900/[0.08] dark:hover:bg-white/[0.08] transition-colors">
           Turn off all
         </button>
       </div>
@@ -310,17 +310,17 @@ export default function NotificationsPage() {
               <button
                 type="button"
                 onClick={() => setCollapsed(c => ({ ...c, [group.key]: !c[group.key] }))}
-                className="w-full flex items-center gap-2 px-5 py-3 border-b border-white/[0.06] bg-white/[0.02] text-left"
+                className="w-full flex items-center gap-2 px-5 py-3 border-b border-slate-900/10 dark:border-white/[0.06] bg-slate-900/[0.03] dark:bg-white/[0.02] text-left"
               >
                 <group.icon className="h-4 w-4 text-sky-400 shrink-0" />
-                <span className="text-sm font-semibold text-slate-200 flex-1">{group.label}</span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-slate-200 flex-1">{group.label}</span>
                 <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
               </button>
 
               {!isCollapsed && (
                 <div>
                   {/* Column headers (once per section) — hidden on narrow screens where rows stack */}
-                  <div className="hidden sm:flex items-center px-5 py-2 border-b border-white/[0.04]">
+                  <div className="hidden sm:flex items-center px-5 py-2 border-b border-slate-900/10 dark:border-white/[0.04]">
                     <div className="flex-1" />
                     <div className="flex items-center gap-6 shrink-0">
                       {CHANNELS.map(c => (
@@ -331,17 +331,17 @@ export default function NotificationsPage() {
                     </div>
                   </div>
 
-                  <div className="divide-y divide-white/[0.04]">
+                  <div className="divide-y divide-slate-900/10 dark:divide-white/[0.04]">
                     {group.topics.map(topic => {
                       const ch = prefs[topic.key] || { email: false, bell: false, popup: false }
                       const locked = !!topic.locked
                       return (
                         <div key={topic.key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-5 py-3.5">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-200">
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-200">
                               {topic.label}
                               {locked && (
-                                <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-medium text-slate-400 bg-white/[0.06] rounded-full px-1.5 py-0.5 align-middle">
+                                <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-medium text-slate-600 dark:text-slate-400 bg-slate-900/[0.04] dark:bg-white/[0.06] rounded-full px-1.5 py-0.5 align-middle">
                                   <ShieldCheck className="h-2.5 w-2.5" /> Always on
                                 </span>
                               )}
@@ -380,10 +380,10 @@ export default function NotificationsPage() {
 
       {/* Notification Recipients (org-level) */}
       <div className="glass-card rounded-2xl overflow-hidden my-6">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06] bg-white/[0.02]">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-900/10 dark:border-white/[0.06] bg-slate-900/[0.03] dark:bg-white/[0.02]">
           <div className="flex items-center gap-2">
             <Mail className="h-4 w-4 text-sky-400" />
-            <span className="text-sm font-semibold text-slate-200">Client Notification Recipients</span>
+            <span className="text-sm font-semibold text-slate-900 dark:text-slate-200">Client Notification Recipients</span>
           </div>
           <button onClick={saveRecipients} disabled={savingRecipients}
             className="flex items-center gap-1.5 text-xs btn-brand px-3 py-1.5 rounded-lg font-medium disabled:opacity-60">
@@ -392,7 +392,7 @@ export default function NotificationsPage() {
           </button>
         </div>
         <div className="p-5 space-y-3">
-          <p className="text-xs text-slate-400">These email addresses receive a notification whenever a new client is added. Typically your accountant, sales agent, marketing manager, etc.</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400">These email addresses receive a notification whenever a new client is added. Typically your accountant, sales agent, marketing manager, etc.</p>
           <div className="flex flex-wrap gap-2 min-h-[40px]">
             {recipientEmails.map(email => (
               <span key={email} className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/20 px-3 py-1 text-sm">
@@ -407,7 +407,7 @@ export default function NotificationsPage() {
           <div className="flex gap-2">
             <input
               type="email"
-              className="flex-1 bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 placeholder:text-slate-500"
+              className="flex-1 bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 placeholder:text-slate-500"
               placeholder="accountant@example.com"
               value={recipientInput}
               onChange={e => setRecipientInput(e.target.value)}

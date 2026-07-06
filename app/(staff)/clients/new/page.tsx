@@ -156,7 +156,7 @@ const SERVICE_DELIVERABLES: Record<string, DeliverableField[]> = {
 function Field({ label, required, children, hint, filled }: { label: React.ReactNode; required?: boolean; children: React.ReactNode; hint?: string; filled?: boolean }) {
   return (
     <div>
-      <label className="flex items-center gap-1.5 text-sm font-medium text-slate-300 mb-1.5">
+      <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
         {label}{required && <span className="text-red-400 ml-0.5">*</span>}
         {filled && <span className="text-[10px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">Auto-filled</span>}
       </label>
@@ -166,7 +166,7 @@ function Field({ label, required, children, hint, filled }: { label: React.React
   )
 }
 
-const sel = "w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+const sel = "w-full bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 function TagInput({ value, onChange, placeholder }: { value: string[]; onChange: (v: string[]) => void; placeholder?: string }) {
   const [input, setInput] = useState('')
@@ -176,7 +176,7 @@ function TagInput({ value, onChange, placeholder }: { value: string[]; onChange:
     setInput('')
   }
   return (
-    <div className="min-h-[42px] w-full rounded-lg border border-white/[0.12] bg-[rgba(255,255,255,0.06)] px-3 py-2 flex flex-wrap gap-1.5 focus-within:ring-2 focus-within:ring-sky-500/50">
+    <div className="min-h-[42px] w-full rounded-lg border border-slate-900/10 dark:border-white/[0.12] bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] px-3 py-2 flex flex-wrap gap-1.5 focus-within:ring-2 focus-within:ring-sky-500/50">
       {value.map(t => (
         <span key={t} className="inline-flex items-center gap-1 rounded-full bg-sky-500/20 text-sky-300 px-2.5 py-0.5 text-sm">
           {t}
@@ -187,7 +187,7 @@ function TagInput({ value, onChange, placeholder }: { value: string[]; onChange:
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); add(input) } }}
         onBlur={() => { if (input.trim()) add(input) }}
         placeholder={value.length === 0 ? placeholder : ''}
-        className="flex-1 min-w-[100px] bg-transparent text-sm text-white outline-none placeholder:text-slate-500" />
+        className="flex-1 min-w-[100px] bg-transparent text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-500" />
     </div>
   )
 }
@@ -200,7 +200,7 @@ function MultiChip({ options, value, onChange }: { options: string[]; value: str
         <button key={o} type="button" onClick={() => toggle(o)}
           className={`px-3 py-1.5 rounded-full text-sm border transition-all ${value.includes(o)
             ? 'bg-sky-500 border-sky-500 text-white'
-            : 'bg-white/[0.05] border-white/[0.12] text-slate-300 hover:border-sky-400'}`}>
+            : 'bg-slate-900/[0.04] dark:bg-white/[0.05] border-slate-900/10 dark:border-white/[0.12] text-slate-700 dark:text-slate-300 hover:border-sky-400'}`}>
           {o}
         </button>
       ))}
@@ -291,7 +291,7 @@ function PlacesInput({ value, onChange, onDetails }: {
           placeholder="Search Google Business or type name…" required
           onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)} />
-        {(loading || fetching) && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 animate-spin" />}
+        {(loading || fetching) && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600 dark:text-slate-400 animate-spin" />}
       </div>
       {fetching && (
         <p className="text-xs text-sky-400 mt-1.5 flex items-center gap-1.5">
@@ -299,18 +299,18 @@ function PlacesInput({ value, onChange, onDetails }: {
         </p>
       )}
       {showDropdown && (
-        <div className="absolute z-50 mt-1 w-full rounded-xl border border-white/[0.12] bg-[#0f1929] shadow-2xl overflow-hidden">
+        <div className="absolute z-50 mt-1 w-full rounded-xl border border-slate-900/10 dark:border-white/[0.12] bg-white dark:bg-[#0f1929] shadow-2xl overflow-hidden">
           {results.length > 0 ? (
             <>
               {results.map(r => (
                 <button key={r.place_id} type="button"
-                  className="w-full text-left px-4 py-3 hover:bg-white/[0.06] transition-colors border-b border-white/[0.05] last:border-0"
+                  className="w-full text-left px-4 py-3 hover:bg-white/[0.06] transition-colors border-b border-slate-900/10 dark:border-white/[0.05] last:border-0"
                   onClick={() => selectPlace(r)}>
-                  <p className="text-sm font-medium text-white">{r.name}</p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">{r.name}</p>
                   <p className="text-xs text-slate-500 mt-0.5">{r.address}</p>
                 </button>
               ))}
-              <div className="px-4 py-2 bg-white/[0.02] flex items-center justify-between">
+              <div className="px-4 py-2 bg-slate-900/[0.04] dark:bg-white/[0.02] flex items-center justify-between">
                 <p className="text-xs text-slate-600">Not listed?</p>
                 <button type="button" onClick={useManualName}
                   className="text-xs text-sky-400 hover:text-sky-300 font-medium">
@@ -320,7 +320,7 @@ function PlacesInput({ value, onChange, onDetails }: {
             </>
           ) : (
             <div className="px-4 py-3 flex items-center justify-between">
-              <p className="text-sm text-slate-400">No Google matches found.</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">No Google matches found.</p>
               <button type="button" onClick={useManualName}
                 className="text-sm text-sky-400 hover:text-sky-300 font-medium shrink-0 ml-3">
                 Add manually →
@@ -356,11 +356,11 @@ function ServicePackageCard({ pkg, onUpdate, onRemove }: { pkg: ServicePackage; 
   const fields = SERVICE_DELIVERABLES[pkg.service] || []
   const setDel = (key: string, val: any) => onUpdate({ ...pkg, deliverables: { ...pkg.deliverables, [key]: val } })
   return (
-    <div className="border border-white/[0.12] rounded-2xl overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 bg-sky-500/10 border-b border-white/[0.08]">
+    <div className="border border-slate-900/10 dark:border-white/[0.12] rounded-2xl overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 bg-sky-500/10 border-b border-slate-900/10 dark:border-white/[0.08]">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-sky-400" />
-          <span className="font-semibold text-white">{pkg.service}</span>
+          <span className="font-semibold text-slate-900 dark:text-white">{pkg.service}</span>
         </div>
         <button type="button" onClick={onRemove} className="text-slate-500 hover:text-red-400 transition-colors"><X className="h-4 w-4" /></button>
       </div>
@@ -427,12 +427,12 @@ function StepBar({ current }: { current: number }) {
         return (
           <div key={s.label} className="flex items-center flex-1 last:flex-none">
             <div className={`flex items-center gap-2 ${active ? 'text-sky-400' : done ? 'text-emerald-400' : 'text-slate-600'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 shrink-0 transition-all ${done ? 'border-emerald-400 bg-emerald-400/10' : active ? 'border-sky-400 bg-sky-400/10' : 'border-white/[0.12] bg-white/[0.03]'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 shrink-0 transition-all ${done ? 'border-emerald-400 bg-emerald-400/10' : active ? 'border-sky-400 bg-sky-400/10' : 'border-slate-900/10 dark:border-white/[0.12] bg-slate-900/[0.04] dark:bg-white/[0.03]'}`}>
                 {done ? <Check className="h-4 w-4" /> : <s.icon className="h-4 w-4" />}
               </div>
               <span className="text-sm font-medium hidden sm:block">{s.label}</span>
             </div>
-            {i < STEPS.length - 1 && <div className={`flex-1 h-px mx-3 ${i < current ? 'bg-emerald-400/40' : 'bg-white/[0.08]'}`} />}
+            {i < STEPS.length - 1 && <div className={`flex-1 h-px mx-3 ${i < current ? 'bg-emerald-400/40' : 'bg-slate-900/[0.04] dark:bg-white/[0.08]'}`} />}
           </div>
         )
       })}
@@ -443,7 +443,7 @@ function StepBar({ current }: { current: number }) {
 function ReviewRow({ label, value }: { label: string; value?: string | string[] | null }) {
   if (!value || (Array.isArray(value) && value.length === 0)) return null
   return (
-    <div className="flex gap-3 py-2 border-b border-white/[0.06] last:border-0">
+    <div className="flex gap-3 py-2 border-b border-slate-900/10 dark:border-white/[0.06] last:border-0">
       <span className="text-slate-500 text-sm w-40 shrink-0">{label}</span>
       <span className="text-slate-200 text-sm">{Array.isArray(value) ? value.join(', ') : value}</span>
     </div>
@@ -646,11 +646,11 @@ export default function NewClientPage() {
               <CheckCircle className="h-10 w-10 text-emerald-400" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Client Created!</h2>
-          <p className="text-slate-300 font-medium mb-1">{success.name}</p>
-          <p className="text-slate-400 text-sm mb-1">Notifications sent to your team</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Client Created!</h2>
+          <p className="text-slate-700 dark:text-slate-300 font-medium mb-1">{success.name}</p>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-1">Notifications sent to your team</p>
           <p className="text-slate-500 text-xs mb-6">The client is now active in Stratiq. You can link QuickBooks from the client&apos;s Integrations tab.</p>
-          <p className="text-slate-400 text-sm flex items-center justify-center gap-2">
+          <p className="text-slate-600 dark:text-slate-400 text-sm flex items-center justify-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" /> Taking you to the client dashboard…
           </p>
           <button onClick={() => router.push(`/clients/${success.id}`)} className="btn-brand mt-6 px-6 py-2.5 font-medium rounded-lg">Go Now</button>
@@ -663,11 +663,11 @@ export default function NewClientPage() {
     <div className="p-4 lg:p-8 max-w-4xl mx-auto">
       <div className="flex items-center gap-3 mb-8">
         <Link href="/clients" className="p-2 hover:bg-white/[0.06] rounded-lg transition-colors">
-          <ChevronLeft className="h-5 w-5 text-slate-400" />
+          <ChevronLeft className="h-5 w-5 text-slate-600 dark:text-slate-400" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-white">Add New Client</h1>
-          <p className="text-sm text-slate-400">Complete all steps to onboard and set up billing</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Add New Client</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Complete all steps to onboard and set up billing</p>
         </div>
       </div>
 
@@ -680,8 +680,8 @@ export default function NewClientPage() {
           {/* Contact Person */}
           <div className="glass-card p-6 space-y-4">
             <div>
-              <h2 className="text-lg font-semibold text-white mb-0.5">Contact Person</h2>
-              <p className="text-sm text-slate-400">The individual who owns or manages this business. One person can have multiple businesses.</p>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-0.5">Contact Person</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400">The individual who owns or manages this business. One person can have multiple businesses.</p>
             </div>
 
             {/* Mode: search */}
@@ -713,12 +713,12 @@ export default function NewClientPage() {
                       }
                     }}
                   />
-                  {contactSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />}
+                  {contactSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-600 dark:text-slate-400" />}
                 </div>
 
                 {/* Results dropdown */}
                 {contactResults.length > 0 && (
-                  <div className="rounded-xl border border-white/[0.12] bg-[#0a1628] overflow-hidden">
+                  <div className="rounded-xl border border-slate-900/10 dark:border-white/[0.12] bg-white dark:bg-[#0a1628] overflow-hidden">
                     {contactResults.map((contact, idx) => (
                       <button key={`${contact.businesses[0]?.id || idx}`} type="button"
                         onClick={() => {
@@ -734,8 +734,8 @@ export default function NewClientPage() {
                           setContactResults([])
                           setContactSearched(false)
                         }}
-                        className="w-full text-left px-4 py-3 hover:bg-white/[0.06] border-b border-white/[0.05] last:border-0 transition-colors">
-                        <p className="text-sm font-semibold text-white">{contact.businesses[0]?.company_name || `${contact.contact_first_name} ${contact.contact_last_name}`}</p>
+                        className="w-full text-left px-4 py-3 hover:bg-white/[0.06] border-b border-slate-900/10 dark:border-white/[0.05] last:border-0 transition-colors">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white">{contact.businesses[0]?.company_name || `${contact.contact_first_name} ${contact.contact_last_name}`}</p>
                         <p className="text-xs text-slate-500 mt-0.5">{contact.contact_first_name} {contact.contact_last_name}</p>
                       </button>
                     ))}
@@ -744,8 +744,8 @@ export default function NewClientPage() {
 
                 {/* No results → show Add New button */}
                 {contactSearched && contactResults.length === 0 && !contactSearching && (
-                  <div className="flex items-center justify-between rounded-xl border border-white/[0.10] bg-white/[0.03] px-4 py-3">
-                    <p className="text-sm text-slate-400">No existing contact found for &ldquo;{contactSearch}&rdquo;</p>
+                  <div className="flex items-center justify-between rounded-xl border border-slate-900/10 dark:border-white/[0.10] bg-slate-900/[0.04] dark:bg-white/[0.03] px-4 py-3">
+                    <p className="text-sm text-slate-600 dark:text-slate-400">No existing contact found for &ldquo;{contactSearch}&rdquo;</p>
                     <button type="button"
                       onClick={() => {
                         const parts = contactSearch.trim().split(' ')
@@ -775,7 +775,7 @@ export default function NewClientPage() {
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-white">{form.contact_first_name} {form.contact_last_name}</p>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{form.contact_first_name} {form.contact_last_name}</p>
                     <p className="text-xs text-emerald-400">Linked to existing contact</p>
                   </div>
                 </div>
@@ -790,7 +790,7 @@ export default function NewClientPage() {
             {contactMode === 'new' && (
               <>
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">New Contact</p>
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">New Contact</p>
                   <button type="button" onClick={() => {
                     setContactMode('search')
                     setForm(f => ({ ...f, contact_first_name: '', contact_last_name: '' }))
@@ -815,8 +815,8 @@ export default function NewClientPage() {
           {/* Business Info */}
           <div className="glass-card p-6 space-y-5">
           <div>
-            <h2 className="text-lg font-semibold text-white mb-0.5">Business Information</h2>
-            <p className="text-sm text-slate-400">Search Google Business or type the company name manually</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-0.5">Business Information</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Search Google Business or type the company name manually</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="sm:col-span-2">
@@ -849,8 +849,8 @@ export default function NewClientPage() {
                 onBlur={e => fetchLogoForWebsite(e.target.value)}
                 placeholder="example.com" required />
               {(form.logo_url || logoCandidates) && (
-                <div className="mt-2.5 flex items-center gap-3 rounded-lg border border-white/[0.10] bg-white/[0.03] px-3 py-2">
-                  <div className="h-10 w-10 rounded-lg bg-white/[0.06] border border-white/[0.08] flex items-center justify-center overflow-hidden shrink-0">
+                <div className="mt-2.5 flex items-center gap-3 rounded-lg border border-slate-900/10 dark:border-white/[0.10] bg-slate-900/[0.04] dark:bg-white/[0.03] px-3 py-2">
+                  <div className="h-10 w-10 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.06] border border-slate-900/10 dark:border-white/[0.08] flex items-center justify-center overflow-hidden shrink-0">
                     {form.logo_url ? (
                       <img src={form.logo_url} alt="Client logo"
                         className="max-h-9 max-w-9 object-contain"
@@ -866,7 +866,7 @@ export default function NewClientPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-slate-300">Logo from website</p>
+                    <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Logo from website</p>
                     <p className="text-[11px] text-slate-500 truncate">{form.logo_url ? 'Auto-picked — saved with the client' : 'No logo found'}</p>
                   </div>
                   {form.logo_url && (
@@ -926,7 +926,7 @@ export default function NewClientPage() {
                           if (opt.mode === 'business') setForm(f => ({ ...f, display_name: '' }))
                           else if (opt.mode === 'contact') setForm(f => ({ ...f, display_name: [f.contact_first_name, f.contact_last_name].filter(Boolean).join(' ') }))
                         }}
-                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border text-left transition-all ${displayNameMode === opt.mode ? 'border-sky-500 bg-sky-500/10 text-white' : 'border-white/[0.10] bg-white/[0.03] text-slate-400 hover:border-white/20'}`}>
+                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border text-left transition-all ${displayNameMode === opt.mode ? 'border-sky-500 bg-sky-500/10 text-slate-900 dark:text-white' : 'border-slate-900/10 dark:border-white/[0.10] bg-slate-900/[0.04] dark:bg-white/[0.03] text-slate-600 dark:text-slate-400 hover:border-white/20'}`}>
                         <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${displayNameMode === opt.mode ? 'border-sky-500' : 'border-white/30'}`}>
                           {displayNameMode === opt.mode && <div className="w-2 h-2 rounded-full bg-sky-500" />}
                         </div>
@@ -960,10 +960,10 @@ export default function NewClientPage() {
               </label>
               {isSubClient && (
                 <div className="mt-3 ml-8">
-                  <label className="text-xs font-medium text-slate-400 mb-1.5 block">Parent Client</label>
+                  <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 block">Parent Client</label>
                   {parentSelected ? (
                     <div className="flex items-center justify-between rounded-lg border border-violet-500/30 bg-violet-500/5 px-4 py-2.5">
-                      <span className="text-sm font-medium text-white">{parentSelected.name}</span>
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">{parentSelected.name}</span>
                       <button type="button" onClick={() => { setParentSelected(null); setForm(f => ({ ...f, parent_client_id: '' })) }}
                         className="text-xs text-slate-500 hover:text-slate-300">Change</button>
                     </div>
@@ -988,14 +988,14 @@ export default function NewClientPage() {
                           } else { setParentResults([]) }
                         }}
                       />
-                      {parentSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />}
+                      {parentSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-600 dark:text-slate-400" />}
                       {parentResults.length > 0 && (
-                        <div className="absolute z-50 mt-1 w-full rounded-xl border border-white/[0.12] bg-[#0a1628] shadow-2xl overflow-hidden">
+                        <div className="absolute z-50 mt-1 w-full rounded-xl border border-slate-900/10 dark:border-white/[0.12] bg-white dark:bg-[#0a1628] shadow-2xl overflow-hidden">
                           {parentResults.map((c: any) => (
                             <button key={c.id} type="button"
                               onClick={() => { setParentSelected({ id: c.id, name: c.display_name || c.company_name }); setForm(f => ({ ...f, parent_client_id: c.id })); setParentSearch(''); setParentResults([]) }}
-                              className="w-full text-left px-4 py-3 hover:bg-white/[0.06] border-b border-white/[0.05] last:border-0 transition-colors">
-                              <p className="text-sm font-medium text-white">{c.display_name || c.company_name}</p>
+                              className="w-full text-left px-4 py-3 hover:bg-white/[0.06] border-b border-slate-900/10 dark:border-white/[0.05] last:border-0 transition-colors">
+                              <p className="text-sm font-medium text-slate-900 dark:text-white">{c.display_name || c.company_name}</p>
                               {c.contact_first_name && <p className="text-xs text-slate-500 mt-0.5">{c.contact_first_name} {c.contact_last_name}</p>}
                             </button>
                           ))}
@@ -1031,8 +1031,8 @@ export default function NewClientPage() {
 
           {/* Team Assignment */}
           {users.length > 0 && (
-            <div className="border-t border-white/[0.08] pt-6">
-              <h3 className="text-sm font-semibold text-white mb-4">Team Assignment</h3>
+            <div className="border-t border-slate-900/10 dark:border-white/[0.08] pt-6">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">Team Assignment</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <Field label={<>Sales Manager <InfoTooltip content="The team member responsible for the client relationship and upsell opportunities." /></>}>
                   <select className={sel} value={form.sales_manager_id} onChange={setFE('sales_manager_id')}>
@@ -1062,8 +1062,8 @@ export default function NewClientPage() {
       {step === 1 && (
         <div className="space-y-6">
           <div className="glass-card p-6">
-            <h2 className="text-lg font-semibold text-white mb-0.5">Services & Packages</h2>
-            <p className="text-sm text-slate-400 mb-5">Select all services. Each one expands with deliverables and pricing.</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-0.5">Services & Packages</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">Select all services. Each one expands with deliverables and pricing.</p>
             <div className="flex flex-wrap gap-2">
               {SERVICES.map(svc => {
                 const selected = !!packages.find(p => p.service === svc)
@@ -1071,7 +1071,7 @@ export default function NewClientPage() {
                   <button key={svc} type="button" onClick={() => toggleService(svc)}
                     className={`px-3 py-2 rounded-xl text-sm border transition-all font-medium ${selected
                       ? 'bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-500/20'
-                      : 'bg-white/[0.05] border-white/[0.12] text-slate-300 hover:border-sky-400'}`}>
+                      : 'bg-slate-900/[0.04] dark:bg-white/[0.05] border-slate-900/10 dark:border-white/[0.12] text-slate-700 dark:text-slate-300 hover:border-sky-400'}`}>
                     {selected && <span className="mr-1.5">✓</span>}{svc}
                   </button>
                 )
@@ -1082,7 +1082,7 @@ export default function NewClientPage() {
           {packages.length === 0 && (
             <div className="glass-card p-8 text-center">
               <Briefcase className="h-10 w-10 text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-400">Select at least one service above to configure deliverables and pricing.</p>
+              <p className="text-slate-600 dark:text-slate-400">Select at least one service above to configure deliverables and pricing.</p>
             </div>
           )}
 
@@ -1093,7 +1093,7 @@ export default function NewClientPage() {
           {packages.length > 0 && (
             <div className="glass-card p-5 flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">{packages.length} service{packages.length > 1 ? 's' : ''} selected</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{packages.length} service{packages.length > 1 ? 's' : ''} selected</p>
                 {totalSetup > 0 && <p className="text-xs text-slate-500 mt-0.5">Setup fee: ${totalSetup.toLocaleString()}</p>}
               </div>
               <div className="text-right">
@@ -1108,8 +1108,8 @@ export default function NewClientPage() {
       {step === 2 && (
         <div className="glass-card p-6 space-y-6">
           <div>
-            <h2 className="text-lg font-semibold text-white mb-0.5">Goals & Expectations</h2>
-            <p className="text-sm text-slate-400">Define what success looks like for this client</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-0.5">Goals & Expectations</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Define what success looks like for this client</p>
           </div>
 
           {!needsGoals ? (
@@ -1117,7 +1117,7 @@ export default function NewClientPage() {
               <Target className="h-5 w-5 text-sky-400 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-sky-300">Goals not required for selected services</p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                   Goals & Expectations apply to marketing campaigns (SEO, Ads, Social Media, etc.).
                   Your selected services (maintenance, design, or development) don&apos;t require campaign goals — click Next to continue.
                 </p>
@@ -1142,7 +1142,7 @@ export default function NewClientPage() {
             {proposalFile ? (
               <div className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium text-white">{proposalFile.name}</p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">{proposalFile.name}</p>
                   <p className="text-xs text-emerald-400 mt-0.5">Will upload to Google Drive on submit</p>
                 </div>
                 <button type="button" onClick={() => { setProposalFile(null); if (proposalInputRef.current) proposalInputRef.current.value = '' }}
@@ -1150,7 +1150,7 @@ export default function NewClientPage() {
               </div>
             ) : (
               <button type="button" onClick={() => proposalInputRef.current?.click()}
-                className="w-full flex items-center justify-center gap-2 border border-dashed border-white/[0.15] rounded-lg py-4 text-slate-400 hover:border-sky-500/50 hover:text-sky-400 transition-all text-sm">
+                className="w-full flex items-center justify-center gap-2 border border-dashed border-slate-900/10 dark:border-white/[0.15] rounded-lg py-4 text-slate-600 dark:text-slate-400 hover:border-sky-500/50 hover:text-sky-400 transition-all text-sm">
                 <Plus className="h-4 w-4" /> Choose File
               </button>
             )}
@@ -1161,8 +1161,8 @@ export default function NewClientPage() {
       {step === 3 && (
         <div className="glass-card p-6 space-y-6">
           <div>
-            <h2 className="text-lg font-semibold text-white mb-0.5">Hosting & Domain Details</h2>
-            <p className="text-sm text-slate-400">Track the client&apos;s hosting, domain registrar, and renewal dates in one place</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-0.5">Hosting & Domain Details</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Track the client&apos;s hosting, domain registrar, and renewal dates in one place</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="sm:col-span-2">
@@ -1187,7 +1187,7 @@ export default function NewClientPage() {
                 {['Yes', 'No'].map(opt => (
                   <button key={opt} type="button"
                     onClick={() => { setForm(f => ({ ...f, hosting_includes_backup: opt, backup_frequency: opt === 'No' ? '' : f.backup_frequency })) }}
-                    className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-all ${form.hosting_includes_backup === opt ? 'border-sky-500 bg-sky-500/10 text-white' : 'border-white/[0.12] bg-white/[0.04] text-slate-400 hover:border-white/20'}`}>
+                    className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-all ${form.hosting_includes_backup === opt ? 'border-sky-500 bg-sky-500/10 text-slate-900 dark:text-white' : 'border-slate-900/10 dark:border-white/[0.12] bg-slate-900/[0.04] dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 hover:border-white/20'}`}>
                     {opt}
                   </button>
                 ))}
@@ -1209,7 +1209,7 @@ export default function NewClientPage() {
                 {['24×7', '8×5'].map(opt => (
                   <button key={opt} type="button"
                     onClick={() => setForm(f => ({ ...f, support_type: opt }))}
-                    className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-all ${form.support_type === opt ? 'border-violet-500 bg-violet-500/10 text-white' : 'border-white/[0.12] bg-white/[0.04] text-slate-400 hover:border-white/20'}`}>
+                    className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-all ${form.support_type === opt ? 'border-violet-500 bg-violet-500/10 text-slate-900 dark:text-white' : 'border-slate-900/10 dark:border-white/[0.12] bg-slate-900/[0.04] dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 hover:border-white/20'}`}>
                     {opt}
                   </button>
                 ))}
@@ -1228,9 +1228,9 @@ export default function NewClientPage() {
       {step === 4 && (
         <div className="space-y-6">
           <div className="glass-card p-6">
-            <h2 className="text-lg font-semibold text-white mb-1">Review & Confirm</h2>
-            <p className="text-sm text-slate-400 mb-6">
-              Submitting saves this client and sends an approval email to <span className="text-white font-medium">jay@jaymehta.co</span> with full pricing details. Once approved, QuickBooks customer & invoice are created automatically.
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">Review & Confirm</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
+              Submitting saves this client and sends an approval email to <span className="text-slate-900 dark:text-white font-medium">jay@jaymehta.co</span> with full pricing details. Once approved, QuickBooks customer & invoice are created automatically.
             </p>
             <div className="space-y-1 mb-6">
               <ReviewRow label="Contact Person" value={[form.contact_first_name, form.contact_last_name].filter(Boolean).join(' ')} />
@@ -1254,23 +1254,23 @@ export default function NewClientPage() {
             <p className="text-xs font-semibold text-sky-400 uppercase tracking-wider mb-3">Services & Pricing</p>
             <div className="space-y-3">
               {packages.map(p => (
-                <div key={p.service} className="flex items-center justify-between py-2 border-b border-white/[0.06] last:border-0">
+                <div key={p.service} className="flex items-center justify-between py-2 border-b border-slate-900/10 dark:border-white/[0.06] last:border-0">
                   <div>
-                    <p className="text-sm font-medium text-white">{p.service}</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{p.service}</p>
                     <p className="text-xs text-slate-500">{p.billing_term} · {p.contract_term}{parseFloat(p.setup_fee) > 0 ? ` · $${parseFloat(p.setup_fee).toLocaleString()} setup` : ''}</p>
                   </div>
                   <p className="text-sm font-semibold text-sky-400">${parseFloat(p.price).toLocaleString()}<span className="text-slate-500 font-normal">/mo</span></p>
                 </div>
               ))}
             </div>
-            <div className="flex justify-between mt-4 pt-3 border-t border-white/[0.12]">
-              <span className="text-sm font-semibold text-white">Monthly Total</span>
+            <div className="flex justify-between mt-4 pt-3 border-t border-slate-900/10 dark:border-white/[0.12]">
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">Monthly Total</span>
               <span className="text-lg font-bold text-sky-400">${totalMonthly.toLocaleString()}/mo</span>
             </div>
             {totalSetup > 0 && (
               <div className="flex justify-between mt-1">
                 <span className="text-sm text-slate-500">One-time Setup</span>
-                <span className="text-sm text-slate-300">${totalSetup.toLocaleString()}</span>
+                <span className="text-sm text-slate-700 dark:text-slate-300">${totalSetup.toLocaleString()}</span>
               </div>
             )}
           </div>
@@ -1287,13 +1287,13 @@ export default function NewClientPage() {
 
       {/* Nav buttons — sticky on mobile, inline on sm+ */}
       <div className="fixed bottom-0 left-0 right-0 z-40 sm:static sm:z-auto
-        bg-[rgba(10,16,30,0.95)] sm:bg-transparent
-        border-t border-white/[0.08] sm:border-0
+        bg-white/95 dark:bg-[rgba(10,16,30,0.95)] sm:bg-transparent
+        border-t border-slate-900/10 dark:border-white/[0.08] sm:border-0
         px-4 py-3 sm:px-0 sm:py-0 sm:mt-8
         flex gap-3 justify-between backdrop-blur-sm sm:backdrop-blur-none">
         <button type="button"
           onClick={() => step > 0 ? setStep(s => s - 1) : router.push('/clients')}
-          className="flex items-center gap-2 px-5 py-2.5 border border-white/[0.08] rounded-xl text-sm font-medium text-slate-300 hover:bg-white/[0.05] transition-colors">
+          className="flex items-center gap-2 px-5 py-2.5 border border-slate-900/10 dark:border-white/[0.08] rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-white/[0.05] transition-colors">
           <ChevronLeft className="h-4 w-4" />{step === 0 ? 'Cancel' : 'Back'}
         </button>
         {step < 4 ? (

@@ -21,7 +21,7 @@ type Lead = {
 }
 
 const STAGES = [
-  { key: 'prospect', label: 'Prospect', accent: 'text-slate-300' },
+  { key: 'prospect', label: 'Prospect', accent: 'text-slate-700 dark:text-slate-300' },
   { key: 'contacted', label: 'Contacted', accent: 'text-sky-400' },
   { key: 'proposal_sent', label: 'Proposal Sent', accent: 'text-amber-400' },
   { key: 'won', label: 'Won', accent: 'text-emerald-400' },
@@ -95,7 +95,7 @@ function LeadCard({
   const value = formatValue(lead.estimated_value)
   const canConvert = (lead.stage === 'proposal_sent' || lead.stage === 'won') && !lead.converted_client_id
   return (
-    <div className={cn('glass-card rounded-xl p-3 hover:bg-white/[0.04] transition-colors duration-200 flex gap-2', selected && 'ring-1 ring-sky-500/50 bg-sky-500/[0.05]')}>
+    <div className={cn('glass-card rounded-xl p-3 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.04] transition-colors duration-200 flex gap-2', selected && 'ring-1 ring-sky-500/50 bg-sky-500/[0.05]')}>
       <button
         onClick={(e) => { e.stopPropagation(); onToggleSelect(lead.id) }}
         aria-label={selected ? 'Deselect lead' : 'Select lead'}
@@ -105,8 +105,8 @@ function LeadCard({
       </button>
       <div className="min-w-0 flex-1">
       <button onClick={() => onEdit(lead)} className="w-full text-left">
-        <div className="text-sm font-medium text-white truncate">{lead.company_name}</div>
-        {lead.contact_name && <div className="text-xs text-slate-400 mt-0.5 truncate">{lead.contact_name}</div>}
+        <div className="text-sm font-medium text-slate-900 dark:text-white truncate">{lead.company_name}</div>
+        {lead.contact_name && <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 truncate">{lead.contact_name}</div>}
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           {value && (
             <span className="inline-flex px-1.5 py-0.5 rounded-md text-[11px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
@@ -114,7 +114,7 @@ function LeadCard({
             </span>
           )}
           {lead.source && (
-            <span className="inline-flex px-1.5 py-0.5 rounded-md text-[11px] bg-white/[0.06] text-slate-400 border border-white/[0.08]">
+            <span className="inline-flex px-1.5 py-0.5 rounded-md text-[11px] bg-slate-900/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border border-slate-900/10 dark:border-white/[0.08]">
               {lead.source}
             </span>
           )}
@@ -174,7 +174,7 @@ function LeadFormFields({ form, setForm }: { form: FormState; setForm: React.Dis
   return (
     <>
       <div>
-        <label className="block text-xs font-medium text-slate-400 mb-1.5">Company</label>
+        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Company</label>
         <input
           autoFocus
           required
@@ -186,7 +186,7 @@ function LeadFormFields({ form, setForm }: { form: FormState; setForm: React.Dis
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5">Contact name</label>
+          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Contact name</label>
           <input
             value={form.contact_name}
             onChange={e => setForm(f => ({ ...f, contact_name: e.target.value }))}
@@ -194,7 +194,7 @@ function LeadFormFields({ form, setForm }: { form: FormState; setForm: React.Dis
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5">Email</label>
+          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Email</label>
           <input
             type="email"
             value={form.email}
@@ -203,7 +203,7 @@ function LeadFormFields({ form, setForm }: { form: FormState; setForm: React.Dis
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5">Phone</label>
+          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Phone</label>
           <input
             value={form.phone}
             onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
@@ -211,7 +211,7 @@ function LeadFormFields({ form, setForm }: { form: FormState; setForm: React.Dis
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5">Website</label>
+          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Website</label>
           <input
             value={form.website}
             onChange={e => setForm(f => ({ ...f, website: e.target.value }))}
@@ -220,7 +220,7 @@ function LeadFormFields({ form, setForm }: { form: FormState; setForm: React.Dis
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5">Source</label>
+          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Source</label>
           <input
             value={form.source}
             onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
@@ -229,7 +229,7 @@ function LeadFormFields({ form, setForm }: { form: FormState; setForm: React.Dis
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5">Estimated value ($)</label>
+          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Estimated value ($)</label>
           <input
             type="number"
             min="0"
@@ -241,7 +241,7 @@ function LeadFormFields({ form, setForm }: { form: FormState; setForm: React.Dis
         </div>
       </div>
       <div>
-        <label className="block text-xs font-medium text-slate-400 mb-1.5">Stage</label>
+        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Stage</label>
         <select
           value={form.stage}
           onChange={e => setForm(f => ({ ...f, stage: e.target.value }))}
@@ -253,7 +253,7 @@ function LeadFormFields({ form, setForm }: { form: FormState; setForm: React.Dis
         </select>
       </div>
       <div>
-        <label className="block text-xs font-medium text-slate-400 mb-1.5">Notes</label>
+        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Notes</label>
         <textarea
           rows={3}
           value={form.notes}
@@ -445,12 +445,12 @@ export default function LeadsPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-xl font-semibold text-white">Leads</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Track prospects from first touch to signed client</p>
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-white">Leads</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Track prospects from first touch to signed client</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={exportAll} disabled={!leads.length}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-300 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] transition-colors disabled:opacity-40">
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-900/[0.04] dark:bg-white/[0.06] hover:bg-slate-900/[0.08] dark:hover:bg-white/[0.1] border border-slate-900/10 dark:border-white/[0.08] transition-colors disabled:opacity-40">
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline">Export all</span>
           </button>
@@ -465,14 +465,14 @@ export default function LeadsPage() {
       {unavailable ? (
         <div className="glass-card rounded-2xl p-10 text-center">
           <AlertTriangle className="h-8 w-8 text-amber-400 mx-auto mb-3" />
-          <h2 className="text-white font-medium mb-1">Leads not enabled</h2>
-          <p className="text-sm text-slate-400">Run migration 023 to enable the lead pipeline</p>
+          <h2 className="text-slate-900 dark:text-white font-medium mb-1">Leads not enabled</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Run migration 023 to enable the lead pipeline</p>
         </div>
       ) : !loading && leads.length === 0 ? (
         <div className="glass-card rounded-2xl p-10 text-center">
           <Target className="h-8 w-8 text-slate-500 mx-auto mb-3" />
-          <h2 className="text-white font-medium mb-1">No leads yet</h2>
-          <p className="text-sm text-slate-400 mb-4">Add your first prospect to start building the pipeline.</p>
+          <h2 className="text-slate-900 dark:text-white font-medium mb-1">No leads yet</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">Add your first prospect to start building the pipeline.</p>
           <button onClick={openNewModal} className="btn-brand inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium">
             <Plus className="h-4 w-4" />
             New Lead
@@ -492,7 +492,7 @@ export default function LeadsPage() {
                     <span className="text-[11px] text-slate-500 shrink-0">{formatValue(col.total)}</span>
                   )}
                 </div>
-                <div className="flex flex-col gap-2 rounded-2xl bg-white/[0.02] border border-white/[0.05] p-2 min-h-[120px]">
+                <div className="flex flex-col gap-2 rounded-2xl bg-slate-900/[0.03] dark:bg-white/[0.02] border border-slate-900/10 dark:border-white/[0.05] p-2 min-h-[120px]">
                   {loading ? (
                     <>
                       <SkeletonCard />
@@ -527,8 +527,8 @@ export default function LeadsPage() {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
           <div className="relative glass-card rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-white">{editingLead ? 'Edit Lead' : 'New Lead'}</h2>
-              <button onClick={() => setModalOpen(false)} className="p-2 rounded-xl bg-white/[0.06] text-slate-400 hover:text-white transition-colors">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{editingLead ? 'Edit Lead' : 'New Lead'}</h2>
+              <button onClick={() => setModalOpen(false)} className="p-2 rounded-xl bg-slate-900/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -538,7 +538,7 @@ export default function LeadsPage() {
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-slate-300 bg-white/[0.06] hover:bg-white/[0.1] transition-colors"
+                  className="px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-900/[0.04] dark:bg-white/[0.06] hover:bg-slate-900/[0.08] dark:hover:bg-white/[0.1] transition-colors"
                 >
                   Cancel
                 </button>
@@ -559,9 +559,9 @@ export default function LeadsPage() {
       {selectedIds.size > 0 && (
         <div className="sticky bottom-3 z-40 mt-4">
           <div className="glass-card rounded-2xl px-3 py-2.5 flex flex-wrap items-center gap-2 shadow-2xl border border-sky-500/20 bg-sky-500/[0.08]">
-            <span className="text-xs font-medium text-white">{selectedIds.size} selected</span>
+            <span className="text-xs font-medium text-slate-900 dark:text-white">{selectedIds.size} selected</span>
             <button onClick={exportSelected}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.06] border border-white/[0.1] text-slate-200 hover:bg-white/[0.1] transition-colors">
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900/[0.04] dark:bg-white/[0.06] border border-slate-900/10 dark:border-white/[0.1] text-slate-700 dark:text-slate-200 hover:bg-slate-900/[0.08] dark:hover:bg-white/[0.1] transition-colors">
               <Download className="h-3.5 w-3.5" /> Export CSV
             </button>
             <select value={bulkStage} onChange={e => setBulkStage(e.target.value)}
@@ -574,7 +574,7 @@ export default function LeadsPage() {
               {bulkBusy ? 'Moving…' : 'Apply'}
             </button>
             <button onClick={clearSelection}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white transition-colors">
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">
               <X className="h-3.5 w-3.5" /> Clear
             </button>
             {bulkMsg && <span className="text-xs text-emerald-400 ml-auto">{bulkMsg}</span>}

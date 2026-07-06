@@ -102,13 +102,13 @@ const PLATFORM_COLORS: Record<string, string> = {
   'Facebook Watch': 'bg-blue-600/20 text-blue-300',
   'Instagram Post': 'bg-pink-600/20 text-pink-300',
   'Instagram Reels': 'bg-pink-600/20 text-pink-300',
-  'Twitter/X': 'bg-slate-500/20 text-slate-300',
+  'Twitter/X': 'bg-slate-500/20 text-slate-700 dark:text-slate-300',
   'LinkedIn': 'bg-sky-600/20 text-sky-300',
   'TikTok': 'bg-rose-600/20 text-rose-300',
   'Google Business Profile': 'bg-emerald-600/20 text-emerald-300',
   'YouTube': 'bg-red-600/20 text-red-300',
   'Snapchat': 'bg-yellow-500/20 text-yellow-300',
-  'Threads': 'bg-slate-500/20 text-slate-300',
+  'Threads': 'bg-slate-500/20 text-slate-700 dark:text-slate-300',
 }
 
 const TYPES = ['Image', 'Video', 'Carousel', 'Story', 'Reel', 'GIF']
@@ -123,7 +123,7 @@ const STATUS_FILTER_TABS = [
 ]
 
 const statusColors: Record<string, string> = {
-  draft: 'bg-slate-500/15 text-slate-400 border border-slate-500/25',
+  draft: 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/25',
   scheduled: 'bg-blue-500/15 text-blue-400 border border-blue-500/25',
   live: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
   under_review: 'bg-amber-500/15 text-amber-400 border border-amber-500/25',
@@ -131,7 +131,7 @@ const statusColors: Record<string, string> = {
   deleted: 'bg-red-500/10 text-red-500 border border-red-500/20',
 }
 
-const selectClass = "w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+const selectClass = "w-full bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 function today() { return new Date().toISOString().split('T')[0] }
 
@@ -409,11 +409,11 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
       {/* Stats bar */}
       <div className="glass-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-          <span className="text-sm font-medium text-slate-300">Social Media Posts</span>
-          <div className="flex gap-4 text-xs text-slate-400">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Social Media Posts</span>
+          <div className="flex gap-4 text-xs text-slate-600 dark:text-slate-400">
             <span><span className="text-emerald-400 font-semibold">{liveCount}</span> Live</span>
             <span><span className="text-blue-400 font-semibold">{scheduledCount}</span> Scheduled</span>
-            <span><span className="text-white font-semibold">{posts.length}</span> Total</span>
+            <span><span className="text-slate-900 dark:text-white font-semibold">{posts.length}</span> Total</span>
           </div>
         </div>
       </div>
@@ -421,10 +421,10 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
       {/* Main card */}
       <div className="glass-card">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-white/[0.06]">
-          <h2 className="font-semibold text-white">Posts</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-slate-900/10 dark:border-white/[0.06]">
+          <h2 className="font-semibold text-slate-900 dark:text-white">Posts</h2>
           <div className="flex items-center gap-2 flex-wrap">
-            <button onClick={openBulk} className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] transition-all">
+            <button onClick={openBulk} className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all">
               <CalendarClock className="h-4 w-4" />
               Schedule in bulk
             </button>
@@ -444,7 +444,7 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
               className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                 platformTab === tab.value
                   ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
-                  : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06]'
               }`}
             >
               {tab.label}
@@ -453,7 +453,7 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
         </div>
 
         {/* Status filter */}
-        <div className="flex gap-1 px-4 pt-2 pb-3 overflow-x-auto border-b border-white/[0.06]">
+        <div className="flex gap-1 px-4 pt-2 pb-3 overflow-x-auto border-b border-slate-900/10 dark:border-white/[0.06]">
           {STATUS_FILTER_TABS.map(tab => (
             <button
               key={tab.value}
@@ -462,8 +462,8 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                 statusTab === tab.value
                   ? statusTab
                     ? `${statusColors[tab.value]} !border-0 bg-opacity-30`
-                    : 'bg-white/[0.12] text-white'
-                  : 'text-slate-500 hover:text-slate-300'
+                    : 'bg-slate-900/[0.04] dark:bg-white/[0.12] text-slate-900 dark:text-white'
+                  : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
               }`}
             >
               {tab.label}
@@ -478,7 +478,7 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
             <select
               value={bulkStatus}
               onChange={e => setBulkStatus(e.target.value)}
-              className="text-xs bg-white/[0.06] border border-white/[0.10] text-white rounded px-2 py-1"
+              className="text-xs bg-slate-900/[0.04] dark:bg-white/[0.06] border border-slate-900/10 dark:border-white/[0.10] text-slate-900 dark:text-white rounded px-2 py-1"
             >
               <option value="">Change status to...</option>
               {STATUSES.map(s => (
@@ -504,14 +504,14 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
 
         {/* Content */}
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-slate-400">
+          <div className="flex items-center justify-center py-16 text-slate-600 dark:text-slate-400">
             <Loader2 className="h-6 w-6 animate-spin mr-2" />
             Loading posts...
           </div>
         ) : error ? (
           <div className="p-8 text-center text-red-400 text-sm">{error}</div>
         ) : posts.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">
+          <div className="p-12 text-center text-slate-600 dark:text-slate-400">
             <p className="font-medium">No posts found</p>
             <p className="text-sm mt-1">
               {platformTab || statusTab ? 'Try adjusting your filters' : 'Click "Add Post" to log your first social media post'}
@@ -521,7 +521,7 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
           <div className="p-4">
             {/* Select all row */}
             <div className="flex items-center gap-2 mb-3">
-              <button onClick={toggleAll} className="text-slate-400 hover:text-white transition-colors">
+              <button onClick={toggleAll} className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                 {selected.size === posts.length && posts.length > 0
                   ? <CheckSquare className="h-4 w-4 text-sky-400" />
                   : <Square className="h-4 w-4" />}
@@ -533,7 +533,7 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {posts.map(post => {
                 const badge = PLATFORM_BADGE[post.platform] || post.platform?.slice(0, 2).toUpperCase() || '??'
-                const badgeColor = PLATFORM_COLORS[post.platform] || 'bg-slate-500/20 text-slate-300'
+                const badgeColor = PLATFORM_COLORS[post.platform] || 'bg-slate-500/20 text-slate-700 dark:text-slate-300'
                 const statusKey = (post.status || 'draft').toLowerCase()
                 const statusLabel = post.status?.replace(/_/g, ' ') || 'draft'
                 const isSelected = selected.has(post.id)
@@ -547,17 +547,17 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                     className={`relative rounded-xl border transition-all ${
                       isSelected
                         ? 'border-sky-500/40 bg-sky-500/5'
-                        : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.05]'
+                        : 'border-slate-900/10 dark:border-white/[0.08] bg-slate-900/[0.04] dark:bg-white/[0.03] hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.05]'
                     }`}
                   >
                     {/* Card header */}
-                    <div className="flex items-center gap-2 p-3 border-b border-white/[0.06]">
-                      <button onClick={() => toggleSelect(post.id)} className="text-slate-400 hover:text-white flex-shrink-0 transition-colors">
+                    <div className="flex items-center gap-2 p-3 border-b border-slate-900/10 dark:border-white/[0.06]">
+                      <button onClick={() => toggleSelect(post.id)} className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex-shrink-0 transition-colors">
                         {isSelected ? <CheckSquare className="h-4 w-4 text-sky-400" /> : <Square className="h-4 w-4" />}
                       </button>
                       <span className={`px-2 py-0.5 rounded text-xs font-bold ${badgeColor}`}>{badge}</span>
-                      <span className="text-xs text-slate-400 truncate flex-1">{post.platform}</span>
-                      <span className="px-1.5 py-0.5 rounded text-xs border border-white/[0.10] text-slate-400 capitalize">
+                      <span className="text-xs text-slate-600 dark:text-slate-400 truncate flex-1">{post.platform}</span>
+                      <span className="px-1.5 py-0.5 rounded text-xs border border-slate-900/10 dark:border-white/[0.10] text-slate-600 dark:text-slate-400 capitalize">
                         {post.type || 'image'}
                       </span>
                     </div>
@@ -565,7 +565,7 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                     {/* Content */}
                     <div className="p-3 space-y-2">
                       {post.post_content ? (
-                        <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
+                        <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed line-clamp-3">
                           {post.post_content.length > 150 ? post.post_content.slice(0, 150) + '…' : post.post_content}
                         </p>
                       ) : (
@@ -597,21 +597,21 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                       <div className="flex gap-1">
                         {post.live_link && (
                           <a href={post.live_link} target="_blank" rel="noopener noreferrer"
-                            className="p-1.5 text-slate-400 hover:text-sky-400 transition-colors rounded">
+                            className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-sky-400 transition-colors rounded">
                             <ExternalLink className="h-3.5 w-3.5" />
                           </a>
                         )}
-                        <button onClick={() => openEdit(post)} className="p-1.5 text-slate-400 hover:text-sky-400 transition-colors rounded">
+                        <button onClick={() => openEdit(post)} className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-sky-400 transition-colors rounded">
                           <Edit2 className="h-3.5 w-3.5" />
                         </button>
-                        <button onClick={() => setDeleteId(post.id)} className="p-1.5 text-slate-400 hover:text-red-400 transition-colors rounded">
+                        <button onClick={() => setDeleteId(post.id)} className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-red-400 transition-colors rounded">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                       {deleteId === post.id && (
                         <div className="flex items-center gap-1.5 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-2 py-1">
                           <span className="text-red-400">Delete?</span>
-                          <button onClick={() => setDeleteId(null)} className="px-1.5 py-0.5 border border-white/[0.10] rounded text-slate-400 hover:text-white transition-all">No</button>
+                          <button onClick={() => setDeleteId(null)} className="px-1.5 py-0.5 border border-slate-900/10 dark:border-white/[0.10] rounded text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all">No</button>
                           <button onClick={handleDelete} disabled={deleting} className="px-1.5 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded disabled:opacity-60">
                             {deleting ? '...' : 'Yes'}
                           </button>
@@ -626,13 +626,13 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
         )}
 
         {/* Footer */}
-        <div className="p-4 border-t border-white/[0.06] flex flex-wrap gap-2">
+        <div className="p-4 border-t border-slate-900/10 dark:border-white/[0.06] flex flex-wrap gap-2">
           <button className="btn-brand flex items-center gap-1.5 px-3 py-1.5 text-sm">
             <Send className="h-3.5 w-3.5" /> Send to All
           </button>
-          <button className="px-3 py-1.5 rounded-lg border border-white/[0.10] text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Send to DM Manager</button>
-          <button className="px-3 py-1.5 rounded-lg border border-white/[0.10] text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Send to Sales Manager</button>
-          <button className="px-3 py-1.5 rounded-lg border border-white/[0.10] text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Send to Client</button>
+          <button className="px-3 py-1.5 rounded-lg border border-slate-900/10 dark:border-white/[0.10] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all text-sm">Send to DM Manager</button>
+          <button className="px-3 py-1.5 rounded-lg border border-slate-900/10 dark:border-white/[0.10] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all text-sm">Send to Sales Manager</button>
+          <button className="px-3 py-1.5 rounded-lg border border-slate-900/10 dark:border-white/[0.10] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all text-sm">Send to Client</button>
         </div>
       </div>
 
@@ -641,27 +641,27 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="glass w-full max-w-lg rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-lg font-semibold text-white">{editEntry ? 'Edit Social Media Post' : 'Add Social Media Post'}</h3>
-              <button onClick={closeModal}><X className="h-5 w-5 text-slate-400" /></button>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{editEntry ? 'Edit Social Media Post' : 'Add Social Media Post'}</h3>
+              <button onClick={closeModal}><X className="h-5 w-5 text-slate-600 dark:text-slate-400" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Platform <span className="text-red-400">*</span></label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Platform <span className="text-red-400">*</span></label>
                   <select className={selectClass} value={form.platform} onChange={set('platform')} required>
                     <option value="">Select...</option>
                     {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Post Type <span className="text-red-400">*</span></label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Post Type <span className="text-red-400">*</span></label>
                   <select className={selectClass} value={form.type} onChange={set('type')} required>
                     {TYPES.map(t => <option key={t} value={t.toLowerCase()}>{t}</option>)}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Content
                   <span className="ml-2 text-xs text-slate-500 font-normal">{form.post_content.length} chars</span>
                 </label>
@@ -673,50 +673,50 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Media URL <span className="text-xs text-slate-500 font-normal">(optional)</span></label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Media URL <span className="text-xs text-slate-500 font-normal">(optional)</span></label>
                 <input className="input-glass" type="url" value={form.media_url} onChange={set('media_url')} placeholder="https://... (image or video URL)" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Status <span className="text-red-400">*</span></label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status <span className="text-red-400">*</span></label>
                   <select className={selectClass} value={form.status} onChange={set('status')} required>
                     {STATUSES.map(s => <option key={s} value={s.toLowerCase().replace(/ /g, '_')}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Scheduled Date/Time</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Scheduled Date/Time</label>
                   <input className="input-glass" type="datetime-local" value={form.scheduled_date} onChange={set('scheduled_date')} />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Submission Date <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Submission Date <span className="text-red-400">*</span></label>
                 <input className="input-glass" type="date" value={form.submission_date} onChange={set('submission_date')} required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Live Link <span className="text-xs text-slate-500 font-normal">(optional)</span></label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Live Link <span className="text-xs text-slate-500 font-normal">(optional)</span></label>
                 <input className="input-glass" type="url" value={form.live_link} onChange={set('live_link')} placeholder="https://..." />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Username <span className="text-xs text-slate-500 font-normal">(optional)</span></label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Username <span className="text-xs text-slate-500 font-normal">(optional)</span></label>
                   <input className="input-glass" value={form.username} onChange={set('username')} placeholder="@handle" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Password <span className="text-xs text-slate-500 font-normal">(optional)</span></label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password <span className="text-xs text-slate-500 font-normal">(optional)</span></label>
                   <div className="relative">
                     <input className="input-glass pr-10" type={showPassword ? 'text' : 'password'} value={form.password} onChange={set('password')} placeholder="••••••" />
-                    <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
+                    <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Notes <span className="text-xs text-slate-500 font-normal">(optional)</span></label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notes <span className="text-xs text-slate-500 font-normal">(optional)</span></label>
                 <textarea className="input-glass resize-none h-20" value={form.comment} onChange={set('comment')} placeholder="Optional notes or comments..." />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={closeModal} className="flex-1 py-2.5 rounded-lg border border-white/[0.10] text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all text-sm">Cancel</button>
+                <button type="button" onClick={closeModal} className="flex-1 py-2.5 rounded-lg border border-slate-900/10 dark:border-white/[0.10] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all text-sm">Cancel</button>
                 <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-2.5 btn-brand disabled:opacity-60 text-sm font-medium">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   {saving ? 'Saving...' : editEntry ? 'Update Post' : 'Save Post'}
@@ -732,8 +732,8 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="glass w-full max-w-lg mx-4 rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-lg font-semibold text-white">Schedule in bulk</h3>
-              <button onClick={() => setShowBulk(false)}><X className="h-5 w-5 text-slate-400" /></button>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Schedule in bulk</h3>
+              <button onClick={() => setShowBulk(false)}><X className="h-5 w-5 text-slate-600 dark:text-slate-400" /></button>
             </div>
 
             {bulkResult ? (
@@ -753,14 +753,14 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
               </div>
             ) : (
               <div className="space-y-5">
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-slate-600 dark:text-slate-400">
                   Upload a CSV to schedule many posts at once. Each row becomes a scheduled post.
-                  Date format: <code className="text-slate-300">mm/dd/yy hh:mm</code> (e.g. <code className="text-slate-300">07/15/26 09:30</code>).
+                  Date format: <code className="text-slate-700 dark:text-slate-300">mm/dd/yy hh:mm</code> (e.g. <code className="text-slate-700 dark:text-slate-300">07/15/26 09:30</code>).
                 </p>
 
                 <div className="flex flex-wrap items-center gap-3">
                   <input ref={bulkFileRef} type="file" accept=".csv,text/csv" onChange={handleBulkFile} className="hidden" />
-                  <button onClick={() => bulkFileRef.current?.click()} className="flex items-center gap-2 px-4 py-2 text-sm rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] transition-all">
+                  <button onClick={() => bulkFileRef.current?.click()} className="flex items-center gap-2 px-4 py-2 text-sm rounded-xl border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all">
                     <Upload className="h-4 w-4" /> {csvHeaders.length > 0 ? 'Choose a different file' : 'Choose CSV file'}
                   </button>
                   <button onClick={downloadBulkTemplate} className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300 transition-colors">
@@ -769,7 +769,7 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Default platform <span className="text-xs text-slate-500 font-normal">(used when a row has no platform)</span></label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Default platform <span className="text-xs text-slate-500 font-normal">(used when a row has no platform)</span></label>
                   <select className={selectClass} value={bulkDefaultPlatform} onChange={e => setBulkDefaultPlatform(e.target.value)}>
                     {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
@@ -778,11 +778,11 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                 {csvHeaders.length > 0 && (
                   <>
                     <div>
-                      <p className="text-sm font-medium text-slate-300 mb-2">Map columns</p>
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Map columns</p>
                       <div className="space-y-2">
                         {csvHeaders.map((h, i) => (
                           <div key={i} className="flex items-center gap-2">
-                            <span className="flex-1 text-xs text-white font-mono truncate px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06]">{h || `Column ${i + 1}`}</span>
+                            <span className="flex-1 text-xs text-slate-900 dark:text-white font-mono truncate px-3 py-2 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.04] border border-slate-900/10 dark:border-white/[0.06]">{h || `Column ${i + 1}`}</span>
                             <span className="text-slate-500 text-xs">→</span>
                             <select
                               value={bulkMapping[i] ?? ''}
@@ -798,13 +798,13 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                     </div>
 
                     <div>
-                      <p className="text-sm font-medium text-slate-300 mb-2">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                         Preview <span className="text-slate-500 font-normal">({bulkMappedRows().length} post{bulkMappedRows().length === 1 ? '' : 's'} to schedule)</span>
                       </p>
-                      <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
+                      <div className="overflow-x-auto rounded-xl border border-slate-900/10 dark:border-white/[0.06]">
                         <table className="w-full text-xs">
                           <thead>
-                            <tr className="bg-white/[0.05]">
+                            <tr className="bg-slate-900/[0.04] dark:bg-white/[0.05]">
                               <th className="px-3 py-2 text-left font-semibold text-slate-500">Platform</th>
                               <th className="px-3 py-2 text-left font-semibold text-slate-500">Date</th>
                               <th className="px-3 py-2 text-left font-semibold text-slate-500">Message</th>
@@ -812,14 +812,14 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                           </thead>
                           <tbody>
                             {bulkMappedRows().slice(0, 10).map((row, ri) => (
-                              <tr key={ri} className="border-t border-white/[0.04]">
-                                <td className="px-3 py-2 text-slate-300 truncate max-w-[120px]">{row.platform}</td>
-                                <td className="px-3 py-2 text-slate-300 whitespace-nowrap">
+                              <tr key={ri} className="border-t border-slate-900/10 dark:border-white/[0.04]">
+                                <td className="px-3 py-2 text-slate-700 dark:text-slate-300 truncate max-w-[120px]">{row.platform}</td>
+                                <td className="px-3 py-2 text-slate-700 dark:text-slate-300 whitespace-nowrap">
                                   {row.scheduled_date
                                     ? new Date(row.scheduled_date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: '2-digit', hour: 'numeric', minute: '2-digit' })
                                     : <span className="text-amber-400">no date</span>}
                                 </td>
-                                <td className="px-3 py-2 text-slate-300 truncate max-w-[200px]">{row.post_content}</td>
+                                <td className="px-3 py-2 text-slate-700 dark:text-slate-300 truncate max-w-[200px]">{row.post_content}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -837,7 +837,7 @@ export default function SocialMediaPage({ params }: { params: { id: string; proj
                 {bulkError && <p className="text-sm text-red-400">{bulkError}</p>}
 
                 <div className="flex gap-3 pt-2">
-                  <button onClick={() => setShowBulk(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] transition-all text-sm">
+                  <button onClick={() => setShowBulk(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all text-sm">
                     Cancel
                   </button>
                   <button onClick={runBulkSchedule} disabled={importing || csvHeaders.length === 0} className="flex-1 btn-brand py-2.5 text-sm disabled:opacity-60">

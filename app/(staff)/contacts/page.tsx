@@ -9,7 +9,7 @@ const STATUS_COLORS: Record<string, string> = {
   hold: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
   on_hold: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
   cancelled: 'bg-red-500/20 text-red-400 border-red-500/30',
-  completed: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+  completed: 'bg-slate-500/20 text-slate-600 dark:text-slate-400 border-slate-500/30',
   onboarding: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
   in_onboarding: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
   prospect: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
@@ -51,7 +51,7 @@ type Contact = {
 
 function SkeletonCard() {
   return (
-    <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-4 flex flex-col gap-4">
+    <div className="glass-card rounded-2xl p-4 flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <div className="skeleton w-11 h-11 rounded-full shrink-0" />
         <div className="flex-1 flex flex-col gap-2">
@@ -103,7 +103,7 @@ export default function ContactsPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-white">Contacts</h1>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Contacts</h1>
           <p className="text-xs text-slate-500 mt-0.5">
             {loading ? 'Loading…' : `${contacts.length} contact${contacts.length !== 1 ? 's' : ''} · ${totalBusinesses} business${totalBusinesses !== 1 ? 'es' : ''}`}
           </p>
@@ -124,12 +124,12 @@ export default function ContactsPage() {
           value={search}
           onChange={e => onSearch(e.target.value)}
           placeholder="Search contacts…"
-          className="w-full bg-white/[0.05] border border-white/[0.08] text-sm text-white placeholder-slate-500 rounded-xl pl-9 pr-9 py-2.5 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition"
+          className="w-full bg-slate-900/[0.04] dark:bg-white/[0.05] border border-slate-900/10 dark:border-white/[0.08] text-sm text-slate-900 dark:text-white placeholder-slate-500 rounded-xl pl-9 pr-9 py-2.5 focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition"
         />
         {search && (
           <button
             onClick={() => { setSearch(''); fetchContacts('') }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -142,7 +142,7 @@ export default function ContactsPage() {
           <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
             <Users className="h-8 w-8 text-red-400" />
           </div>
-          <h2 className="text-base font-semibold text-white mb-1">Failed to load contacts</h2>
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Failed to load contacts</h2>
           <p className="text-slate-500 text-sm max-w-xs mb-4">{error}</p>
           <button
             onClick={() => fetchContacts(search)}
@@ -160,10 +160,10 @@ export default function ContactsPage() {
         </div>
       ) : !error && contacts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-full bg-white/[0.04] flex items-center justify-center mb-4">
+          <div className="w-16 h-16 rounded-full bg-slate-900/[0.04] dark:bg-white/[0.04] flex items-center justify-center mb-4">
             <Users className="h-8 w-8 text-slate-600" />
           </div>
-          <h2 className="text-base font-semibold text-white mb-1">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">
             {search ? 'No contacts found' : 'No contacts yet'}
           </h2>
           <p className="text-slate-500 text-sm max-w-xs">
@@ -184,7 +184,7 @@ export default function ContactsPage() {
             return (
               <div
                 key={`${fullName}-${idx}`}
-                className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-4 hover:bg-white/[0.06] hover:border-white/[0.12] transition-all duration-200 flex flex-col gap-4"
+                className="glass-card rounded-2xl p-4 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] hover:border-slate-900/10 dark:hover:border-white/[0.12] transition-all duration-200 flex flex-col gap-4"
               >
                 {/* Contact header */}
                 <div className="flex items-center gap-3">
@@ -192,7 +192,7 @@ export default function ContactsPage() {
                     {initials(contact.contact_first_name, contact.contact_last_name)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-white truncate">{fullName || '—'}</p>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{fullName || '—'}</p>
                     <p className="text-xs text-slate-500 mt-0.5">
                       {contact.businesses.length} business{contact.businesses.length !== 1 ? 'es' : ''}
                     </p>
@@ -209,7 +209,7 @@ export default function ContactsPage() {
                       onClick={() => setMergePrimary(contact.businesses[0])}
                       title="Merge with another record"
                       aria-label={`Merge ${fullName || 'contact'}`}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-sky-400 hover:bg-white/[0.06] transition-colors shrink-0"
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-sky-400 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-colors shrink-0"
                     >
                       <GitMerge className="h-3.5 w-3.5" />
                     </button>
@@ -222,17 +222,17 @@ export default function ContactsPage() {
                     <Link
                       key={biz.id}
                       href={`/clients/${biz.id}`}
-                      className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-200 group"
+                      className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-900/[0.04] dark:bg-white/[0.04] border border-slate-900/10 dark:border-white/[0.06] hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.08] hover:border-slate-900/10 dark:hover:border-white/[0.12] transition-all duration-200 group"
                     >
                       <Building2 className="h-3.5 w-3.5 text-slate-500 shrink-0 group-hover:text-sky-400 transition-colors" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-slate-200 group-hover:text-white truncate transition-colors">
+                        <p className="text-xs font-medium text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white truncate transition-colors">
                           {biz.display_name || biz.company_name}
                         </p>
                         {biz.project_status && (
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[biz.project_status] || 'bg-slate-500'}`} />
-                            <span className={`text-[10px] capitalize px-1.5 py-0.5 rounded-full border ${STATUS_COLORS[biz.project_status] || 'bg-slate-500/20 text-slate-400 border-slate-500/30'}`}>
+                            <span className={`text-[10px] capitalize px-1.5 py-0.5 rounded-full border ${STATUS_COLORS[biz.project_status] || 'bg-slate-500/20 text-slate-600 dark:text-slate-400 border-slate-500/30'}`}>
                               {biz.project_status.replace(/_/g, ' ')}
                             </span>
                           </div>

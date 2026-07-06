@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 
-const labelClass = "block text-sm font-medium text-slate-300 mb-1"
-const selectGlass = "bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 w-full"
+const labelClass = "block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+const selectGlass = "bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 w-full"
 
 const SERVICE_OPTIONS = ['SEO', 'Google Ads', 'Meta Ads', 'Social Media Management', 'Content Writing', 'Web Design', 'Email Marketing', 'Local SEO', 'E-commerce SEO']
 const STATUS_OPTIONS = ['active', 'hold', 'cancelled', 'prospect', 'onboarding', 'completed']
@@ -74,16 +74,16 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
   return (
     <div className="p-4 lg:p-8 max-w-3xl">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.06]">
+        <button onClick={() => router.back()} className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.06]">
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="text-2xl font-bold text-white">Edit Client</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Edit Client</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Company Info */}
         <div className="glass-card p-5 space-y-4">
-          <h2 className="font-semibold text-white">Company Info</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white">Company Info</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className={labelClass}>Company Name *</label><input className="input-glass" value={form.company_name || ''} onChange={set('company_name')} required /></div>
             <div><label className={labelClass}>Website</label><input className="input-glass" value={form.website || ''} onChange={set('website')} /></div>
@@ -101,7 +101,7 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
 
         {/* Address */}
         <div className="glass-card p-5 space-y-4">
-          <h2 className="font-semibold text-white">Address</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white">Address</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2"><label className={labelClass}>Street Address</label><input className="input-glass" value={form.street_address || ''} onChange={set('street_address')} /></div>
             <div><label className={labelClass}>City</label><input className="input-glass" value={form.city || ''} onChange={set('city')} /></div>
@@ -112,11 +112,11 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
 
         {/* Services */}
         <div className="glass-card p-5">
-          <h2 className="font-semibold text-white mb-3">Services</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white mb-3">Services</h2>
           <div className="flex flex-wrap gap-2">
             {SERVICE_OPTIONS.map(s => (
               <button key={s} type="button" onClick={() => toggleService(s)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${form.services?.includes(s) ? 'bg-sky-500 text-white border-sky-500' : 'bg-white/[0.05] text-slate-300 border-white/[0.12] hover:border-sky-400'}`}>
+                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${form.services?.includes(s) ? 'bg-sky-500 text-white border-sky-500' : 'bg-slate-900/[0.04] dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 border-slate-900/10 dark:border-white/[0.12] hover:border-sky-400'}`}>
                 {s}
               </button>
             ))}
@@ -125,7 +125,7 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
 
         {/* Storage */}
         <div className="glass-card p-5 space-y-4">
-          <h2 className="font-semibold text-white">Storage & Links</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white">Storage & Links</h2>
           <div>
             <label className={labelClass}>Google Drive Folder URL</label>
             <input className="input-glass" value={form.google_drive_folder_url || ''} onChange={set('google_drive_folder_url')} placeholder="https://drive.google.com/..." />
@@ -137,7 +137,7 @@ export default function EditClientPage({ params }: { params: { id: string } }) {
         </div>
 
         <div className="flex gap-3">
-          <button type="button" onClick={() => router.back()} className="px-6 py-2.5 border border-white/[0.08] text-slate-300 rounded-lg text-sm hover:bg-white/[0.05]">Cancel</button>
+          <button type="button" onClick={() => router.back()} className="px-6 py-2.5 border border-slate-900/10 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 rounded-lg text-sm hover:bg-white/[0.05]">Cancel</button>
           <button type="submit" disabled={saving} className="btn-brand flex items-center gap-2 px-6 py-2.5 disabled:opacity-60 rounded-lg text-sm font-medium">
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             {saving ? 'Saving...' : 'Save Changes'}

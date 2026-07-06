@@ -6,9 +6,9 @@ type IntegrationStatus = 'connected' | 'disconnected' | 'error' | 'loading'
 
 const statusConfig = {
   connected: { icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/10', label: 'Connected' },
-  disconnected: { icon: XCircle, color: 'text-slate-400', bg: 'bg-white/[0.05]', label: 'Not Connected' },
+  disconnected: { icon: XCircle, color: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-900/[0.04] dark:bg-white/[0.05]', label: 'Not Connected' },
   error: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10', label: 'Error' },
-  loading: { icon: Loader2, color: 'text-slate-400', bg: 'bg-white/[0.05]', label: 'Checking...' },
+  loading: { icon: Loader2, color: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-900/[0.04] dark:bg-white/[0.05]', label: 'Checking...' },
 }
 
 function timeAgo(iso: string | null | undefined): string | null {
@@ -256,8 +256,8 @@ export default function IntegrationsPage() {
   return (
     <div className="p-4 lg:p-8 max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Integrations</h1>
-        <p className="text-slate-400 text-sm">Connect external platforms to pull data automatically</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Integrations</h1>
+        <p className="text-slate-600 dark:text-slate-400 text-sm">Connect external platforms to pull data automatically</p>
       </div>
 
       {banner && (
@@ -274,19 +274,19 @@ export default function IntegrationsPage() {
               <div className="text-2xl">🔵</div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="font-semibold text-white">Google Ads</h2>
+                  <h2 className="font-semibold text-slate-900 dark:text-white">Google Ads</h2>
                   {googleStatus !== 'loading' && <StatusBadge status={googleStatus} />}
                   {googleStatus === 'loading' && <StatusBadge status="loading" />}
                 </div>
-                <p className="text-sm text-slate-400 mt-1">Pull campaign performance data for all client accounts via Google Ads MCC. Also enables Google Drive, Analytics, and Search Console.</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Pull campaign performance data for all client accounts via Google Ads MCC. Also enables Google Drive, Analytics, and Search Console.</p>
                 {lastSynced.google_ads && googleStatus === 'connected' && (
                   <p className="text-xs text-slate-500 mt-1.5">Last synced: {timeAgo(lastSynced.google_ads)}</p>
                 )}
                 {googleStatus === 'disconnected' && (
                   <ol className="mt-3 space-y-1">
                     {['Connect your Google account (MCC)', 'Authorize ads, drive, analytics, and search console scopes', 'Map customer accounts per client in their detail page'].map((step, i) => (
-                      <li key={i} className="text-xs text-slate-400 flex gap-1.5">
-                        <span className="font-medium text-slate-300">{i + 1}.</span>
+                      <li key={i} className="text-xs text-slate-600 dark:text-slate-400 flex gap-1.5">
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{i + 1}.</span>
                         {step}
                       </li>
                     ))}
@@ -302,7 +302,7 @@ export default function IntegrationsPage() {
                   <button
                     onClick={handleGoogleAdsSync}
                     disabled={googleAdsSyncing}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50"
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-slate-900/10 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${googleAdsSyncing ? 'animate-spin' : ''}`} />
                     Sync Data
@@ -331,7 +331,7 @@ export default function IntegrationsPage() {
               <div className="text-2xl">📁</div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="font-semibold text-white">Google Drive</h2>
+                  <h2 className="font-semibold text-slate-900 dark:text-white">Google Drive</h2>
                   {googleStatus === 'loading' ? (
                     <StatusBadge status="loading" />
                   ) : googleStatus === 'connected' ? (
@@ -343,7 +343,7 @@ export default function IntegrationsPage() {
                     <StatusBadge status="disconnected" />
                   )}
                 </div>
-                <p className="text-sm text-slate-400 mt-1">Store all client files in Google Drive. Files are organized per client automatically.</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Store all client files in Google Drive. Files are organized per client automatically.</p>
                 {lastSynced.google_drive && googleStatus === 'connected' && (
                   <p className="text-xs text-slate-500 mt-1.5">Last tested: {timeAgo(lastSynced.google_drive)}</p>
                 )}
@@ -356,7 +356,7 @@ export default function IntegrationsPage() {
                 <button
                   onClick={handleGoogleDriveTest}
                   disabled={googleDriveSyncing}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm border border-slate-900/10 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${googleDriveSyncing ? 'animate-spin' : ''}`} />
                   Test Connection
@@ -375,18 +375,18 @@ export default function IntegrationsPage() {
               <div className="text-2xl">🔷</div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="font-semibold text-white">Meta Ads (Facebook & Instagram)</h2>
+                  <h2 className="font-semibold text-slate-900 dark:text-white">Meta Ads (Facebook & Instagram)</h2>
                   <StatusBadge status={metaStatus} />
                 </div>
-                <p className="text-sm text-slate-400 mt-1">Pull Ads Insights data for all connected client ad accounts.</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Pull Ads Insights data for all connected client ad accounts.</p>
                 {lastSynced.meta && metaStatus === 'connected' && (
                   <p className="text-xs text-slate-500 mt-1.5">Last synced: {timeAgo(lastSynced.meta)}</p>
                 )}
                 {metaStatus === 'disconnected' && (
                   <ol className="mt-3 space-y-1">
                     {['Connect Meta Business Manager account', 'Authorize ads_read scope', 'Set Ad Account IDs per client'].map((step, i) => (
-                      <li key={i} className="text-xs text-slate-400 flex gap-1.5">
-                        <span className="font-medium text-slate-300">{i + 1}.</span>
+                      <li key={i} className="text-xs text-slate-600 dark:text-slate-400 flex gap-1.5">
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{i + 1}.</span>
                         {step}
                       </li>
                     ))}
@@ -402,7 +402,7 @@ export default function IntegrationsPage() {
                   <button
                     onClick={handleMetaSync}
                     disabled={metaSyncing}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50"
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-slate-900/10 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${metaSyncing ? 'animate-spin' : ''}`} />
                     Sync Data
@@ -433,18 +433,18 @@ export default function IntegrationsPage() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="font-semibold text-white">QuickBooks Online</h2>
+                  <h2 className="font-semibold text-slate-900 dark:text-white">QuickBooks Online</h2>
                   <StatusBadge status={qbStatus} />
                 </div>
-                <p className="text-sm text-slate-400 mt-1">Sync invoices and client billing with QuickBooks Online.</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Sync invoices and client billing with QuickBooks Online.</p>
                 {lastSynced.qb && qbStatus === 'connected' && (
                   <p className="text-xs text-slate-500 mt-1.5">Last synced: {timeAgo(lastSynced.qb)}</p>
                 )}
                 {qbStatus === 'disconnected' && (
                   <ol className="mt-3 space-y-1">
                     {['Connect your QuickBooks Online account', 'Authorize accounting scope', 'Map QB customers per client in their detail page'].map((step, i) => (
-                      <li key={i} className="text-xs text-slate-400 flex gap-1.5">
-                        <span className="font-medium text-slate-300">{i + 1}.</span>
+                      <li key={i} className="text-xs text-slate-600 dark:text-slate-400 flex gap-1.5">
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{i + 1}.</span>
                         {step}
                       </li>
                     ))}
@@ -460,7 +460,7 @@ export default function IntegrationsPage() {
                   <button
                     onClick={handleQbSync}
                     disabled={qbSyncing}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-white/[0.08] text-slate-300 rounded-xl hover:bg-white/[0.06] transition-all disabled:opacity-50"
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-slate-900/10 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all disabled:opacity-50"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${qbSyncing ? 'animate-spin' : ''}`} />
                     Sync Products
@@ -468,7 +468,7 @@ export default function IntegrationsPage() {
                   <button
                     onClick={handleQbCustomerSync}
                     disabled={qbCustomerSyncing}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-white/[0.08] text-slate-300 rounded-xl hover:bg-white/[0.06] transition-all disabled:opacity-50"
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-slate-900/10 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all disabled:opacity-50"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${qbCustomerSyncing ? 'animate-spin' : ''}`} />
                     Sync Customers
@@ -499,10 +499,10 @@ export default function IntegrationsPage() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="font-semibold text-white">Helcim</h2>
+                  <h2 className="font-semibold text-slate-900 dark:text-white">Helcim</h2>
                   <StatusBadge status={helcimStatus} />
                 </div>
-                <p className="text-sm text-slate-400 mt-1">Collect invoice payments online via Helcim Hosted Payment Pages. A "Pay Now" button is added to sent invoices when configured.</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Collect invoice payments online via Helcim Hosted Payment Pages. A "Pay Now" button is added to sent invoices when configured.</p>
                 {helcimStatus === 'disconnected' && (
                   <ol className="mt-3 space-y-1">
                     {[
@@ -510,8 +510,8 @@ export default function IntegrationsPage() {
                       'Set HELCIM_PAYMENT_PAGE_URL to your Hosted Payment Page base URL',
                       'Set HELCIM_WEBHOOK_VERIFIER_TOKEN and point Helcim webhooks at /api/webhooks/payments',
                     ].map((step, i) => (
-                      <li key={i} className="text-xs text-slate-400 flex gap-1.5">
-                        <span className="font-medium text-slate-300">{i + 1}.</span>
+                      <li key={i} className="text-xs text-slate-600 dark:text-slate-400 flex gap-1.5">
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{i + 1}.</span>
                         {step}
                       </li>
                     ))}
@@ -538,7 +538,7 @@ export default function IntegrationsPage() {
               <div className="text-2xl">📊</div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="font-semibold text-white">Google Analytics 4</h2>
+                  <h2 className="font-semibold text-slate-900 dark:text-white">Google Analytics 4</h2>
                   {googleStatus === 'connected' ? (
                     <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
                       <CheckCircle className="h-3 w-3" />
@@ -548,7 +548,7 @@ export default function IntegrationsPage() {
                     <StatusBadge status={googleStatus === 'loading' ? 'loading' : 'disconnected'} />
                   )}
                 </div>
-                <p className="text-sm text-slate-400 mt-1">Pull website traffic, sessions, and goal data per client.</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Pull website traffic, sessions, and goal data per client.</p>
               </div>
             </div>
             <div className="shrink-0">
@@ -564,7 +564,7 @@ export default function IntegrationsPage() {
               <div className="text-2xl">🔍</div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="font-semibold text-white">Google Search Console</h2>
+                  <h2 className="font-semibold text-slate-900 dark:text-white">Google Search Console</h2>
                   {googleStatus === 'connected' ? (
                     <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
                       <CheckCircle className="h-3 w-3" />
@@ -574,7 +574,7 @@ export default function IntegrationsPage() {
                     <StatusBadge status={googleStatus === 'loading' ? 'loading' : 'disconnected'} />
                   )}
                 </div>
-                <p className="text-sm text-slate-400 mt-1">Pull keyword rankings, impressions, and click data per client site.</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Pull keyword rankings, impressions, and click data per client site.</p>
               </div>
             </div>
             <div className="shrink-0">
@@ -591,20 +591,20 @@ export default function IntegrationsPage() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="font-semibold text-white">Looker Studio (Google Data Studio)</h2>
+                <h2 className="font-semibold text-slate-900 dark:text-white">Looker Studio (Google Data Studio)</h2>
                 {lookerTemplateId
                   ? <StatusBadge status="connected" />
                   : <StatusBadge status="disconnected" />}
               </div>
-              <p className="text-sm text-slate-400 mt-1">Generate shareable report dashboards for clients. Set an org-wide template report ID here; each client can then create a dashboard from it (Linking API) or embed a published report.</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Generate shareable report dashboards for clients. Set an org-wide template report ID here; each client can then create a dashboard from it (Linking API) or embed a published report.</p>
               <ol className="mt-3 space-y-1">
                 {[
                   'Create a Looker Studio report to use as a template.',
                   'Share/publish it, then copy its report ID (the segment after /reporting/ in the report URL).',
                   'Paste the report ID below. Each client can then generate or embed their dashboard from the Marketing Reports page.',
                 ].map((step, i) => (
-                  <li key={i} className="text-xs text-slate-400 flex gap-1.5">
-                    <span className="font-medium text-slate-300">{i + 1}.</span>
+                  <li key={i} className="text-xs text-slate-600 dark:text-slate-400 flex gap-1.5">
+                    <span className="font-medium text-slate-700 dark:text-slate-300">{i + 1}.</span>
                     {step}
                   </li>
                 ))}

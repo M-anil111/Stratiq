@@ -28,7 +28,7 @@ const statusColors: Record<string, string> = {
 }
 
 const selectClass =
-  'w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
+  'w-full bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
 
 interface SocialAccount {
   id: string | null
@@ -173,32 +173,32 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/[0.06]">
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Platform</th>
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Handle</th>
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Password</th>
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Access Level</th>
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Status</th>
-                <th className="text-left px-3 py-2 text-slate-400 font-medium">Profile URL</th>
-                <th className="text-right px-3 py-2 text-slate-400 font-medium">Actions</th>
+              <tr className="border-b border-slate-900/10 dark:border-white/[0.06]">
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Platform</th>
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Handle</th>
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Password</th>
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Access Level</th>
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Status</th>
+                <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Profile URL</th>
+                <th className="text-right px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {accounts.map(account => (
-                <tr key={account.platform} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
-                  <td className="px-3 py-3 text-white font-medium">{account.platform}</td>
-                  <td className="px-3 py-3 text-slate-300 font-mono text-xs">
+                <tr key={account.platform} className="border-b border-slate-900/10 dark:border-white/[0.04] hover:bg-white/[0.02] transition-colors">
+                  <td className="px-3 py-3 text-slate-900 dark:text-white font-medium">{account.platform}</td>
+                  <td className="px-3 py-3 text-slate-700 dark:text-slate-300 font-mono text-xs">
                     {account.username || <span className="text-slate-600 italic">—</span>}
                   </td>
                   <td className="px-3 py-3">
                     {account.password ? (
                       <div className="flex items-center gap-2">
-                        <span className={revealed.has(account.platform) ? 'text-emerald-400 font-mono text-sm' : 'text-slate-400 tracking-widest text-xs'}>
+                        <span className={revealed.has(account.platform) ? 'text-emerald-400 font-mono text-sm' : 'text-slate-600 dark:text-slate-400 tracking-widest text-xs'}>
                           {revealed.has(account.platform) ? account.password : '••••••••'}
                         </span>
                         <button
                           onClick={() => toggleReveal(account.platform)}
-                          className="p-1 rounded hover:bg-white/[0.08] text-slate-400 hover:text-white transition-colors"
+                          className="p-1 rounded hover:bg-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-white transition-colors"
                           title={revealed.has(account.platform) ? 'Hide' : 'Reveal'}
                         >
                           {revealed.has(account.platform) ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -208,12 +208,12 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
                       <span className="text-slate-600 text-xs italic">not set</span>
                     )}
                   </td>
-                  <td className="px-3 py-3 text-xs capitalize text-slate-300">
+                  <td className="px-3 py-3 text-xs capitalize text-slate-700 dark:text-slate-300">
                     {account.access_level || <span className="text-slate-600 italic">—</span>}
                   </td>
                   <td className="px-3 py-3">
                     {account.status ? (
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusColors[account.status] ?? 'bg-white/[0.06] text-slate-400'}`}>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusColors[account.status] ?? 'bg-slate-900/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-400'}`}>
                         {account.status}
                       </span>
                     ) : (
@@ -233,7 +233,7 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
                     <div className="flex items-center justify-end">
                       <button
                         onClick={() => openEdit(account)}
-                        className="p-1.5 rounded hover:bg-white/[0.08] text-slate-400 hover:text-sky-400 transition-colors"
+                        className="p-1.5 rounded hover:bg-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-sky-400 transition-colors"
                         title="Edit"
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -252,10 +252,10 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
           <div className="glass-card w-full max-w-md p-6 relative">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="text-base font-semibold text-white">{editingPlatform}</h2>
-                <p className="text-xs text-slate-400 mt-0.5">Update account details</p>
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white">{editingPlatform}</h2>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Update account details</p>
               </div>
-              <button onClick={closeModal} className="p-1.5 rounded hover:bg-white/[0.08] text-slate-400 hover:text-white transition-colors">
+              <button onClick={closeModal} className="p-1.5 rounded hover:bg-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-white transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -268,7 +268,7 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Username / Handle</label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Username / Handle</label>
                 <input
                   className="input-glass w-full"
                   placeholder="@username"
@@ -278,7 +278,7 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Password / Token</label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Password / Token</label>
                 <div className="relative">
                   <input
                     className="input-glass w-full pr-10"
@@ -290,7 +290,7 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
                   <button
                     type="button"
                     onClick={() => setShowFormPassword(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-400 hover:text-white transition-colors"
                   >
                     {showFormPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -302,7 +302,7 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1.5">Access Level</label>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Access Level</label>
                   <select
                     className={selectClass}
                     value={form.access_level}
@@ -315,7 +315,7 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1.5">Status</label>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Status</label>
                   <select
                     className={selectClass}
                     value={form.status}
@@ -328,7 +328,7 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Account URL</label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Account URL</label>
                 <input
                   className="input-glass w-full"
                   type="url"
@@ -340,7 +340,7 @@ export default function SocialAccountsTab({ projectId }: { projectId: string }) 
             </div>
 
             <div className="flex items-center justify-end gap-3 mt-6">
-              <button onClick={closeModal} className="px-4 py-2 rounded-lg text-sm text-slate-400 hover:bg-white/[0.06] transition-colors">
+              <button onClick={closeModal} className="px-4 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-white/[0.06] transition-colors">
                 Cancel
               </button>
               <button

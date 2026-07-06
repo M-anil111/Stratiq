@@ -49,7 +49,7 @@ const STATUS_COLORS: Record<string, string> = {
   voided: 'bg-slate-700/40 text-slate-500',
 }
 
-const selectClass = "bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+const selectClass = "bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 function fmt(n: number | null | undefined) {
   if (n == null) return '$0.00'
@@ -323,14 +323,14 @@ export default function InvoicesPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6 flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Invoices</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Manage all client invoices and QuickBooks sync</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Invoices</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">Manage all client invoices and QuickBooks sync</p>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
-          <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all whitespace-nowrap">
+          <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all whitespace-nowrap">
             <Download className="h-4 w-4" /> Export CSV
           </button>
-          <button onClick={openImport} className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all whitespace-nowrap">
+          <button onClick={openImport} className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all whitespace-nowrap">
             <Download className="h-4 w-4" /> Import from QuickBooks
           </button>
           <button onClick={() => setShowForm(v => !v)} className="btn-brand flex items-center gap-1.5 px-4 py-2.5 text-sm">
@@ -342,12 +342,12 @@ export default function InvoicesPage() {
       {/* Summary tiles */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {[
-          { label: 'Total Invoiced', value: fmt(totals.total), color: 'text-white' },
+          { label: 'Total Invoiced', value: fmt(totals.total), color: 'text-slate-900 dark:text-white' },
           { label: 'Total Paid', value: fmt(totals.paid), color: 'text-emerald-400' },
           { label: 'Outstanding', value: fmt(totals.outstanding), color: 'text-amber-400' },
         ].map(t => (
           <div key={t.label} className="glass-card p-4">
-            <p className="text-xs text-slate-400 mb-1">{t.label}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">{t.label}</p>
             <p className={`text-xl font-bold ${t.color}`}>{t.value}</p>
           </div>
         ))}
@@ -356,10 +356,10 @@ export default function InvoicesPage() {
       {/* New Invoice Form */}
       {showForm && (
         <div className="glass-card p-5 mb-6">
-          <h2 className="font-semibold text-white mb-4">Create Invoice</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Create Invoice</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Client *</label>
+              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Client *</label>
               <select value={newInvoice.client_id} onChange={e => setNewInvoice(p => ({ ...p, client_id: e.target.value, project_id: '' }))} className={selectClass}>
                 <option value="">Select client…</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
@@ -367,7 +367,7 @@ export default function InvoicesPage() {
             </div>
             {clientProjects.length > 0 && (
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Project</label>
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Project</label>
                 <select value={newInvoice.project_id} onChange={e => setNewInvoice(p => ({ ...p, project_id: e.target.value }))} className={selectClass}>
                   <option value="">No specific project</option>
                   {clientProjects.map(p => <option key={p.id} value={p.id}>{p.domain || 'Project'}</option>)}
@@ -375,15 +375,15 @@ export default function InvoicesPage() {
               </div>
             )}
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Issue Date</label>
+              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Issue Date</label>
               <input type="date" value={newInvoice.issue_date} onChange={e => setNewInvoice(p => ({ ...p, issue_date: e.target.value }))} className="input-glass" />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Due Date</label>
+              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Due Date</label>
               <input type="date" value={newInvoice.due_date} onChange={e => setNewInvoice(p => ({ ...p, due_date: e.target.value }))} className="input-glass" />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Tax Amount ($)</label>
+              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Tax Amount ($)</label>
               <input type="number" step="0.01" placeholder="0.00" value={newInvoice.tax_amount} onChange={e => setNewInvoice(p => ({ ...p, tax_amount: e.target.value }))} className="input-glass" />
             </div>
           </div>
@@ -391,7 +391,7 @@ export default function InvoicesPage() {
           {/* Line items */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Line Items</p>
+              <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Line Items</p>
               <button onClick={addLineItem} className="text-xs text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1">
                 <Plus className="h-3 w-3" /> Add Item
               </button>
@@ -399,7 +399,7 @@ export default function InvoicesPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/[0.06]">
+                  <tr className="border-b border-slate-900/10 dark:border-white/[0.06]">
                     {['Description', 'Qty', 'Unit Price', 'Amount', ''].map(h => (
                       <th key={h} className="text-left text-xs text-slate-500 pb-2 pr-3">{h}</th>
                     ))}
@@ -423,7 +423,7 @@ export default function InvoicesPage() {
                                   return { ...prev, line_items: items }
                                 })
                               }}
-                              className="bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-slate-400 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500/50 max-w-[120px]"
+                              className="bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-600 dark:text-slate-400 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500/50 max-w-[120px]"
                             >
                               <option value="">QB item…</option>
                               {qbItems.map(q => <option key={q.id} value={q.id}>{q.name}</option>)}
@@ -437,7 +437,7 @@ export default function InvoicesPage() {
                       <td className="py-1.5 pr-3 w-28">
                         <input type="number" step="0.01" value={li.unit_price} onChange={e => updateLineItem(idx, 'unit_price', e.target.value)} placeholder="0.00" className="input-glass text-sm" />
                       </td>
-                      <td className="py-1.5 pr-3 w-24 text-slate-300 tabular-nums text-right">${parseFloat(li.amount || '0').toFixed(2)}</td>
+                      <td className="py-1.5 pr-3 w-24 text-slate-700 dark:text-slate-300 tabular-nums text-right">${parseFloat(li.amount || '0').toFixed(2)}</td>
                       <td className="py-1.5 w-8">
                         {newInvoice.line_items.length > 1 && (
                           <button onClick={() => removeLineItem(idx)} className="text-slate-500 hover:text-red-400 transition-colors text-xs">✕</button>
@@ -448,15 +448,15 @@ export default function InvoicesPage() {
                 </tbody>
               </table>
             </div>
-            <div className="flex flex-col items-end mt-3 gap-1 text-sm text-slate-400">
-              <span>Subtotal: <span className="text-white tabular-nums">{fmt(subtotal)}</span></span>
-              <span>Tax: <span className="text-white tabular-nums">{fmt(taxAmt)}</span></span>
-              <span className="text-base font-bold text-white">Total: <span className="tabular-nums">{fmt(totalAmt)}</span></span>
+            <div className="flex flex-col items-end mt-3 gap-1 text-sm text-slate-600 dark:text-slate-400">
+              <span>Subtotal: <span className="text-slate-900 dark:text-white tabular-nums">{fmt(subtotal)}</span></span>
+              <span>Tax: <span className="text-slate-900 dark:text-white tabular-nums">{fmt(taxAmt)}</span></span>
+              <span className="text-base font-bold text-slate-900 dark:text-white">Total: <span className="tabular-nums">{fmt(totalAmt)}</span></span>
             </div>
           </div>
 
           <div className="mb-4">
-            <label className="block text-xs text-slate-400 mb-1">Notes</label>
+            <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Notes</label>
             <textarea value={newInvoice.notes} onChange={e => setNewInvoice(p => ({ ...p, notes: e.target.value }))} rows={2} placeholder="Optional notes for the client" className="input-glass resize-none" />
           </div>
 
@@ -464,7 +464,7 @@ export default function InvoicesPage() {
             <button onClick={saveInvoice} disabled={savingInvoice || !newInvoice.client_id} className="btn-brand px-5 py-2.5 text-sm disabled:opacity-50">
               {savingInvoice ? <><Loader2 className="h-4 w-4 animate-spin inline mr-1" />Saving…</> : 'Save Invoice'}
             </button>
-            <button onClick={() => setShowForm(false)} className="px-4 py-2.5 text-sm border border-white/[0.10] text-slate-400 hover:text-white rounded-xl transition-colors">
+            <button onClick={() => setShowForm(false)} className="px-4 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl transition-colors">
               Cancel
             </button>
           </div>
@@ -487,7 +487,7 @@ export default function InvoicesPage() {
             <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
           ))}
         </select>
-        <button onClick={loadInvoices} className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-xl transition-all">
+        <button onClick={loadInvoices} className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all">
           <RefreshCw className="h-4 w-4" />
         </button>
       </div>
@@ -495,34 +495,34 @@ export default function InvoicesPage() {
       {/* Table */}
       <div className="glass-card overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-slate-400 text-sm">
+          <div className="flex items-center justify-center py-16 text-slate-600 dark:text-slate-400 text-sm">
             <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading invoices…
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center">
             <FileText className="h-8 w-8 text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-400 text-sm">No invoices found</p>
-            <p className="text-slate-600 text-xs mt-1">Create your first invoice with the button above</p>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">No invoices found</p>
+            <p className="text-slate-500 text-xs mt-1">Create your first invoice with the button above</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/[0.06]">
+                <tr className="border-b border-slate-900/10 dark:border-white/[0.06]">
                   {['Invoice #', 'Client', 'Status', 'Issue Date', 'Due Date', 'Total', 'Paid', 'Balance', 'QB', 'Actions'].map(h => (
-                    <th key={h} className="text-left text-xs font-medium text-slate-400 px-4 py-3 whitespace-nowrap">{h}</th>
+                    <th key={h} className="text-left text-xs font-medium text-slate-600 dark:text-slate-400 px-4 py-3 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.04]">
+              <tbody className="divide-y divide-slate-900/10 dark:divide-white/[0.04]">
                 {filtered.map(inv => (
-                  <tr key={inv.id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={inv.id} className="hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.02] transition-colors">
                     <td className="px-4 py-3">
                       <Link href={`/clients/${inv.client_id}?tab=invoices`} className="text-sky-400 hover:text-sky-300 font-medium transition-colors">
                         {inv.invoice_number}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-slate-300">{inv.client?.company_name || '—'}</td>
+                    <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{inv.client?.company_name || '—'}</td>
                     <td className="px-4 py-3">
                       <select
                         value={inv.status}
@@ -537,9 +537,9 @@ export default function InvoicesPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-4 py-3 text-slate-400 tabular-nums whitespace-nowrap">{inv.issue_date}</td>
-                    <td className="px-4 py-3 text-slate-400 tabular-nums whitespace-nowrap">{inv.due_date || '—'}</td>
-                    <td className="px-4 py-3 text-white tabular-nums whitespace-nowrap">{fmt(inv.total)}</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 tabular-nums whitespace-nowrap">{inv.issue_date}</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 tabular-nums whitespace-nowrap">{inv.due_date || '—'}</td>
+                    <td className="px-4 py-3 text-slate-900 dark:text-white tabular-nums whitespace-nowrap">{fmt(inv.total)}</td>
                     <td className="px-4 py-3 text-emerald-400 tabular-nums whitespace-nowrap">{fmt(inv.amount_paid)}</td>
                     <td className="px-4 py-3 tabular-nums whitespace-nowrap">
                       <span className={balanceDue(inv) > 0 ? 'text-amber-400 font-medium' : 'text-slate-500'}>
@@ -558,7 +558,7 @@ export default function InvoicesPage() {
                           onClick={() => sendInvoiceEmail(inv)}
                           disabled={sendingEmail === inv.id}
                           title="Email invoice to client"
-                          className="text-xs px-2 py-1.5 border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-lg transition-all disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
+                          className="text-xs px-2 py-1.5 border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-lg transition-all disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
                         >
                           {sendingEmail === inv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                           {sendMsg[inv.id] || 'Email'}
@@ -567,7 +567,7 @@ export default function InvoicesPage() {
                           onClick={() => pushToQb(inv)}
                           disabled={pushingQb === inv.id}
                           title="Push to QuickBooks"
-                          className="text-xs px-2 py-1.5 border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-lg transition-all disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
+                          className="text-xs px-2 py-1.5 border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-lg transition-all disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
                         >
                           {pushingQb === inv.id
                             ? <Loader2 className="h-3 w-3 animate-spin" />
@@ -581,7 +581,7 @@ export default function InvoicesPage() {
                           <button
                             onClick={() => markPaid(inv)}
                             title="Mark as Paid"
-                            className="text-xs px-2 py-1.5 border border-white/[0.10] text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all whitespace-nowrap flex items-center gap-1"
+                            className="text-xs px-2 py-1.5 border border-slate-900/10 dark:border-white/[0.10] text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all whitespace-nowrap flex items-center gap-1"
                           >
                             <DollarSign className="h-3 w-3" /> Paid
                           </button>
@@ -590,7 +590,7 @@ export default function InvoicesPage() {
                           <button
                             onClick={() => voidInvoice(inv)}
                             title="Void invoice"
-                            className="text-xs px-2 py-1.5 border border-white/[0.10] text-red-400 hover:bg-red-500/10 rounded-lg transition-all whitespace-nowrap flex items-center gap-1"
+                            className="text-xs px-2 py-1.5 border border-slate-900/10 dark:border-white/[0.10] text-red-400 hover:bg-red-500/10 rounded-lg transition-all whitespace-nowrap flex items-center gap-1"
                           >
                             <Ban className="h-3 w-3" /> Void
                           </button>
@@ -599,7 +599,7 @@ export default function InvoicesPage() {
                           href={`/invoices/${inv.id}/print`}
                           target="_blank"
                           title="Print / PDF"
-                          className="text-xs px-2 py-1.5 border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] rounded-lg transition-all whitespace-nowrap flex items-center"
+                          className="text-xs px-2 py-1.5 border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-lg transition-all whitespace-nowrap flex items-center"
                         >
                           <Printer className="h-3 w-3" />
                         </Link>
@@ -622,22 +622,22 @@ export default function InvoicesPage() {
           <div className="glass-card w-full max-w-3xl max-h-[85vh] flex flex-col p-5" onClick={e => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h2 className="font-semibold text-white">Import Invoices from QuickBooks</h2>
-                <p className="text-slate-400 text-xs mt-0.5">Pull recent QuickBooks invoices into Stratiq. Already-imported invoices are skipped.</p>
+                <h2 className="font-semibold text-slate-900 dark:text-white">Import Invoices from QuickBooks</h2>
+                <p className="text-slate-600 dark:text-slate-400 text-xs mt-0.5">Pull recent QuickBooks invoices into Stratiq. Already-imported invoices are skipped.</p>
               </div>
-              <button onClick={() => !importing && setShowImport(false)} className="text-slate-500 hover:text-white transition-colors text-lg leading-none">✕</button>
+              <button onClick={() => !importing && setShowImport(false)} className="text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors text-lg leading-none">✕</button>
             </div>
 
             {importLoading ? (
               <div className="space-y-2">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-10 rounded-lg bg-white/[0.04] animate-pulse" />
+                  <div key={i} className="h-10 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.04] animate-pulse" />
                 ))}
               </div>
             ) : importError ? (
               <div className="py-8 text-center">
                 <AlertCircle className="h-8 w-8 text-amber-400 mx-auto mb-3" />
-                <p className="text-slate-300 text-sm mb-1">{importError}</p>
+                <p className="text-slate-700 dark:text-slate-300 text-sm mb-1">{importError}</p>
                 {importError.toLowerCase().includes('not connected') && (
                   <Link href="/settings/integrations" className="text-sky-400 hover:text-sky-300 text-sm underline">
                     Connect QuickBooks in Settings → Integrations
@@ -647,8 +647,8 @@ export default function InvoicesPage() {
             ) : importResult ? (
               <div className="py-8 text-center">
                 <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto mb-3" />
-                <p className="text-white text-sm font-medium mb-2">Import complete</p>
-                <p className="text-slate-400 text-sm">
+                <p className="text-slate-900 dark:text-white text-sm font-medium mb-2">Import complete</p>
+                <p className="text-slate-600 dark:text-slate-400 text-sm">
                   {importResult.imported} imported · {importResult.skipped} skipped · {importResult.linked} linked to clients
                 </p>
                 <button onClick={() => setShowImport(false)} className="btn-brand px-5 py-2.5 text-sm mt-5">Done</button>
@@ -656,25 +656,25 @@ export default function InvoicesPage() {
             ) : qbPreview.length === 0 ? (
               <div className="py-10 text-center">
                 <FileText className="h-8 w-8 text-slate-600 mx-auto mb-3" />
-                <p className="text-slate-400 text-sm">No invoices found in QuickBooks</p>
+                <p className="text-slate-600 dark:text-slate-400 text-sm">No invoices found in QuickBooks</p>
               </div>
             ) : (
               <>
                 <div className="overflow-y-auto flex-1 -mx-1 px-1">
                   <table className="w-full text-sm">
-                    <thead className="sticky top-0 bg-[#0f1e35]">
-                      <tr className="border-b border-white/[0.06]">
+                    <thead className="sticky top-0 bg-white dark:bg-[#0f1e35]">
+                      <tr className="border-b border-slate-900/10 dark:border-white/[0.06]">
                         <th className="px-3 py-2 text-left w-8">
                           <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="accent-sky-500" />
                         </th>
                         {['Invoice #', 'Customer', 'Date', 'Due', 'Total', 'Balance'].map(h => (
-                          <th key={h} className="px-3 py-2 text-left text-xs font-medium text-slate-400 whitespace-nowrap">{h}</th>
+                          <th key={h} className="px-3 py-2 text-left text-xs font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/[0.04]">
+                    <tbody className="divide-y divide-slate-900/10 dark:divide-white/[0.04]">
                       {qbPreview.map(inv => (
-                        <tr key={inv.qb_id} className="hover:bg-white/[0.02]">
+                        <tr key={inv.qb_id} className="hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.02]">
                           <td className="px-3 py-2">
                             <input
                               type="checkbox"
@@ -684,10 +684,10 @@ export default function InvoicesPage() {
                             />
                           </td>
                           <td className="px-3 py-2 text-sky-400 font-medium whitespace-nowrap">{inv.doc_number || inv.qb_id}</td>
-                          <td className="px-3 py-2 text-slate-300">{inv.customer_name || '—'}</td>
-                          <td className="px-3 py-2 text-slate-400 tabular-nums whitespace-nowrap">{inv.txn_date || '—'}</td>
-                          <td className="px-3 py-2 text-slate-400 tabular-nums whitespace-nowrap">{inv.due_date || '—'}</td>
-                          <td className="px-3 py-2 text-white tabular-nums whitespace-nowrap">{fmt(inv.total_amt)}</td>
+                          <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{inv.customer_name || '—'}</td>
+                          <td className="px-3 py-2 text-slate-600 dark:text-slate-400 tabular-nums whitespace-nowrap">{inv.txn_date || '—'}</td>
+                          <td className="px-3 py-2 text-slate-600 dark:text-slate-400 tabular-nums whitespace-nowrap">{inv.due_date || '—'}</td>
+                          <td className="px-3 py-2 text-slate-900 dark:text-white tabular-nums whitespace-nowrap">{fmt(inv.total_amt)}</td>
                           <td className="px-3 py-2 tabular-nums whitespace-nowrap">
                             <span className={inv.balance > 0 ? 'text-amber-400' : 'text-emerald-400'}>{fmt(inv.balance)}</span>
                           </td>
@@ -696,12 +696,12 @@ export default function InvoicesPage() {
                     </tbody>
                   </table>
                 </div>
-                <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-white/[0.06]">
+                <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-slate-900/10 dark:border-white/[0.06]">
                   <span className="text-xs text-slate-500">
                     {qbPreview.filter(i => importSelected[i.qb_id]).length} of {qbPreview.length} selected
                   </span>
                   <div className="flex gap-2">
-                    <button onClick={() => setShowImport(false)} disabled={importing} className="px-4 py-2.5 text-sm border border-white/[0.10] text-slate-400 hover:text-white rounded-xl transition-colors disabled:opacity-50">
+                    <button onClick={() => setShowImport(false)} disabled={importing} className="px-4 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl transition-colors disabled:opacity-50">
                       Cancel
                     </button>
                     <button

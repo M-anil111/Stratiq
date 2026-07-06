@@ -100,7 +100,7 @@ export default function MarketingReportPrintPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24 text-slate-400 text-sm">
+      <div className="flex items-center justify-center py-24 text-slate-600 dark:text-slate-400 text-sm">
         <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading report…
       </div>
     )
@@ -140,7 +140,7 @@ export default function MarketingReportPrintPage() {
 
       {/* Toolbar — hidden when printing */}
       <div className="print-hide flex items-center justify-between max-w-[820px] mx-auto mb-4">
-        <p className="text-slate-400 text-sm">Print preview — {clientName || 'Marketing report'} · {monthLabel}</p>
+        <p className="text-slate-600 dark:text-slate-400 text-sm">Print preview — {clientName || 'Marketing report'} · {monthLabel}</p>
         <button onClick={() => window.print()} className="btn-brand flex items-center gap-1.5 px-4 py-2.5 text-sm">
           <Printer className="h-4 w-4" /> Download PDF
         </button>

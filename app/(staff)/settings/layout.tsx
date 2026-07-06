@@ -91,7 +91,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
                   active
                     ? 'bg-sky-500/15 text-sky-300'
-                    : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.05]'
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" />
@@ -107,7 +107,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   return (
     <div className="flex min-h-full">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:block w-60 shrink-0 border-r border-white/[0.07] py-6 px-3">
+      <aside className="hidden lg:block w-60 shrink-0 border-r border-slate-900/10 dark:border-white/[0.08] py-6 px-3">
         {Nav}
       </aside>
 
@@ -125,10 +125,10 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <aside className="w-72 max-w-[85%] bg-slate-950 border-l border-white/[0.07] py-6 px-3 overflow-y-auto">
+          <aside className="w-72 max-w-[85%] bg-white dark:bg-slate-950 border-l border-slate-900/10 dark:border-white/[0.08] py-6 px-3 overflow-y-auto">
             <div className="flex items-center justify-between px-2 mb-4">
-              <span className="text-sm font-semibold text-white">Settings</span>
-              <button onClick={() => setMobileOpen(false)} className="p-1.5 rounded-lg hover:bg-white/[0.06] text-slate-400">
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">Settings</span>
+              <button onClick={() => setMobileOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.05] text-slate-600 dark:text-slate-400">
                 <X className="h-4 w-4" />
               </button>
             </div>

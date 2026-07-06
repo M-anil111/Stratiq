@@ -115,10 +115,10 @@ export default function MastersPage() {
   }
 
   const MasterRow = ({ m }: { m: Master }) => (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-lg transition-colors group">
+    <div className="flex items-center gap-3 px-4 py-3 hover:bg-slate-900/[0.04] dark:hover:bg-white/5 rounded-lg transition-colors group">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`font-medium text-sm ${m.is_active ? 'text-slate-100' : 'text-slate-500 line-through'}`}>
+          <span className={`font-medium text-sm ${m.is_active ? 'text-slate-900 dark:text-slate-100' : 'text-slate-500 line-through'}`}>
             {m.label}
           </span>
           <StatusBadge status={m.approval_status} />
@@ -145,7 +145,7 @@ export default function MastersPage() {
         )}
         {m.approval_status === 'approved' && isAdmin && (
           <button onClick={() => handleAction(m.id, 'update', { is_active: !m.is_active })}
-            className="p-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 text-slate-400 transition-colors"
+            className="p-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 text-slate-600 dark:text-slate-400 transition-colors"
             title={m.is_active ? 'Deactivate' : 'Activate'}>
             {m.is_active ? <ToggleRight size={15} className="text-emerald-400" /> : <ToggleLeft size={15} />}
           </button>
@@ -164,8 +164,8 @@ export default function MastersPage() {
     <div className="min-h-screen bg-mesh">
       <div className="max-w-5xl mx-auto px-4 py-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-100">Data Sets</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Manage the dropdown values used across the platform. Each data set has its own tab.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Data Sets</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Manage the dropdown values used across the platform. Each data set has its own tab.</p>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
@@ -181,12 +181,12 @@ export default function MastersPage() {
                   <button key={cat.key}
                     onClick={() => { setActiveTab(cat.key); setSearch('') }}
                     className={`flex-shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors relative ${
-                      active ? 'bg-sky-500/15 text-sky-300' : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                      active ? 'bg-sky-500/15 text-sky-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06]'
                     }`}>
                     <Icon className="h-4 w-4 shrink-0" />
                     <span className="whitespace-nowrap">{cat.label}</span>
                     {pendingCount > 0 && (
-                      <span className="ml-auto bg-amber-500 text-white text-[9px] rounded-full min-w-4 h-4 px-1 flex items-center justify-center font-bold">
+                      <span className="ml-auto bg-amber-500 text-slate-900 dark:text-white text-[9px] rounded-full min-w-4 h-4 px-1 flex items-center justify-center font-bold">
                         {pendingCount}
                       </span>
                     )}
@@ -200,18 +200,18 @@ export default function MastersPage() {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                   <activeCategory.icon className="h-5 w-5 text-sky-400" />
                   {activeCategory.label}
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">{activeCategory.description}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{activeCategory.description}</p>
               </div>
               <AddButton label="Add Value" onClick={() => setShowAdd(true)} />
             </div>
 
             <div className="glass-card rounded-2xl overflow-hidden">
               {/* Search bar */}
-              <div className="p-4 border-b border-white/5">
+              <div className="p-4 border-b border-slate-900/10 dark:border-white/5">
                 <div className="relative">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input value={search} onChange={e => setSearch(e.target.value)}
@@ -268,20 +268,20 @@ export default function MastersPage() {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           onClick={e => { if (e.target === e.currentTarget) setShowAdd(false) }}>
           <div className="glass-card rounded-2xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold text-slate-100 mb-1">Add New Value</h2>
-            <p className="text-xs text-slate-400 mb-4">
-              Data set: <strong className="text-slate-300">{activeCategory.label}</strong>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1">Add New Value</h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
+              Data set: <strong className="text-slate-700 dark:text-slate-300">{activeCategory.label}</strong>
               {!isAdmin && <span className="ml-2 text-amber-400">(requires admin approval)</span>}
             </p>
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-slate-400 mb-1 block">Label <span className="text-red-400">*</span></label>
+                <label className="text-xs text-slate-600 dark:text-slate-400 mb-1 block">Label <span className="text-red-400">*</span></label>
                 <input value={addForm.label} onChange={e => setAddForm(f => ({ ...f, label: e.target.value }))}
                   placeholder="e.g. New Industry Name"
                   className="input-glass w-full px-3 py-2.5 rounded-xl text-sm" autoFocus />
               </div>
               <div>
-                <label className="text-xs text-slate-400 mb-1 block">Description <span className="text-slate-600">(optional)</span></label>
+                <label className="text-xs text-slate-600 dark:text-slate-400 mb-1 block">Description <span className="text-slate-600">(optional)</span></label>
                 <textarea value={addForm.description} onChange={e => setAddForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="Brief description of when to use this value..."
                   rows={2} className="input-glass w-full px-3 py-2.5 rounded-xl text-sm resize-none" />
@@ -289,7 +289,7 @@ export default function MastersPage() {
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setShowAdd(false)}
-                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 bg-white/5 hover:bg-white/10 transition-colors">
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-900/[0.04] dark:bg-white/5 hover:bg-slate-900/[0.08] dark:hover:bg-white/10 transition-colors">
                 Cancel
               </button>
               <button onClick={handleAdd} disabled={adding || !addForm.label.trim()}

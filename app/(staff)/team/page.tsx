@@ -9,7 +9,7 @@ const ROLES: Record<string, { label: string; color: string }> = {
   super_admin: { label: 'Super Admin', color: 'bg-purple-500/20 text-purple-300' },
   admin: { label: 'Admin', color: 'bg-blue-500/20 text-blue-300' },
   manager: { label: 'Manager', color: 'bg-sky-500/20 text-sky-300' },
-  team_member: { label: 'Team Member', color: 'bg-white/[0.08] text-slate-300' },
+  team_member: { label: 'Team Member', color: 'bg-slate-900/[0.04] dark:bg-white/[0.08] text-slate-700 dark:text-slate-300' },
   billing_admin: { label: 'Billing Admin', color: 'bg-amber-500/20 text-amber-300' },
   client: { label: 'Client', color: 'bg-green-500/20 text-green-300' },
 }
@@ -32,7 +32,7 @@ const ROLE_DESCRIPTIONS = [
   {
     role: 'team_member',
     label: 'Team Member',
-    color: 'bg-white/[0.08] text-slate-300',
+    color: 'bg-slate-900/[0.04] dark:bg-white/[0.08] text-slate-700 dark:text-slate-300',
     description: 'Standard staff access. Can view and work with assigned clients and projects.',
     permissions: ['Clients (view)', 'Projects (view, edit own)', 'Activity records (create, edit own)', 'Messages (view, send)', 'Reports (view)'],
   },
@@ -660,16 +660,16 @@ export default function TeamPage() {
     <div className="p-4 lg:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Team</h1>
-          <p className="text-slate-400 text-sm">Manage users, roles, and permissions</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Team</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm">Manage users, roles, and permissions</p>
         </div>
         <AddButton label="Add Users" onClick={() => openAdd(false)} />
       </div>
 
-      <div className="flex border-b border-white/[0.08] mb-6 overflow-x-auto">
+      <div className="flex border-b border-slate-900/10 dark:border-white/[0.08] mb-6 overflow-x-auto">
         {tabs.map((tab, i) => (
           <button key={tab} onClick={() => setActiveTab(i)}
-            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === i ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-400 hover:text-slate-300'}`}>
+            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === i ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}>
             {tab}
             {tab === 'Invitations' && invites.length > 0 && (
               <span className="ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/20 text-sky-300">{invites.length}</span>
@@ -686,7 +686,7 @@ export default function TeamPage() {
 
       {activeTab === 0 && (
         <div className="glass-card">
-          <div className="p-4 border-b border-white/[0.08]">
+          <div className="p-4 border-b border-slate-900/10 dark:border-white/[0.08]">
             <input
               type="text"
               value={search}
@@ -695,7 +695,7 @@ export default function TeamPage() {
               className="input-glass sm:w-72"
             />
           </div>
-          <div className="divide-y divide-white/[0.06]">
+          <div className="divide-y divide-slate-900/10 dark:divide-white/[0.06]">
             {loading ? (
               Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="flex items-center justify-between px-4 py-3">
@@ -710,7 +710,7 @@ export default function TeamPage() {
                 </div>
               ))
             ) : filtered.length === 0 ? (
-              <div className="px-4 py-8 text-center text-slate-400 text-sm">
+              <div className="px-4 py-8 text-center text-slate-600 dark:text-slate-400 text-sm">
                 {search ? 'No members match your search' : 'No team members yet'}
               </div>
             ) : (
@@ -720,29 +720,29 @@ export default function TeamPage() {
                     {user.avatar_url ? (
                       <img src={user.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover" />
                     ) : (
-                      <div className="w-9 h-9 rounded-full bg-white/[0.08] text-slate-300 flex items-center justify-center font-semibold text-sm">
+                      <div className="w-9 h-9 rounded-full bg-slate-900/[0.04] dark:bg-white/[0.08] text-slate-700 dark:text-slate-300 flex items-center justify-center font-semibold text-sm">
                         {(user.full_name || '?').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
                     )}
                     <div>
-                      <p className="font-medium text-white text-sm">{user.full_name}</p>
-                      <p className="text-xs text-slate-400">{user.email}</p>
+                      <p className="font-medium text-slate-900 dark:text-white text-sm">{user.full_name}</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">{user.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ROLES[user.role]?.color || 'bg-white/[0.08] text-slate-300'}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ROLES[user.role]?.color || 'bg-slate-900/[0.04] dark:bg-white/[0.08] text-slate-700 dark:text-slate-300'}`}>
                       {ROLES[user.role]?.label || user.role}
                     </span>
                     <div className="flex gap-1">
                       {canImpersonate(user) && (
-                        <button onClick={() => handleImpersonate(user)} disabled={impersonatingId === user.id} title="View as user" className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-white/[0.06] disabled:opacity-50">
+                        <button onClick={() => handleImpersonate(user)} disabled={impersonatingId === user.id} title="View as user" className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-50">
                           {impersonatingId === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
                         </button>
                       )}
-                      <button onClick={() => openAccess(user)} title="Manage project access" className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06]"><FolderKey className="h-4 w-4" /></button>
-                      <a href={`/team/${user.id}/permissions`} title="Manage permissions" className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06] inline-flex"><Shield className="h-4 w-4" /></a>
-                      <button onClick={() => openEdit(user)} className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06]"><Edit2 className="h-4 w-4" /></button>
-                      <button onClick={() => openRemove(user)} className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-white/[0.06]"><UserX className="h-4 w-4" /></button>
+                      <button onClick={() => openAccess(user)} title="Manage project access" className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-sky-400 rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06]"><FolderKey className="h-4 w-4" /></button>
+                      <a href={`/team/${user.id}/permissions`} title="Manage permissions" className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-sky-400 rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] inline-flex"><Shield className="h-4 w-4" /></a>
+                      <button onClick={() => openEdit(user)} className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-sky-400 rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06]"><Edit2 className="h-4 w-4" /></button>
+                      <button onClick={() => openRemove(user)} className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06]"><UserX className="h-4 w-4" /></button>
                     </div>
                   </div>
                 </div>
@@ -755,7 +755,7 @@ export default function TeamPage() {
       {activeTab === 1 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <p className="text-slate-400 text-sm">
+            <p className="text-slate-600 dark:text-slate-400 text-sm">
               {invites.length} pending invitation{invites.length !== 1 ? 's' : ''}
             </p>
             <AddButton label="Add Users" onClick={() => openAdd(false)} />
@@ -763,11 +763,11 @@ export default function TeamPage() {
           {inviteActionError && <p className="text-sm text-red-400 mb-3">{inviteActionError}</p>}
           <div className="glass-card">
             {!invitesAllowed ? (
-              <div className="px-4 py-8 text-center text-slate-400 text-sm">
+              <div className="px-4 py-8 text-center text-slate-600 dark:text-slate-400 text-sm">
                 Only admins can view pending invitations
               </div>
             ) : invitesLoading ? (
-              <div className="divide-y divide-white/[0.06]">
+              <div className="divide-y divide-slate-900/10 dark:divide-white/[0.06]">
                 {Array.from({ length: 2 }).map((_, i) => (
                   <div key={i} className="flex items-center justify-between px-4 py-3">
                     <div>
@@ -779,13 +779,13 @@ export default function TeamPage() {
                 ))}
               </div>
             ) : invites.length === 0 ? (
-              <div className="px-4 py-10 text-center text-slate-400 text-sm">
+              <div className="px-4 py-10 text-center text-slate-600 dark:text-slate-400 text-sm">
                 <Mail className="h-8 w-8 mx-auto mb-3 text-slate-500" />
                 <p className="font-medium">No pending invitations</p>
                 <p className="mt-1">Invites you send will appear here until they&apos;re accepted</p>
               </div>
             ) : (
-              <div className="divide-y divide-white/[0.06]">
+              <div className="divide-y divide-slate-900/10 dark:divide-white/[0.06]">
                 {invites.map(inv => (
                   <div key={inv.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-3">
                     <div className="flex items-center gap-3 min-w-0">
@@ -793,21 +793,21 @@ export default function TeamPage() {
                         <Mail className="h-4 w-4" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-white text-sm truncate">{inv.email}</p>
-                        <p className="text-xs text-slate-400">
+                        <p className="font-medium text-slate-900 dark:text-white text-sm truncate">{inv.email}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">
                           Invited {formatDate(inv.created_at)} &middot; Expires {formatDate(inv.expires_at)}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ROLES[inv.role]?.color || 'bg-white/[0.08] text-slate-300'}`}>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ROLES[inv.role]?.color || 'bg-slate-900/[0.04] dark:bg-white/[0.08] text-slate-700 dark:text-slate-300'}`}>
                         {ROLES[inv.role]?.label || inv.role}
                       </span>
                       <button
                         onClick={() => handleResendInvite(inv)}
                         disabled={inviteActionId === inv.id}
                         title="Resend invite"
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-sky-300 hover:bg-white/[0.06] disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-sky-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-50"
                       >
                         {inviteActionId === inv.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                         Resend
@@ -815,7 +815,7 @@ export default function TeamPage() {
                       <button
                         onClick={() => handleCopyLink(inv)}
                         title="Copy invite link"
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-sky-300 hover:bg-white/[0.06]"
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-sky-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06]"
                       >
                         {copiedId === inv.id ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
                         {copiedId === inv.id ? 'Copied' : 'Copy link'}
@@ -824,7 +824,7 @@ export default function TeamPage() {
                         onClick={() => handleRevokeInvite(inv)}
                         disabled={inviteActionId === inv.id}
                         title="Revoke invite"
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-red-400 hover:bg-white/[0.06] disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-red-400 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         Revoke
@@ -842,9 +842,9 @@ export default function TeamPage() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Shield className="h-5 w-5 text-sky-400" />
-            <h2 className="font-semibold text-white">Roles &amp; Permissions</h2>
+            <h2 className="font-semibold text-slate-900 dark:text-white">Roles &amp; Permissions</h2>
           </div>
-          <p className="text-sm text-slate-400 mb-4">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
             Start with a template. Each role bundles a set of permissions — assign one to a team member to apply it.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -856,19 +856,19 @@ export default function TeamPage() {
                     {members.filter(m => m.role === r.role).length} member{members.filter(m => m.role === r.role).length !== 1 ? 's' : ''}
                   </span>
                 </div>
-                <p className="text-sm text-slate-300 mb-3">{r.description}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">{r.description}</p>
                 <ul className="space-y-1 flex-1">
                   {r.permissions.map(p => (
-                    <li key={p} className="flex items-start gap-2 text-xs text-slate-400">
+                    <li key={p} className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-400">
                       <Check className="h-3.5 w-3.5 text-sky-400 mt-0.5 shrink-0" />
                       {p}
                     </li>
                   ))}
                 </ul>
-                <div className="mt-4 pt-3 border-t border-white/[0.08]">
+                <div className="mt-4 pt-3 border-t border-slate-900/10 dark:border-white/[0.08]">
                   <button
                     onClick={() => openAssign(r.role)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-white/[0.12] text-sm font-medium text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-slate-900/10 dark:border-white/[0.12] text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-colors"
                   >
                     <Users className="h-4 w-4" /> Assign to member
                   </button>
@@ -882,11 +882,11 @@ export default function TeamPage() {
       {activeTab === 3 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <p className="text-slate-400 text-sm">{clients.length} client account{clients.length !== 1 ? 's' : ''}</p>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">{clients.length} client account{clients.length !== 1 ? 's' : ''}</p>
             <AddButton label="Invite Client" onClick={() => openAdd(true)} icon={<UserCircle className="h-4 w-4 shrink-0" />} />
           </div>
           <div className="glass-card">
-            <div className="divide-y divide-white/[0.06]">
+            <div className="divide-y divide-slate-900/10 dark:divide-white/[0.06]">
               {loading ? (
                 Array.from({ length: 2 }).map((_, i) => (
                   <div key={i} className="flex items-center justify-between px-4 py-3">
@@ -901,7 +901,7 @@ export default function TeamPage() {
                   </div>
                 ))
               ) : clients.length === 0 ? (
-                <div className="px-4 py-8 text-center text-slate-400 text-sm">
+                <div className="px-4 py-8 text-center text-slate-600 dark:text-slate-400 text-sm">
                   <p className="font-medium">No client portal accounts yet</p>
                   <p className="mt-1">Invite clients to grant them portal access</p>
                 </div>
@@ -917,21 +917,21 @@ export default function TeamPage() {
                         </div>
                       )}
                       <div>
-                        <p className="font-medium text-white text-sm">{user.full_name}</p>
-                        <p className="text-xs text-slate-400">{user.email}</p>
+                        <p className="font-medium text-slate-900 dark:text-white text-sm">{user.full_name}</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">{user.email}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-300">Client</span>
                       <div className="flex gap-1">
                         {canImpersonate(user) && (
-                          <button onClick={() => handleImpersonate(user)} disabled={impersonatingId === user.id} title="View as user" className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-white/[0.06] disabled:opacity-50">
+                          <button onClick={() => handleImpersonate(user)} disabled={impersonatingId === user.id} title="View as user" className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-50">
                             {impersonatingId === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
                           </button>
                         )}
-                        <button onClick={() => openAccess(user)} title="Manage project access" className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06]"><FolderKey className="h-4 w-4" /></button>
-                      <a href={`/team/${user.id}/permissions`} title="Manage permissions" className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06] inline-flex"><Shield className="h-4 w-4" /></a>
-                        <button onClick={() => openRemove(user)} className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-white/[0.06]"><UserX className="h-4 w-4" /></button>
+                        <button onClick={() => openAccess(user)} title="Manage project access" className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-sky-400 rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06]"><FolderKey className="h-4 w-4" /></button>
+                      <a href={`/team/${user.id}/permissions`} title="Manage permissions" className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-sky-400 rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] inline-flex"><Shield className="h-4 w-4" /></a>
+                        <button onClick={() => openRemove(user)} className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06]"><UserX className="h-4 w-4" /></button>
                       </div>
                     </div>
                   </div>
@@ -947,12 +947,12 @@ export default function TeamPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="glass w-full max-w-sm rounded-2xl p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-white">Edit Role</h2>
-              <button onClick={closeEdit} className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.06]"><X className="h-4 w-4" /></button>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Edit Role</h2>
+              <button onClick={closeEdit} className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06]"><X className="h-4 w-4" /></button>
             </div>
-            <p className="text-sm text-slate-400 mb-4">{editingMember.full_name} &mdash; {editingMember.email}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{editingMember.full_name} &mdash; {editingMember.email}</p>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-1">Role</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Role</label>
               <select
                 value={editRole}
                 onChange={e => setEditRole(e.target.value)}
@@ -963,7 +963,7 @@ export default function TeamPage() {
             </div>
             {editError && <p className="text-sm text-red-400 mb-3">{editError}</p>}
             <div className="flex gap-3">
-              <button type="button" onClick={closeEdit} className="flex-1 px-4 py-2.5 rounded-xl border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors text-sm font-medium">Cancel</button>
+              <button type="button" onClick={closeEdit} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-900/10 dark:border-white/[0.12] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-colors text-sm font-medium">Cancel</button>
               <button onClick={handleEditSave} disabled={editSaving} className="btn-brand flex-1 flex items-center justify-center gap-2 disabled:opacity-60">
                 {editSaving && <Loader2 className="h-4 w-4 animate-spin" />}
                 {editSaving ? 'Saving…' : 'Save'}
@@ -978,15 +978,15 @@ export default function TeamPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="glass w-full max-w-sm rounded-2xl p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-white">Remove Member</h2>
-              <button onClick={closeRemove} className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.06]"><X className="h-4 w-4" /></button>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Remove Member</h2>
+              <button onClick={closeRemove} className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06]"><X className="h-4 w-4" /></button>
             </div>
-            <p className="text-sm text-slate-400 mb-6">
-              Are you sure you want to remove <span className="text-white font-medium">{removingMember.full_name}</span> from your team? This action cannot be undone.
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
+              Are you sure you want to remove <span className="text-slate-900 dark:text-white font-medium">{removingMember.full_name}</span> from your team? This action cannot be undone.
             </p>
             {removeError && <p className="text-sm text-red-400 mb-3">{removeError}</p>}
             <div className="flex gap-3">
-              <button type="button" onClick={closeRemove} className="flex-1 px-4 py-2.5 rounded-xl border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors text-sm font-medium">Cancel</button>
+              <button type="button" onClick={closeRemove} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-900/10 dark:border-white/[0.12] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-colors text-sm font-medium">Cancel</button>
               <button onClick={handleRemove} disabled={removeLoading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 transition-colors text-sm font-medium disabled:opacity-60">
                 {removeLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {removeLoading ? 'Removing…' : 'Remove'}
@@ -1001,8 +1001,8 @@ export default function TeamPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="glass w-full max-w-2xl rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-white">{clientMode ? 'Invite Clients' : 'Add Users'}</h2>
-              <button onClick={closeAdd} className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.06]">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{clientMode ? 'Invite Clients' : 'Add Users'}</h2>
+              <button onClick={closeAdd} className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06]">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1015,7 +1015,7 @@ export default function TeamPage() {
                       <p className="text-sm font-medium text-green-300 mb-1">
                         {sendResult.sent.length} invite{sendResult.sent.length !== 1 ? 's' : ''} sent
                       </p>
-                      <p className="text-xs text-slate-400 break-words">{sendResult.sent.map(s => s.email).join(', ')}</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 break-words">{sendResult.sent.map(s => s.email).join(', ')}</p>
                     </div>
                   )}
                   {sendResult.skipped.length > 0 && (
@@ -1023,7 +1023,7 @@ export default function TeamPage() {
                       <p className="text-sm font-medium text-amber-300 mb-1">
                         {sendResult.skipped.length} skipped
                       </p>
-                      <ul className="text-xs text-slate-400 space-y-0.5">
+                      <ul className="text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
                         {sendResult.skipped.map(s => <li key={s.email}>{s.email}{s.reason ? ` — ${s.reason}` : ''}</li>)}
                       </ul>
                     </div>
@@ -1033,14 +1033,14 @@ export default function TeamPage() {
                       <p className="text-sm font-medium text-red-300 mb-1">
                         {sendResult.errors.length} failed
                       </p>
-                      <ul className="text-xs text-slate-400 space-y-0.5">
+                      <ul className="text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
                         {sendResult.errors.map(s => <li key={s.email}>{s.email}{s.reason ? ` — ${s.reason}` : ''}</li>)}
                       </ul>
                     </div>
                   )}
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={() => setSendResult(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors text-sm font-medium">
+                  <button onClick={() => setSendResult(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-900/10 dark:border-white/[0.12] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-colors text-sm font-medium">
                     Add more
                   </button>
                   <button onClick={closeAdd} className="btn-brand flex-1">Done</button>
@@ -1049,18 +1049,18 @@ export default function TeamPage() {
             ) : csvRows ? (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm text-slate-300">
-                    <span className="font-medium text-white">{csvSelectedCount}</span> of {csvRows.length} rows selected
+                  <p className="text-sm text-slate-700 dark:text-slate-300">
+                    <span className="font-medium text-slate-900 dark:text-white">{csvSelectedCount}</span> of {csvRows.length} rows selected
                   </p>
                   <div className="flex gap-2">
                     <button onClick={() => toggleCsvAll(true)} className="text-xs text-sky-400 hover:text-sky-300">Select all</button>
-                    <button onClick={() => toggleCsvAll(false)} className="text-xs text-slate-400 hover:text-slate-300">Deselect all</button>
+                    <button onClick={() => toggleCsvAll(false)} className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300">Deselect all</button>
                   </div>
                 </div>
                 {csvNote && <p className="text-xs text-amber-300 mb-2">{csvNote}</p>}
-                <div className="glass-card max-h-64 overflow-y-auto mb-4 divide-y divide-white/[0.06]">
+                <div className="glass-card max-h-64 overflow-y-auto mb-4 divide-y divide-slate-900/10 dark:divide-white/[0.06]">
                   {csvRows.map(row => (
-                    <label key={row.email} className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-white/[0.03] ${!row.valid ? 'opacity-60' : ''}`}>
+                    <label key={row.email} className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.03] ${!row.valid ? 'opacity-60' : ''}`}>
                       <input
                         type="checkbox"
                         checked={row.selected}
@@ -1068,8 +1068,8 @@ export default function TeamPage() {
                         onChange={() => toggleCsvRow(row.email)}
                         className="accent-sky-500"
                       />
-                      <span className={`text-sm flex-1 truncate ${row.valid ? 'text-white' : 'text-red-400 line-through'}`}>{row.email}</span>
-                      <span className="text-xs text-slate-400">
+                      <span className={`text-sm flex-1 truncate ${row.valid ? 'text-slate-900 dark:text-white' : 'text-red-400 line-through'}`}>{row.email}</span>
+                      <span className="text-xs text-slate-600 dark:text-slate-400">
                         {row.valid
                           ? (ROLES[row.role]?.label || ROLES[addRole]?.label || addRole)
                           : 'Invalid email'}
@@ -1081,7 +1081,7 @@ export default function TeamPage() {
                   Rows without a valid Role column use the role selected below. Maximum {CSV_CAP} rows per import.
                 </p>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Default role</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Default role</label>
                   <select value={addRole} onChange={e => setAddRole(e.target.value)} className="input-glass" disabled={clientMode}>
                     {clientMode
                       ? <option value="client">Client</option>
@@ -1090,7 +1090,7 @@ export default function TeamPage() {
                 </div>
                 {addError && <p className="text-sm text-red-400 mb-3">{addError}</p>}
                 <div className="flex gap-3">
-                  <button onClick={() => { setCsvRows(null); setCsvNote('') }} className="flex-1 px-4 py-2.5 rounded-xl border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors text-sm font-medium">
+                  <button onClick={() => { setCsvRows(null); setCsvNote('') }} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-900/10 dark:border-white/[0.12] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-colors text-sm font-medium">
                     Back
                   </button>
                   <button onClick={handleSendInvites} disabled={sending || csvSelectedCount === 0} className="btn-brand flex-1 flex items-center justify-center gap-2 disabled:opacity-60">
@@ -1102,36 +1102,36 @@ export default function TeamPage() {
             ) : (
               <div>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Account type</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Account type</label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
                       onClick={() => chooseAccountType('user')}
-                      className={`text-left rounded-xl border p-3 transition-colors ${accountType === 'user' ? 'border-sky-500/60 bg-sky-500/10' : 'border-white/[0.12] hover:bg-white/[0.04]'}`}
+                      className={`text-left rounded-xl border p-3 transition-colors ${accountType === 'user' ? 'border-sky-500/60 bg-sky-500/10' : 'border-slate-900/10 dark:border-white/[0.12] hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.04]'}`}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <Briefcase className={`h-4 w-4 ${accountType === 'user' ? 'text-sky-400' : 'text-slate-400'}`} />
-                        <span className="text-sm font-medium text-white">Team member / Manager</span>
+                        <Briefcase className={`h-4 w-4 ${accountType === 'user' ? 'text-sky-400' : 'text-slate-600 dark:text-slate-400'}`} />
+                        <span className="text-sm font-medium text-slate-900 dark:text-white">Team member / Manager</span>
                       </div>
-                      <p className="text-xs text-slate-400">Internal staff. Managers can create &amp; edit; pick the seat below.</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Internal staff. Managers can create &amp; edit; pick the seat below.</p>
                     </button>
                     <button
                       type="button"
                       onClick={() => chooseAccountType('client')}
-                      className={`text-left rounded-xl border p-3 transition-colors ${accountType === 'client' ? 'border-green-500/60 bg-green-500/10' : 'border-white/[0.12] hover:bg-white/[0.04]'}`}
+                      className={`text-left rounded-xl border p-3 transition-colors ${accountType === 'client' ? 'border-green-500/60 bg-green-500/10' : 'border-slate-900/10 dark:border-white/[0.12] hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.04]'}`}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <UserCircle className={`h-4 w-4 ${accountType === 'client' ? 'text-green-400' : 'text-slate-400'}`} />
-                        <span className="text-sm font-medium text-white">Client</span>
+                        <UserCircle className={`h-4 w-4 ${accountType === 'client' ? 'text-green-400' : 'text-slate-600 dark:text-slate-400'}`} />
+                        <span className="text-sm font-medium text-slate-900 dark:text-white">Client</span>
                       </div>
-                      <p className="text-xs text-slate-400">Portal-only, view access to their assigned projects.</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Portal-only, view access to their assigned projects.</p>
                     </button>
                   </div>
                 </div>
 
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm font-medium text-slate-300">Email addresses</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Email addresses</label>
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
@@ -1151,7 +1151,7 @@ export default function TeamPage() {
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${chip.valid ? 'bg-sky-500/20 text-sky-300' : 'bg-red-500/20 text-red-300'}`}
                       >
                         {chip.email}
-                        <button type="button" onClick={() => removeChip(chip.email)} className="hover:text-white">
+                        <button type="button" onClick={() => removeChip(chip.email)} className="hover:text-slate-900 dark:hover:text-white">
                           <X className="h-3 w-3" />
                         </button>
                       </span>
@@ -1164,7 +1164,7 @@ export default function TeamPage() {
                       onPaste={handleEmailPaste}
                       onBlur={handleEmailBlur}
                       placeholder={chips.length === 0 ? 'jane@example.com, john@example.com…' : ''}
-                      className="flex-1 min-w-[160px] bg-transparent outline-none text-sm text-white placeholder:text-slate-500 py-0.5"
+                      className="flex-1 min-w-[160px] bg-transparent outline-none text-sm text-slate-900 dark:text-white placeholder:text-slate-500 py-0.5"
                       autoFocus
                     />
                   </div>
@@ -1176,7 +1176,7 @@ export default function TeamPage() {
 
                 {accountType === 'user' && (
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Role (seat)</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Role (seat)</label>
                     <select value={addRole} onChange={e => setAddRole(e.target.value)} className="input-glass">
                       {STAFF_ROLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
@@ -1184,20 +1184,20 @@ export default function TeamPage() {
                 )}
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Access to projects</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Access to projects</label>
                   <div className="space-y-2">
                     <label className="flex items-start gap-2.5 cursor-pointer">
                       <input type="radio" name="add-project-access" checked={projectAccess === 'all'} onChange={() => setProjectAccess('all')} className="accent-sky-500 mt-0.5" />
                       <span>
-                        <span className="block text-sm text-white">All projects</span>
-                        <span className="block text-xs text-slate-400">Access to every project in the organization, including ones added later.</span>
+                        <span className="block text-sm text-slate-900 dark:text-white">All projects</span>
+                        <span className="block text-xs text-slate-600 dark:text-slate-400">Access to every project in the organization, including ones added later.</span>
                       </span>
                     </label>
                     <label className="flex items-start gap-2.5 cursor-pointer">
                       <input type="radio" name="add-project-access" checked={projectAccess === 'specific'} onChange={() => setProjectAccess('specific')} className="accent-sky-500 mt-0.5" />
                       <span>
-                        <span className="block text-sm text-white">Specific projects</span>
-                        <span className="block text-xs text-slate-400">Choose exactly which projects this {accountType === 'client' ? 'client' : 'user'} can access.</span>
+                        <span className="block text-sm text-slate-900 dark:text-white">Specific projects</span>
+                        <span className="block text-xs text-slate-600 dark:text-slate-400">Choose exactly which projects this {accountType === 'client' ? 'client' : 'user'} can access.</span>
                       </span>
                     </label>
                   </div>
@@ -1215,15 +1215,15 @@ export default function TeamPage() {
                 </div>
 
                 {summaryRole && (
-                  <div className="rounded-xl bg-white/[0.03] border border-white/[0.08] p-4 mb-4">
+                  <div className="rounded-xl bg-slate-900/[0.04] dark:bg-white/[0.03] border border-slate-900/10 dark:border-white/[0.08] p-4 mb-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Shield className="h-4 w-4 text-sky-400" />
-                      <p className="text-sm font-medium text-white">What {summaryRole.label}s can do</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">What {summaryRole.label}s can do</p>
                     </div>
-                    <p className="text-xs text-slate-400 mb-2">{summaryRole.description}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">{summaryRole.description}</p>
                     <ul className="space-y-1">
                       {summaryRole.permissions.map(p => (
-                        <li key={p} className="flex items-start gap-2 text-xs text-slate-400">
+                        <li key={p} className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-400">
                           <Check className="h-3.5 w-3.5 text-sky-400 mt-0.5 shrink-0" />
                           {p}
                         </li>
@@ -1235,7 +1235,7 @@ export default function TeamPage() {
                 {addError && <p className="text-sm text-red-400 mb-3">{addError}</p>}
 
                 <div className="flex gap-3">
-                  <button type="button" onClick={closeAdd} className="flex-1 px-4 py-2.5 rounded-xl border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors text-sm font-medium">
+                  <button type="button" onClick={closeAdd} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-900/10 dark:border-white/[0.12] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-colors text-sm font-medium">
                     Cancel
                   </button>
                   <button
@@ -1258,18 +1258,18 @@ export default function TeamPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="glass w-full max-w-md rounded-2xl p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Assign {assignTemplate.label}</h2>
-              <button onClick={closeAssign} className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.06]"><X className="h-4 w-4" /></button>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Assign {assignTemplate.label}</h2>
+              <button onClick={closeAssign} className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06]"><X className="h-4 w-4" /></button>
             </div>
-            <p className="text-sm text-slate-400 mb-4">
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
               Choose a team member to apply the <span className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${assignTemplate.color}`}>{assignTemplate.label}</span> permission template.
             </p>
-            <div className="glass-card max-h-64 overflow-y-auto divide-y divide-white/[0.06] mb-4">
+            <div className="glass-card max-h-64 overflow-y-auto divide-y divide-slate-900/10 dark:divide-white/[0.06] mb-4">
               {assignCandidates.length === 0 ? (
-                <div className="px-4 py-6 text-center text-slate-400 text-sm">No members available</div>
+                <div className="px-4 py-6 text-center text-slate-600 dark:text-slate-400 text-sm">No members available</div>
               ) : (
                 assignCandidates.map(m => (
-                  <label key={m.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-white/[0.03]">
+                  <label key={m.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.03]">
                     <input
                       type="radio"
                       name="assign-member"
@@ -1278,10 +1278,10 @@ export default function TeamPage() {
                       className="accent-sky-500"
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white truncate">{m.full_name || m.email}</p>
-                      <p className="text-xs text-slate-400 truncate">{m.email}</p>
+                      <p className="text-sm text-slate-900 dark:text-white truncate">{m.full_name || m.email}</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{m.email}</p>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${ROLES[m.role]?.color || 'bg-white/[0.08] text-slate-300'}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${ROLES[m.role]?.color || 'bg-slate-900/[0.04] dark:bg-white/[0.08] text-slate-700 dark:text-slate-300'}`}>
                       {ROLES[m.role]?.label || m.role}
                     </span>
                   </label>
@@ -1290,7 +1290,7 @@ export default function TeamPage() {
             </div>
             {assignError && <p className="text-sm text-red-400 mb-3">{assignError}</p>}
             <div className="flex gap-3">
-              <button type="button" onClick={closeAssign} className="flex-1 px-4 py-2.5 rounded-xl border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors text-sm font-medium">Cancel</button>
+              <button type="button" onClick={closeAssign} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-900/10 dark:border-white/[0.12] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-colors text-sm font-medium">Cancel</button>
               <button onClick={handleAssign} disabled={assigning || !assignMemberId} className="btn-brand flex-1 flex items-center justify-center gap-2 disabled:opacity-60">
                 {assigning && <Loader2 className="h-4 w-4 animate-spin" />}
                 {assigning ? 'Assigning…' : 'Assign'}
@@ -1305,27 +1305,27 @@ export default function TeamPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="glass w-full max-w-lg rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2"><FolderKey className="h-5 w-5 text-sky-400" /> Manage project access</h2>
-              <button onClick={closeAccess} className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.06]"><X className="h-4 w-4" /></button>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2"><FolderKey className="h-5 w-5 text-sky-400" /> Manage project access</h2>
+              <button onClick={closeAccess} className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06]"><X className="h-4 w-4" /></button>
             </div>
-            <p className="text-sm text-slate-400 mb-4">{accessMember.full_name || accessMember.email} &mdash; {accessMember.email}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{accessMember.full_name || accessMember.email} &mdash; {accessMember.email}</p>
             {accessLoading ? (
-              <div className="flex items-center justify-center py-10 text-slate-400"><Loader2 className="h-5 w-5 animate-spin" /></div>
+              <div className="flex items-center justify-center py-10 text-slate-600 dark:text-slate-400"><Loader2 className="h-5 w-5 animate-spin" /></div>
             ) : (
               <>
                 <div className="space-y-2 mb-3">
                   <label className="flex items-start gap-2.5 cursor-pointer">
                     <input type="radio" name="manage-access" checked={accessScope === 'all'} onChange={() => setAccessScope('all')} className="accent-sky-500 mt-0.5" />
                     <span>
-                      <span className="block text-sm text-white">All projects</span>
-                      <span className="block text-xs text-slate-400">Access to every project, including ones added later.</span>
+                      <span className="block text-sm text-slate-900 dark:text-white">All projects</span>
+                      <span className="block text-xs text-slate-600 dark:text-slate-400">Access to every project, including ones added later.</span>
                     </span>
                   </label>
                   <label className="flex items-start gap-2.5 cursor-pointer">
                     <input type="radio" name="manage-access" checked={accessScope === 'specific'} onChange={() => setAccessScope('specific')} className="accent-sky-500 mt-0.5" />
                     <span>
-                      <span className="block text-sm text-white">Specific projects</span>
-                      <span className="block text-xs text-slate-400">Only the projects selected below.</span>
+                      <span className="block text-sm text-slate-900 dark:text-white">Specific projects</span>
+                      <span className="block text-xs text-slate-600 dark:text-slate-400">Only the projects selected below.</span>
                     </span>
                   </label>
                 </div>
@@ -1342,7 +1342,7 @@ export default function TeamPage() {
                 )}
                 {accessError && <p className="text-sm text-red-400 mb-3">{accessError}</p>}
                 <div className="flex gap-3">
-                  <button type="button" onClick={closeAccess} className="flex-1 px-4 py-2.5 rounded-xl border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors text-sm font-medium">Cancel</button>
+                  <button type="button" onClick={closeAccess} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-900/10 dark:border-white/[0.12] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-colors text-sm font-medium">Cancel</button>
                   <button onClick={handleAccessSave} disabled={accessSaving} className="btn-brand flex-1 flex items-center justify-center gap-2 disabled:opacity-60">
                     {accessSaving && <Loader2 className="h-4 w-4 animate-spin" />}
                     {accessSaving ? 'Saving…' : 'Save access'}
@@ -1385,20 +1385,20 @@ function ProjectMultiSelect({
           placeholder="Search projects…"
           className="input-glass flex-1"
         />
-        <span className="ml-3 text-xs text-slate-400 shrink-0">{selected.length} selected</span>
+        <span className="ml-3 text-xs text-slate-600 dark:text-slate-400 shrink-0">{selected.length} selected</span>
       </div>
-      <div className="glass-card max-h-56 overflow-y-auto divide-y divide-white/[0.06]">
+      <div className="glass-card max-h-56 overflow-y-auto divide-y divide-slate-900/10 dark:divide-white/[0.06]">
         {loading || !loaded ? (
-          <div className="flex items-center justify-center py-6 text-slate-400"><Loader2 className="h-4 w-4 animate-spin" /></div>
+          <div className="flex items-center justify-center py-6 text-slate-600 dark:text-slate-400"><Loader2 className="h-4 w-4 animate-spin" /></div>
         ) : list.length === 0 ? (
-          <div className="px-4 py-6 text-center text-slate-400 text-sm">{projects.length === 0 ? 'No projects available' : 'No projects match your search'}</div>
+          <div className="px-4 py-6 text-center text-slate-600 dark:text-slate-400 text-sm">{projects.length === 0 ? 'No projects available' : 'No projects match your search'}</div>
         ) : (
           list.map(p => (
-            <label key={p.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-white/[0.03]">
+            <label key={p.id} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.03]">
               <input type="checkbox" checked={selected.includes(p.id)} onChange={() => onToggle(p.id)} className="accent-sky-500" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-white truncate">{p.label}</p>
-                {p.sublabel && <p className="text-xs text-slate-400 truncate">{p.sublabel}</p>}
+                <p className="text-sm text-slate-900 dark:text-white truncate">{p.label}</p>
+                {p.sublabel && <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{p.sublabel}</p>}
               </div>
             </label>
           ))

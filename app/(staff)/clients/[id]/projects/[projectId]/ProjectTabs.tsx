@@ -41,7 +41,7 @@ function ProjectInfoTab({ projectId }: { projectId: string }) {
 
   if (error || !project) {
     return (
-      <div className="p-6 text-center text-slate-400">
+      <div className="p-6 text-center text-slate-600 dark:text-slate-400">
         <p className="font-medium text-red-400">{error || 'Project not found'}</p>
       </div>
     )
@@ -57,13 +57,13 @@ function ProjectInfoTab({ projectId }: { projectId: string }) {
       {/* Name + status */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white">{project.domain || project.name || 'Untitled Project'}</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">{project.domain || project.name || 'Untitled Project'}</h2>
           {project.industry && (
-            <p className="text-sm text-slate-400 mt-0.5">{project.industry}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{project.industry}</p>
           )}
         </div>
         {project.status && (
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize whitespace-nowrap ${statusColors[statusKey] || 'bg-white/[0.06] text-slate-300'}`}>
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize whitespace-nowrap ${statusColors[statusKey] || 'bg-slate-900/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-slate-300'}`}>
             {project.status}
           </span>
         )}
@@ -72,18 +72,18 @@ function ProjectInfoTab({ projectId }: { projectId: string }) {
       {/* Key details grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {project.created_at && (
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.04] border border-slate-900/10 dark:border-white/[0.06]">
             <Calendar className="h-4 w-4 text-sky-400 shrink-0" />
             <div>
               <p className="text-xs text-slate-500">Start Date</p>
-              <p className="text-sm font-medium text-slate-200">
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
                 {new Date(project.created_at).toLocaleDateString('en-AU', { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             </div>
           </div>
         )}
         {project.domain && (
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.04] border border-slate-900/10 dark:border-white/[0.06]">
             <Globe className="h-4 w-4 text-sky-400 shrink-0" />
             <div>
               <p className="text-xs text-slate-500">Domain</p>
@@ -99,7 +99,7 @@ function ProjectInfoTab({ projectId }: { projectId: string }) {
           </div>
         )}
         {project.services && project.services.length > 0 && (
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] sm:col-span-2">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.04] border border-slate-900/10 dark:border-white/[0.06] sm:col-span-2">
             <Tag className="h-4 w-4 text-sky-400 shrink-0 mt-0.5" />
             <div>
               <p className="text-xs text-slate-500 mb-1.5">Services</p>
@@ -112,9 +112,9 @@ function ProjectInfoTab({ projectId }: { projectId: string }) {
           </div>
         )}
         {project.goals && (
-          <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] sm:col-span-2">
+          <div className="p-3 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.04] border border-slate-900/10 dark:border-white/[0.06] sm:col-span-2">
             <p className="text-xs text-slate-500 mb-1">Goals</p>
-            <p className="text-sm text-slate-300">{project.goals}</p>
+            <p className="text-sm text-slate-700 dark:text-slate-300">{project.goals}</p>
           </div>
         )}
       </div>
@@ -128,8 +128,8 @@ function ProjectInfoTab({ projectId }: { projectId: string }) {
             { label: 'Social Accounts', value: socialCount },
             { label: 'Tracking Tools', value: trackingCount },
           ].map(({ label, value }) => (
-            <div key={label} className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] text-center">
-              <p className="text-2xl font-bold text-white">{value}</p>
+            <div key={label} className="p-3 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.04] border border-slate-900/10 dark:border-white/[0.06] text-center">
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
               <p className="text-xs text-slate-500 mt-0.5">{label}</p>
             </div>
           ))}
@@ -144,15 +144,15 @@ export default function ProjectTabs({ projectId }: { projectId: string }) {
 
   return (
     <div className="glass-card">
-      <div className="flex border-b border-white/[0.08] overflow-x-auto">
+      <div className="flex border-b border-slate-900/10 dark:border-white/[0.08] overflow-x-auto">
         {TABS.map((tab, i) => (
           <button
             key={tab}
             onClick={() => setActiveTab(i)}
             className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
               i === activeTab
-                ? 'bg-white/[0.08] text-white border-sky-400'
-                : 'border-transparent text-slate-400 hover:text-white'
+                ? 'bg-slate-900/[0.06] dark:bg-white/[0.08] text-slate-900 dark:text-white border-sky-400'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-white'
             }`}
           >
             {tab}
@@ -169,7 +169,7 @@ export default function ProjectTabs({ projectId }: { projectId: string }) {
       ) : activeTab === 6 ? (
         <SocialAccountsTab projectId={projectId} />
       ) : (
-        <div className="p-6 text-center text-slate-400">
+        <div className="p-6 text-center text-slate-600 dark:text-slate-400">
           <p className="font-medium">This tab is not yet implemented.</p>
           <p className="text-sm mt-1">Connect your Supabase database and configure environment variables to enable data loading.</p>
         </div>

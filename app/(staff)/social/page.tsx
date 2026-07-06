@@ -37,8 +37,8 @@ function meta(platform: string) {
   return PLATFORM_META[platform?.toLowerCase()] || { label: platform || 'Unknown', color: '#64748b', limit: 5000 }
 }
 
-const inputClass = 'w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 placeholder:text-slate-500'
-const labelClass = 'block text-xs font-medium text-slate-400 mb-1.5'
+const inputClass = 'w-full bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 placeholder:text-slate-500'
+const labelClass = 'block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5'
 
 // Brand colors for the small platform badge overlaid on avatar chips.
 const BADGE_META: Record<string, { color: string; short: string }> = {
@@ -90,7 +90,7 @@ function AccountChip({ account, selected, onToggle }: { account: Account; select
           </span>
         )}
       </span>
-      <span className={`text-[11px] leading-tight text-center truncate w-full ${selected ? 'text-white' : 'text-slate-500'}`}>{account.account_name}</span>
+      <span className={`text-[11px] leading-tight text-center truncate w-full ${selected ? 'text-slate-900 dark:text-white' : 'text-slate-500'}`}>{account.account_name}</span>
     </button>
   )
 }
@@ -309,24 +309,24 @@ export default function SocialPage() {
           <Share2 className="h-6 w-6" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Social</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Compose, schedule and preview posts across your connected networks.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Social</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">Compose, schedule and preview posts across your connected networks.</p>
         </div>
       </div>
 
       {/* Honest capability note */}
-      <div className="glass-card p-3 mb-6 flex items-start gap-2.5 text-xs text-slate-300 border border-amber-500/20">
+      <div className="glass-card p-3 mb-6 flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300 border border-amber-500/20">
         <PlugZap className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
         <p>Posts are drafted, scheduled, stored and previewed here. Auto-publishing to each network turns on once that platform&apos;s credentials are configured in <Link href="/settings/social-accounts" className="text-sky-400 hover:underline">Settings → Social Accounts</Link>.</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-white/[0.04] p-1 rounded-xl w-fit">
+      <div className="flex gap-1 mb-6 bg-slate-900/[0.04] dark:bg-white/[0.04] p-1 rounded-xl w-fit">
         {([['compose', 'Create post'], ['calendar', 'Calendar'], ['scheduled', 'Scheduled posts'], ['approvals', 'Approvals']] as const).map(([k, l]) => (
           <button
             key={k}
             onClick={() => setTab(k)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === k ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'}`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === k ? 'bg-sky-500 text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
           >
             {l}
           </button>
@@ -342,7 +342,7 @@ export default function SocialPage() {
             {/* Accounts */}
             <div className="glass-card p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-white">Accounts</h2>
+                <h2 className="font-semibold text-slate-900 dark:text-white">Accounts</h2>
                 {accounts && accounts.length > 0 && (
                   <button
                     type="button"
@@ -354,9 +354,9 @@ export default function SocialPage() {
                 )}
               </div>
               {accounts === null ? (
-                <div className="h-16 rounded-lg bg-white/[0.04] animate-pulse" />
+                <div className="h-16 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.04] animate-pulse" />
               ) : accountsUnavailable || accounts.length === 0 ? (
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-slate-600 dark:text-slate-400">
                   No connected accounts yet.{' '}
                   <Link href="/settings/social-accounts" className="text-sky-400 hover:underline">Connect one in Settings → Social Accounts</Link>.
                 </p>
@@ -376,7 +376,7 @@ export default function SocialPage() {
 
             {/* Destination + content type */}
             <div className="glass-card p-5 space-y-4">
-              <h2 className="font-semibold text-white">Post details</h2>
+              <h2 className="font-semibold text-slate-900 dark:text-white">Post details</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Client</label>
@@ -396,9 +396,9 @@ export default function SocialPage() {
 
               <div>
                 <label className={labelClass}>Content type</label>
-                <div className="flex gap-1 bg-white/[0.04] p-1 rounded-xl w-fit">
+                <div className="flex gap-1 bg-slate-900/[0.04] dark:bg-white/[0.04] p-1 rounded-xl w-fit">
                   {(['post', 'story', 'reel'] as const).map(t => (
-                    <button key={t} onClick={() => setContentType(t)} className={`px-4 py-1.5 rounded-lg text-sm capitalize transition-colors ${contentType === t ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'}`}>{t}</button>
+                    <button key={t} onClick={() => setContentType(t)} className={`px-4 py-1.5 rounded-lg text-sm capitalize transition-colors ${contentType === t ? 'bg-sky-500 text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}>{t}</button>
                   ))}
                 </div>
               </div>
@@ -407,7 +407,7 @@ export default function SocialPage() {
             {/* Caption */}
             <div className="glass-card p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-white">Caption</h2>
+                <h2 className="font-semibold text-slate-900 dark:text-white">Caption</h2>
               </div>
               <textarea value={caption} onChange={e => setCaption(e.target.value)} rows={5} placeholder="Write your post…" className={inputClass} />
               {selectedPlatforms.length > 0 && (
@@ -417,7 +417,7 @@ export default function SocialPage() {
                     const used = (perNetwork[p]?.caption?.trim() || caption).length
                     const over = used > m.limit
                     return (
-                      <span key={p} className={`text-[11px] px-2 py-0.5 rounded-md ${over ? 'bg-red-500/15 text-red-400' : 'bg-white/[0.06] text-slate-400'}`}>
+                      <span key={p} className={`text-[11px] px-2 py-0.5 rounded-md ${over ? 'bg-red-500/15 text-red-400' : 'bg-slate-900/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-400'}`}>
                         {m.label}: {used}/{m.limit}
                       </span>
                     )
@@ -449,8 +449,8 @@ export default function SocialPage() {
                           const spec = SOCIAL_MEDIA_SPECS[p]
                           if (!spec) return null
                           return (
-                            <div key={p} className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5 text-[11px] text-slate-400">
-                              <div className="text-slate-200 font-medium mb-1">{spec.label}</div>
+                            <div key={p} className="rounded-lg border border-slate-900/10 dark:border-white/[0.08] bg-slate-900/[0.03] dark:bg-white/[0.02] p-2.5 text-[11px] text-slate-600 dark:text-slate-400">
+                              <div className="text-slate-800 dark:text-slate-200 font-medium mb-1">{spec.label}</div>
                               <div>Images: up to {spec.image.maxImagesPerPost}/post, ≤{spec.image.maxFileSizeMB}MB, aspect {spec.image.aspectRatioMin}–{spec.image.aspectRatioMax}{spec.image.gifSupport ? ', GIF ok' : ', no GIF'}</div>
                               <div>Video: ≤{spec.video.maxFileSizeMB}MB, {spec.video.minLenSec}–{spec.video.maxLenSec}s, aspect {spec.video.aspectRatioMin}–{spec.video.aspectRatioMax}, {spec.video.fileTypes.join('/')}</div>
                             </div>
@@ -482,10 +482,10 @@ export default function SocialPage() {
             {/* Per-network customization */}
             {selectedPlatforms.length > 0 && (
               <div className="glass-card p-5 space-y-3">
-                <h2 className="font-semibold text-white">Customize per network <span className="text-xs font-normal text-slate-500">(optional)</span></h2>
+                <h2 className="font-semibold text-slate-900 dark:text-white">Customize per network <span className="text-xs font-normal text-slate-500">(optional)</span></h2>
                 <div className="flex flex-wrap gap-1">
                   {selectedPlatforms.map(p => (
-                    <button key={p} onClick={() => setActiveNetworkTab(p)} className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${activeNetworkTab === p ? 'bg-sky-500 text-white' : 'bg-white/[0.06] text-slate-400 hover:text-white'}`}>{meta(p).label}</button>
+                    <button key={p} onClick={() => setActiveNetworkTab(p)} className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${activeNetworkTab === p ? 'bg-sky-500 text-white' : 'bg-slate-900/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}>{meta(p).label}</button>
                   ))}
                 </div>
                 {activeNetworkTab && (
@@ -513,13 +513,13 @@ export default function SocialPage() {
 
             {/* Schedule */}
             <div className="glass-card p-5 space-y-4">
-              <h2 className="font-semibold text-white">Schedule</h2>
+              <h2 className="font-semibold text-slate-900 dark:text-white">Schedule</h2>
               <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                   <input type="radio" checked={scheduleMode === 'now'} onChange={() => setScheduleMode('now')} className="accent-sky-500" />
                   <Send className="h-4 w-4" /> Publish now
                 </label>
-                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                   <input type="radio" checked={scheduleMode === 'later'} onChange={() => setScheduleMode('later')} className="accent-sky-500" />
                   <CalendarClock className="h-4 w-4" /> Schedule for later
                 </label>
@@ -535,11 +535,11 @@ export default function SocialPage() {
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 {scheduleMode === 'later' ? 'Review & schedule' : 'Review & publish'}
               </button>
-              <button onClick={saveDraft} disabled={submitting || savingDraft} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-slate-300 hover:text-white bg-white/[0.06] hover:bg-white/[0.12] transition-colors disabled:opacity-50">
+              <button onClick={saveDraft} disabled={submitting || savingDraft} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-900/[0.04] dark:bg-white/[0.06] hover:bg-slate-900/[0.08] dark:hover:bg-white/[0.12] transition-colors disabled:opacity-50">
                 {savingDraft ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
                 Save draft
               </button>
-              <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer select-none">
+              <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer select-none">
                 <input type="checkbox" checked={createAnother} onChange={e => setCreateAnother(e.target.checked)} className="accent-sky-500" />
                 Create another
               </label>
@@ -554,7 +554,7 @@ export default function SocialPage() {
 
           {/* ---- Live preview ---- */}
           <div className="space-y-4 min-w-0">
-            <h2 className="font-semibold text-white">Live preview</h2>
+            <h2 className="font-semibold text-slate-900 dark:text-white">Live preview</h2>
             {selectedPlatforms.length === 0 ? (
               <div className="glass-card p-6 text-sm text-slate-500 text-center">Select accounts to preview your post.</div>
             ) : (
@@ -569,18 +569,18 @@ export default function SocialPage() {
                         {(acct?.account_name || m.label).charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm text-white truncate">{acct?.account_name || m.label}</div>
+                        <div className="text-sm text-slate-900 dark:text-white truncate">{acct?.account_name || m.label}</div>
                         <div className="text-xs text-slate-500 truncate">{acct?.account_handle || m.label}</div>
                       </div>
                       <div className="ml-auto"><PlatformBadge platform={p} /></div>
                     </div>
-                    <p className="text-sm text-slate-200 whitespace-pre-wrap break-words">{text || <span className="text-slate-500">Your caption will appear here…</span>}</p>
+                    <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap break-words">{text || <span className="text-slate-500">Your caption will appear here…</span>}</p>
                     {primaryMediaUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={primaryMediaUrl} alt="media preview" className="mt-3 rounded-lg w-full max-h-56 object-cover border border-white/[0.08]" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                      <img src={primaryMediaUrl} alt="media preview" className="mt-3 rounded-lg w-full max-h-56 object-cover border border-slate-900/10 dark:border-white/[0.08]" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                     )}
                     {link && <div className="mt-2 text-xs text-sky-400 truncate flex items-center gap-1"><Link2 className="h-3 w-3" /> {link}</div>}
-                    {firstComment && <div className="mt-2 text-xs text-slate-500 border-t border-white/[0.06] pt-2">First comment: {firstComment}</div>}
+                    {firstComment && <div className="mt-2 text-xs text-slate-500 border-t border-slate-900/10 dark:border-white/[0.06] pt-2">First comment: {firstComment}</div>}
                   </div>
                 )
               })
@@ -595,11 +595,11 @@ export default function SocialPage() {
               {[0, 1, 2].map(i => <div key={i} className="glass-card h-20 animate-pulse" />)}
             </div>
           ) : postsUnavailable ? (
-            <div className="glass-card p-8 text-center text-sm text-slate-400">
+            <div className="glass-card p-8 text-center text-sm text-slate-600 dark:text-slate-400">
               Scheduled posts are unavailable. Apply the latest database migrations to enable this view.
             </div>
           ) : posts.length === 0 ? (
-            <div className="glass-card p-8 text-center text-sm text-slate-400">
+            <div className="glass-card p-8 text-center text-sm text-slate-600 dark:text-slate-400">
               No scheduled or recent posts yet. Create one from the Create post tab.
             </div>
           ) : (
@@ -609,14 +609,14 @@ export default function SocialPage() {
                   <div className="flex items-center gap-2 shrink-0">
                     <PlatformBadge platform={p.platform} />
                     {p.status && (
-                      <span className={`text-[11px] px-2 py-0.5 rounded-md ${p.status === 'scheduled' ? 'bg-sky-500/15 text-sky-300' : p.status === 'live' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/[0.06] text-slate-400'}`}>{p.status}</span>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-md ${p.status === 'scheduled' ? 'bg-sky-500/15 text-sky-300' : p.status === 'live' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-900/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-400'}`}>{p.status}</span>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-white truncate">{p.post_content || <span className="text-slate-500">No caption</span>}</p>
+                    <p className="text-sm text-slate-900 dark:text-white truncate">{p.post_content || <span className="text-slate-500">No caption</span>}</p>
                     <p className="text-xs text-slate-500 truncate">{p.client_name || 'Unknown client'}{p.project_name ? ` · ${p.project_name}` : ''}</p>
                   </div>
-                  <div className="text-xs text-slate-400 shrink-0">
+                  <div className="text-xs text-slate-600 dark:text-slate-400 shrink-0">
                     {p.scheduled_date ? new Date(p.scheduled_date).toLocaleString() : '—'}
                   </div>
                 </div>
@@ -632,26 +632,26 @@ export default function SocialPage() {
               {[0, 1, 2].map(i => <div key={i} className="glass-card h-20 animate-pulse" />)}
             </div>
           ) : postsUnavailable ? (
-            <div className="glass-card p-8 text-center text-sm text-slate-400">
+            <div className="glass-card p-8 text-center text-sm text-slate-600 dark:text-slate-400">
               Approvals are unavailable. Apply the latest database migrations to enable this view.
             </div>
           ) : (
             <>
               {/* Pending approval */}
               <div>
-                <h2 className="font-semibold text-white mb-3 flex items-center gap-2">
+                <h2 className="font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-amber-400" /> Pending approval
                   {pendingPosts.length > 0 && <span className="text-xs text-slate-500">({pendingPosts.length})</span>}
                 </h2>
                 {pendingPosts.length === 0 ? (
-                  <div className="glass-card p-6 text-center text-sm text-slate-400">No posts awaiting approval.</div>
+                  <div className="glass-card p-6 text-center text-sm text-slate-600 dark:text-slate-400">No posts awaiting approval.</div>
                 ) : (
                   <div className="space-y-2.5">
                     {pendingPosts.map(p => (
                       <div key={p.id} className="glass-card p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                         <div className="flex items-center gap-2 shrink-0"><PlatformBadge platform={p.platform} /></div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm text-white truncate">{p.post_content || <span className="text-slate-500">No caption</span>}</p>
+                          <p className="text-sm text-slate-900 dark:text-white truncate">{p.post_content || <span className="text-slate-500">No caption</span>}</p>
                           <p className="text-xs text-slate-500 truncate">
                             {p.client_name || 'Unknown client'}{p.project_name ? ` · ${p.project_name}` : ''}
                             {p.scheduled_date ? ` · ${new Date(p.scheduled_date).toLocaleString()}` : ''}
@@ -682,19 +682,19 @@ export default function SocialPage() {
 
               {/* Failed posts */}
               <div>
-                <h2 className="font-semibold text-white mb-3 flex items-center gap-2">
+                <h2 className="font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-red-400" /> Failed posts
                   {failedPosts.length > 0 && <span className="text-xs text-slate-500">({failedPosts.length})</span>}
                 </h2>
                 {failedPosts.length === 0 ? (
-                  <div className="glass-card p-6 text-center text-sm text-slate-400">No failed posts.</div>
+                  <div className="glass-card p-6 text-center text-sm text-slate-600 dark:text-slate-400">No failed posts.</div>
                 ) : (
                   <div className="space-y-2.5">
                     {failedPosts.map(p => (
                       <div key={p.id} className="glass-card p-4 flex flex-col sm:flex-row sm:items-center gap-3 border border-red-500/20">
                         <div className="flex items-center gap-2 shrink-0"><PlatformBadge platform={p.platform} /></div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm text-white truncate">{p.post_content || <span className="text-slate-500">No caption</span>}</p>
+                          <p className="text-sm text-slate-900 dark:text-white truncate">{p.post_content || <span className="text-slate-500">No caption</span>}</p>
                           <p className="text-xs text-slate-500 truncate">
                             {p.client_name || 'Unknown client'}{p.project_name ? ` · ${p.project_name}` : ''}
                           </p>
@@ -726,16 +726,16 @@ export default function SocialPage() {
           <div className="glass-card w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h2 className="text-lg font-bold text-white">Review &amp; {scheduleMode === 'later' ? 'Schedule' : 'Publish'}</h2>
-                <p className="text-sm text-slate-400 mt-0.5 flex items-center gap-1.5">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Review &amp; {scheduleMode === 'later' ? 'Schedule' : 'Publish'}</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
                   {scheduleMode === 'later' ? <CalendarClock className="h-4 w-4" /> : <Send className="h-4 w-4" />} {reviewWhen}
                 </p>
               </div>
-              <button onClick={() => !submitting && setShowReview(false)} aria-label="Close" className="text-slate-400 hover:text-white"><X className="h-4 w-4" /></button>
+              <button onClick={() => !submitting && setShowReview(false)} aria-label="Close" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"><X className="h-4 w-4" /></button>
             </div>
 
             {campaign && (
-              <div className="mb-4 text-xs text-slate-400 flex items-center gap-1.5"><Megaphone className="h-3.5 w-3.5" /> Campaign: <span className="text-slate-200">{campaign}</span></div>
+              <div className="mb-4 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5"><Megaphone className="h-3.5 w-3.5" /> Campaign: <span className="text-slate-800 dark:text-slate-200">{campaign}</span></div>
             )}
 
             <div className="space-y-3">
@@ -744,19 +744,19 @@ export default function SocialPage() {
                 const m = meta(p)
                 const text = perNetwork[p]?.caption?.trim() || caption
                 return (
-                  <div key={a.id} className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 flex gap-3">
+                  <div key={a.id} className="rounded-xl border border-slate-900/10 dark:border-white/[0.08] bg-slate-900/[0.03] dark:bg-white/[0.02] p-4 flex gap-3">
                     {primaryMediaUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={primaryMediaUrl} alt="media" className="w-16 h-16 rounded-lg object-cover border border-white/[0.08] shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                      <img src={primaryMediaUrl} alt="media" className="w-16 h-16 rounded-lg object-cover border border-slate-900/10 dark:border-white/[0.08] shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                     ) : (
-                      <div className="w-16 h-16 rounded-lg bg-white/[0.04] border border-white/[0.08] shrink-0 flex items-center justify-center text-slate-600"><ImageIcon className="h-5 w-5" /></div>
+                      <div className="w-16 h-16 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.04] border border-slate-900/10 dark:border-white/[0.08] shrink-0 flex items-center justify-center text-slate-600"><ImageIcon className="h-5 w-5" /></div>
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1.5">
                         <PlatformBadge platform={p} />
-                        <span className="text-sm text-white truncate">{a.account_name}</span>
+                        <span className="text-sm text-slate-900 dark:text-white truncate">{a.account_name}</span>
                       </div>
-                      <p className="text-sm text-slate-200 whitespace-pre-wrap break-words line-clamp-4">{text}</p>
+                      <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap break-words line-clamp-4">{text}</p>
                       {(perNetwork[p]?.first_comment?.trim() || firstComment) && (
                         <p className="text-xs text-slate-500 mt-1.5 truncate">First comment: {perNetwork[p]?.first_comment?.trim() || firstComment}</p>
                       )}
@@ -769,7 +769,7 @@ export default function SocialPage() {
             {error && <p className="text-sm text-red-400 flex items-center gap-1 mt-4"><AlertTriangle className="h-4 w-4" /> {error}</p>}
 
             <div className="flex flex-wrap items-center justify-end gap-3 mt-5">
-              <button onClick={() => setShowReview(false)} disabled={submitting} className="px-4 py-2 rounded-xl text-sm text-slate-300 hover:text-white bg-white/[0.06] hover:bg-white/[0.12] transition-colors disabled:opacity-50">Back</button>
+              <button onClick={() => setShowReview(false)} disabled={submitting} className="px-4 py-2 rounded-xl text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-900/[0.04] dark:bg-white/[0.06] hover:bg-slate-900/[0.08] dark:hover:bg-white/[0.12] transition-colors disabled:opacity-50">Back</button>
               <button onClick={submit} disabled={submitting} className="btn-brand inline-flex items-center gap-2 disabled:opacity-50">
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 {scheduleMode === 'later' ? 'Schedule' : 'Publish'}

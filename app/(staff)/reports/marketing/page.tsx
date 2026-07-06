@@ -49,7 +49,7 @@ function DeltaBadge({ field, current, prev }: { field: string; current: any; pre
   )
 }
 
-const selectClass = "bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+const selectClass = "bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 export default function MarketingReportsPage() {
   const now = new Date()
@@ -228,8 +228,8 @@ export default function MarketingReportsPage() {
     <div className="p-4 lg:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Marketing Reports</h1>
-          <p className="text-slate-400 text-sm">Monthly unified report per client</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Marketing Reports</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm">Monthly unified report per client</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <select value={clientId} onChange={e => setClientId(e.target.value)} className={`${selectClass} min-w-[160px]`}>
@@ -252,7 +252,7 @@ export default function MarketingReportsPage() {
       )}
 
       {loading && (
-        <div className="flex items-center justify-center py-12 text-slate-400 text-sm">Loading report…</div>
+        <div className="flex items-center justify-center py-12 text-slate-600 dark:text-slate-400 text-sm">Loading report…</div>
       )}
 
       {clientId && !loading && (
@@ -261,13 +261,13 @@ export default function MarketingReportsPage() {
           <div className="glass-card mb-4">
             <button className="w-full flex items-center justify-between p-5 text-left" onClick={() => setSeoOpen(o => !o)}>
               <div>
-                <h2 className="font-semibold text-white">Section A: SEO Performance</h2>
-                <p className="text-sm text-slate-400">Auto-calculated from submission data</p>
+                <h2 className="font-semibold text-slate-900 dark:text-white">Section A: SEO Performance</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Auto-calculated from submission data</p>
               </div>
-              {seoOpen ? <ChevronDown className="h-5 w-5 text-slate-400" /> : <ChevronRight className="h-5 w-5 text-slate-400" />}
+              {seoOpen ? <ChevronDown className="h-5 w-5 text-slate-600 dark:text-slate-400" /> : <ChevronRight className="h-5 w-5 text-slate-600 dark:text-slate-400" />}
             </button>
             {seoOpen && (
-              <div className="px-5 pb-5 border-t border-white/[0.06]">
+              <div className="px-5 pb-5 border-t border-slate-900/10 dark:border-white/[0.08]">
                 <div className="grid grid-cols-3 gap-4 mt-4">
                   {[
                     { label: 'Off-Page Links', value: report?.seo_offpage_count ?? '—', sub: 'This month' },
@@ -275,8 +275,8 @@ export default function MarketingReportsPage() {
                     { label: 'OnPage URLs', value: report?.seo_onpage_count ?? '—', sub: 'Optimized' },
                   ].map(stat => (
                     <div key={stat.label} className="glass-card p-4 text-center">
-                      <p className="text-2xl font-bold text-white">{stat.value}</p>
-                      <p className="text-sm font-medium text-slate-300">{stat.label}</p>
+                      <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{stat.label}</p>
                       <p className="text-xs text-slate-500">{stat.sub}</p>
                     </div>
                   ))}
@@ -287,12 +287,12 @@ export default function MarketingReportsPage() {
 
           {/* Section B: Google Ads */}
           <div className="glass-card mb-4">
-            <button className="w-full flex items-center justify-between p-5 border-b border-white/[0.06] text-left" onClick={() => setGadsOpen(o => !o)}>
+            <button className="w-full flex items-center justify-between p-5 border-b border-slate-900/10 dark:border-white/[0.08] text-left" onClick={() => setGadsOpen(o => !o)}>
               <div>
-                <h2 className="font-semibold text-white">Section B: Google Ads Performance</h2>
-                <p className="text-sm text-slate-400">Enter data or sync via Google Ads integration</p>
+                <h2 className="font-semibold text-slate-900 dark:text-white">Section B: Google Ads Performance</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Enter data or sync via Google Ads integration</p>
               </div>
-              {gadsOpen ? <ChevronDown className="h-5 w-5 text-slate-400" /> : <ChevronRight className="h-5 w-5 text-slate-400" />}
+              {gadsOpen ? <ChevronDown className="h-5 w-5 text-slate-600 dark:text-slate-400" /> : <ChevronRight className="h-5 w-5 text-slate-600 dark:text-slate-400" />}
             </button>
             {gadsOpen && (
               <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -308,14 +308,14 @@ export default function MarketingReportsPage() {
                   { label: 'Period End', field: 'google_period_end' as keyof Report, type: 'date' },
                 ].map(item => (
                   <div key={item.label}>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                       {item.label}
                       {item.field !== undefined && item.type === 'number' && report?.prev && (
                         <DeltaBadge field={item.field} current={(form as any)[item.field]} prev={(report.prev as any)[item.field]} />
                       )}
                     </label>
                     {item.computed !== undefined
-                      ? <div className="px-3 py-2 bg-white/[0.05] rounded-lg text-sm font-medium text-slate-300">{item.computed}</div>
+                      ? <div className="px-3 py-2 bg-slate-900/[0.04] dark:bg-white/[0.05] rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300">{item.computed}</div>
                       : <input className="input-glass" type={item.type || 'number'} value={(form as any)[item.field!] ?? ''} onChange={set(item.field!)} placeholder={item.type === 'date' ? '' : '0'} />
                     }
                   </div>
@@ -326,12 +326,12 @@ export default function MarketingReportsPage() {
 
           {/* Section C: Meta Ads */}
           <div className="glass-card mb-4">
-            <button className="w-full flex items-center justify-between p-5 border-b border-white/[0.06] text-left" onClick={() => setMetaOpen(o => !o)}>
+            <button className="w-full flex items-center justify-between p-5 border-b border-slate-900/10 dark:border-white/[0.08] text-left" onClick={() => setMetaOpen(o => !o)}>
               <div>
-                <h2 className="font-semibold text-white">Section C: Meta Ads Performance</h2>
-                <p className="text-sm text-slate-400">Facebook &amp; Instagram ad data</p>
+                <h2 className="font-semibold text-slate-900 dark:text-white">Section C: Meta Ads Performance</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Facebook &amp; Instagram ad data</p>
               </div>
-              {metaOpen ? <ChevronDown className="h-5 w-5 text-slate-400" /> : <ChevronRight className="h-5 w-5 text-slate-400" />}
+              {metaOpen ? <ChevronDown className="h-5 w-5 text-slate-600 dark:text-slate-400" /> : <ChevronRight className="h-5 w-5 text-slate-600 dark:text-slate-400" />}
             </button>
             {metaOpen && (
               <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -348,14 +348,14 @@ export default function MarketingReportsPage() {
                   { label: 'Period End', field: 'meta_period_end' as keyof Report, type: 'date' },
                 ].map(item => (
                   <div key={item.label}>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                       {item.label}
                       {item.field !== undefined && item.type === 'number' && report?.prev && (
                         <DeltaBadge field={item.field} current={(form as any)[item.field]} prev={(report.prev as any)[item.field]} />
                       )}
                     </label>
                     {item.computed !== undefined
-                      ? <div className="px-3 py-2 bg-white/[0.05] rounded-lg text-sm font-medium text-slate-300">{item.computed}</div>
+                      ? <div className="px-3 py-2 bg-slate-900/[0.04] dark:bg-white/[0.05] rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300">{item.computed}</div>
                       : <input className="input-glass" type={item.type || 'number'} value={(form as any)[item.field!] ?? ''} onChange={set(item.field!)} placeholder={item.type === 'date' ? '' : '0'} />
                     }
                   </div>
@@ -366,7 +366,7 @@ export default function MarketingReportsPage() {
 
           {/* Notes */}
           <div className="glass-card mb-4 p-5">
-            <label className="block text-sm font-semibold text-white mb-2">Notes</label>
+            <label className="block text-sm font-semibold text-slate-900 dark:text-white mb-2">Notes</label>
             <textarea
               className="input-glass w-full h-24 resize-none"
               placeholder="Add notes for this report…"
@@ -381,14 +381,14 @@ export default function MarketingReportsPage() {
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-indigo-400" />
                 <div>
-                  <h2 className="font-semibold text-white">Looker Studio Dashboard</h2>
-                  <p className="text-sm text-slate-400">Embed a shareable Looker Studio (Google Data Studio) report</p>
+                  <h2 className="font-semibold text-slate-900 dark:text-white">Looker Studio Dashboard</h2>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Embed a shareable Looker Studio (Google Data Studio) report</p>
                 </div>
               </div>
-              {lookerOpen ? <ChevronDown className="h-5 w-5 text-slate-400" /> : <ChevronRight className="h-5 w-5 text-slate-400" />}
+              {lookerOpen ? <ChevronDown className="h-5 w-5 text-slate-600 dark:text-slate-400" /> : <ChevronRight className="h-5 w-5 text-slate-600 dark:text-slate-400" />}
             </button>
             {lookerOpen && (
-              <div className="px-5 pb-5 border-t border-white/[0.06] pt-4 space-y-4">
+              <div className="px-5 pb-5 border-t border-slate-900/10 dark:border-white/[0.08] pt-4 space-y-4">
                 {/* Create from template (Linking API) */}
                 {linkingUrl && lookerGaProperty && (
                   <a
@@ -420,7 +420,7 @@ export default function MarketingReportsPage() {
                 {/* Embedded report */}
                 {embedUrl ? (
                   <div className="space-y-2">
-                    <div className="relative w-full rounded-xl overflow-hidden border border-white/[0.08]" style={{ paddingTop: '56.25%' }}>
+                    <div className="relative w-full rounded-xl overflow-hidden border border-slate-900/10 dark:border-white/[0.08]" style={{ paddingTop: '56.25%' }}>
                       <iframe
                         src={embedUrl}
                         className="absolute inset-0 w-full h-full"
@@ -437,7 +437,7 @@ export default function MarketingReportsPage() {
                     )}
                   </div>
                 ) : !linkingUrl ? (
-                  <p className="text-sm text-slate-400">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
                     No Looker Studio dashboard configured. Paste a published report URL above, or set an org-wide template report ID in{' '}
                     <a href="/settings/integrations" className="text-sky-400 hover:text-sky-300">Settings → Integrations</a>{' '}
                     to generate one from a template.
@@ -454,11 +454,11 @@ export default function MarketingReportsPage() {
               <Download className="h-4 w-4" /> {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Report'}
             </button>
             <button onClick={handleSendToClient} disabled={sending || !clientId}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium">
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-900/10 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium">
               <Send className="h-4 w-4" /> {sending ? 'Sending…' : sent ? 'Sent!' : 'Send to Client'}
             </button>
             <button onClick={handleCopyShareLink} disabled={sharing || !clientId}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium">
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-900/10 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium">
               <Link2 className="h-4 w-4" /> {sharing ? 'Creating link…' : copied ? 'Copied!' : 'Copy Share Link'}
             </button>
             <button
@@ -467,7 +467,7 @@ export default function MarketingReportsPage() {
                 window.open(`/reports/print/${clientId}?month=${monthStr}`, '_blank')
               }}
               disabled={!clientId}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium">
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-900/10 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium">
               <Printer className="h-4 w-4" /> Download PDF
             </button>
             {sendError && <span className="text-red-400 text-sm">{sendError}</span>}

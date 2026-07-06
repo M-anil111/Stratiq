@@ -312,7 +312,7 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">{card.label}</p>
                 {card.value != null
-                  ? <p className="text-2xl font-bold text-white">{card.value}</p>
+                  ? <p className="text-2xl font-bold text-slate-900 dark:text-white">{card.value}</p>
                   : <div className="skeleton h-8 w-16 mt-1" />
                 }
               </div>
@@ -347,7 +347,7 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">{card.label}</p>
                 {card.value != null
-                  ? <p className="text-2xl font-bold text-white">{card.value}</p>
+                  ? <p className="text-2xl font-bold text-slate-900 dark:text-white">{card.value}</p>
                   : <div className="skeleton h-8 w-16 mt-1" />
                 }
               </div>
@@ -441,12 +441,12 @@ export default function DashboardPage() {
               { href: '/reports/marketing', title: 'View Reports', sub: 'Marketing performance', icon: BarChart2, color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
             ].map(({ href, title, sub, icon: Icon, color }) => (
               <Link key={href} href={href}
-                className="flex flex-col items-start gap-3 p-4 rounded-xl border border-white/[0.07] bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/[0.12] transition-all duration-200 group">
+                className="flex flex-col items-start gap-3 p-4 rounded-xl border border-slate-900/10 dark:border-white/[0.07] bg-slate-900/[0.03] dark:bg-white/[0.03] hover:bg-slate-900/[0.06] dark:hover:bg-white/[0.07] hover:border-slate-900/20 dark:hover:border-white/[0.12] transition-all duration-200 group">
                 <div className={`p-2 rounded-xl border ${color}`}>
                   <Icon className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="font-semibold text-white text-sm">{title}</p>
+                  <p className="font-semibold text-slate-900 dark:text-white text-sm">{title}</p>
                   <p className="text-xs text-slate-500 mt-0.5">{sub}</p>
                 </div>
               </Link>
@@ -464,7 +464,7 @@ export default function DashboardPage() {
             title="Drag to reorder">
             <GripVertical className="h-4 w-4" />
           </button>
-          <h2 className="font-semibold text-white flex-1">Top Clients by MRR</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white flex-1">Top Clients by MRR</h2>
           <Link href="/clients" className="text-xs text-sky-400 hover:text-sky-300 transition-colors shrink-0">View all →</Link>
         </div>
         {clientsLoading ? (
@@ -487,21 +487,21 @@ export default function DashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/[0.06]">
+                <tr className="border-b border-slate-900/10 dark:border-white/[0.06]">
                   <th className="text-left text-xs font-semibold text-slate-600 uppercase tracking-wider pb-3 pr-4 w-8">#</th>
                   <th className="text-left text-xs font-semibold text-slate-600 uppercase tracking-wider pb-3 pr-4">Client</th>
                   <th className="text-right text-xs font-semibold text-slate-600 uppercase tracking-wider pb-3 pr-4">MRR</th>
                   <th className="text-right text-xs font-semibold text-slate-600 uppercase tracking-wider pb-3">Active Projects</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.04]">
+              <tbody className="divide-y divide-slate-900/10 dark:divide-white/[0.04]">
                 {topClients.map((client, i) => {
                   const mrr = clientMrr(client)
                   return (
-                    <tr key={client.id} className="group hover:bg-white/[0.03] transition-colors duration-150">
+                    <tr key={client.id} className="group hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.03] transition-colors duration-150">
                       <td className="py-3 pr-4 text-slate-600 font-medium">{i + 1}</td>
                       <td className="py-3 pr-4">
-                        <Link href={`/clients/${client.id}`} className="text-white hover:text-sky-300 transition-colors font-medium">
+                        <Link href={`/clients/${client.id}`} className="text-slate-900 dark:text-white hover:text-sky-500 dark:hover:text-sky-300 transition-colors font-medium">
                           {client.company_name}
                         </Link>
                       </td>
@@ -509,7 +509,7 @@ export default function DashboardPage() {
                         <span className="text-emerald-400 font-semibold">{fmtCurrency(mrr)}</span>
                       </td>
                       <td className="py-3 text-right">
-                        <span className="text-slate-400">{client.active_project_count ?? 0}</span>
+                        <span className="text-slate-600 dark:text-slate-400">{client.active_project_count ?? 0}</span>
                       </td>
                     </tr>
                   )
@@ -529,7 +529,7 @@ export default function DashboardPage() {
             title="Drag to reorder">
             <GripVertical className="h-4 w-4" />
           </button>
-          <h2 className="font-semibold text-white flex-1">Recent Activity</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white flex-1">Recent Activity</h2>
           {/* Search within activity */}
           <div className={`flex items-center gap-2 transition-all duration-200 ${searchFocus || search ? 'w-48' : 'w-8'}`}>
             {(searchFocus || search) ? (
@@ -541,7 +541,7 @@ export default function DashboardPage() {
                   onChange={e => setSearch(e.target.value)}
                   onBlur={() => { if (!search) setSearchFocus(false) }}
                   placeholder="Filter activity…"
-                  className="w-full pl-7 pr-7 py-1.5 text-xs bg-white/[0.06] border border-white/[0.12] rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
+                  className="w-full pl-7 pr-7 py-1.5 text-xs bg-slate-900/[0.04] dark:bg-white/[0.06] border border-slate-900/10 dark:border-white/[0.12] rounded-lg text-slate-900 dark:text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
                 />
                 {search && (
                   <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
@@ -570,7 +570,7 @@ export default function DashboardPage() {
           </div>
         ) : filteredActivity.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-14 text-slate-600">
-            <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-3">
+            <div className="w-12 h-12 rounded-2xl bg-slate-900/[0.04] dark:bg-white/[0.04] border border-slate-900/10 dark:border-white/[0.06] flex items-center justify-center mb-3">
               <Activity className="h-6 w-6 opacity-40" />
             </div>
             <p className="text-sm">{search ? 'No matching activity' : 'No activity yet'}</p>
@@ -583,15 +583,15 @@ export default function DashboardPage() {
               const IconComp = activityTypeIcon[item.type] || Clock
               return (
                 <div key={i}
-                  className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-white/[0.04] transition-colors duration-150 group">
-                  <div className="p-1.5 rounded-lg bg-white/[0.05] border border-white/[0.07] shrink-0">
-                    <IconComp className="h-3.5 w-3.5 text-slate-400" />
+                  className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.04] transition-colors duration-150 group">
+                  <div className="p-1.5 rounded-lg bg-slate-900/[0.05] dark:bg-white/[0.05] border border-slate-900/10 dark:border-white/[0.07] shrink-0">
+                    <IconComp className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
                   </div>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border shrink-0"
                     style={{ background: badge ? badge.color.split(' ')[0] : 'rgba(100,100,100,0.15)' }}>
                     {badge?.label || item.type}
                   </span>
-                  <span className="text-sm text-slate-300 flex-1 truncate">{item.label}</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-300 flex-1 truncate">{item.label}</span>
                   {item.client && (
                     <span className="text-xs text-slate-600 shrink-0 hidden sm:block group-hover:text-slate-500 transition-colors">{item.client}</span>
                   )}
@@ -614,7 +614,7 @@ export default function DashboardPage() {
             <Sparkles className="h-4 w-4 text-sky-400" />
             <span className="text-xs font-medium text-sky-400 uppercase tracking-widest">Agency Dashboard</span>
           </div>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
             {getGreeting()}{userName ? `, ${userName}!` : '!'}
           </h1>
           <p className="text-slate-500 text-sm mt-0.5">
@@ -629,7 +629,7 @@ export default function DashboardPage() {
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border transition-colors ${
               editMode
                 ? 'bg-sky-500/15 border-sky-500/30 text-sky-300'
-                : 'border-white/[0.1] bg-white/[0.04] text-slate-300 hover:bg-white/[0.07]'
+                : 'border-slate-900/10 dark:border-white/[0.1] bg-slate-900/[0.04] dark:bg-white/[0.04] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.08] dark:hover:bg-white/[0.07]'
             }`}>
             {editMode ? <Check className="h-4 w-4" /> : <Settings2 className="h-4 w-4" />}
             <span className="hidden sm:inline">{editMode ? 'Done' : 'Edit dashboard'}</span>
@@ -646,7 +646,7 @@ export default function DashboardPage() {
         <div className="glass-card p-4 mb-8 animate-float-up">
           <div className="flex items-center gap-2 mb-3">
             <Settings2 className="h-4 w-4 text-sky-400" />
-            <span className="text-sm font-semibold text-white">Add widgets</span>
+            <span className="text-sm font-semibold text-slate-900 dark:text-white">Add widgets</span>
           </div>
           {hidden.length === 0 ? (
             <p className="text-xs text-slate-500">All widgets are visible. Use the <EyeOff className="h-3 w-3 inline" /> button on a widget to hide it.</p>
@@ -654,7 +654,7 @@ export default function DashboardPage() {
             <div className="flex flex-wrap gap-2">
               {DEFAULT_ORDER.filter(id => hidden.includes(id)).map(id => (
                 <button key={id} onClick={() => toggleHidden(id)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-white/[0.1] bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:border-sky-500/30 transition-colors">
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-slate-900/10 dark:border-white/[0.1] bg-slate-900/[0.04] dark:bg-white/[0.04] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.08] dark:hover:bg-white/[0.08] hover:border-sky-500/30 transition-colors">
                   <Plus className="h-3.5 w-3.5" />
                   {WIDGET_META[id] || id}
                 </button>
@@ -677,19 +677,19 @@ export default function DashboardPage() {
                       <div>
                         {editMode && (
                           <div className="flex items-center gap-1.5 mb-2">
-                            <span className="text-xs font-semibold text-slate-400 mr-1">{WIDGET_META[id] || id}</span>
+                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 mr-1">{WIDGET_META[id] || id}</span>
                             <button onClick={() => moveSection(id, -1)} disabled={idx === 0}
-                              className="p-1 rounded-lg border border-white/[0.1] bg-white/[0.04] text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                              className="p-1 rounded-lg border border-slate-900/10 dark:border-white/[0.1] bg-slate-900/[0.04] dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                               title="Move up">
                               <ChevronUp className="h-3.5 w-3.5" />
                             </button>
                             <button onClick={() => moveSection(id, 1)} disabled={idx === visibleOrder.length - 1}
-                              className="p-1 rounded-lg border border-white/[0.1] bg-white/[0.04] text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                              className="p-1 rounded-lg border border-slate-900/10 dark:border-white/[0.1] bg-slate-900/[0.04] dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                               title="Move down">
                               <ChevronDown className="h-3.5 w-3.5" />
                             </button>
                             <button onClick={() => toggleHidden(id)}
-                              className="flex items-center gap-1 p-1 px-2 rounded-lg border border-white/[0.1] bg-white/[0.04] text-slate-400 hover:text-rose-300 hover:border-rose-500/30 transition-colors"
+                              className="flex items-center gap-1 p-1 px-2 rounded-lg border border-slate-900/10 dark:border-white/[0.1] bg-slate-900/[0.04] dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-300 hover:border-rose-500/30 transition-colors"
                               title="Hide widget">
                               <EyeOff className="h-3.5 w-3.5" />
                             </button>

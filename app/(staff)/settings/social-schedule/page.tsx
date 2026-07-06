@@ -163,13 +163,13 @@ export default function SocialSchedulePage() {
   if (loading) {
     return (
       <div className="p-4 lg:p-8 max-w-3xl mx-auto">
-        <div className="h-8 w-56 rounded-lg bg-white/[0.06] animate-pulse mb-6" />
+        <div className="h-8 w-56 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.06] animate-pulse mb-6" />
         <div className="space-y-3">
           {[0, 1, 2, 3, 4, 5, 6].map(i => (
             <div key={i} className="glass-card rounded-2xl p-4 flex items-center gap-3">
-              <div className="h-4 w-16 rounded bg-white/[0.08] animate-pulse" />
-              <div className="h-7 w-24 rounded-full bg-white/[0.05] animate-pulse" />
-              <div className="h-7 w-20 rounded-full bg-white/[0.05] animate-pulse" />
+              <div className="h-4 w-16 rounded bg-slate-900/[0.06] dark:bg-white/[0.08] animate-pulse" />
+              <div className="h-7 w-24 rounded-full bg-slate-900/[0.04] dark:bg-white/[0.05] animate-pulse" />
+              <div className="h-7 w-20 rounded-full bg-slate-900/[0.04] dark:bg-white/[0.05] animate-pulse" />
             </div>
           ))}
         </div>
@@ -181,14 +181,14 @@ export default function SocialSchedulePage() {
     <div className="p-4 lg:p-8 max-w-3xl mx-auto">
       <div className="flex items-start justify-between mb-5 gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <CalendarClock className="h-6 w-6 text-sky-400" /> Publishing Schedule
           </h1>
-          <p className="text-slate-400 text-sm mt-0.5">
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">
             Set the preferred times to publish social posts each week. New posts snap to the next open slot.
           </p>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-slate-400 shrink-0 h-8">
+        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 shrink-0 h-8">
           {saving ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving…</>)
             : saved ? (<><Check className="h-3.5 w-3.5 text-emerald-400" /> Saved</>)
               : null}
@@ -203,11 +203,11 @@ export default function SocialSchedulePage() {
       )}
 
       {/* Time zone reminder */}
-      <div className="glass-card rounded-xl p-3 mb-4 flex items-start gap-2.5 text-sm text-slate-300">
-        <Globe className="h-4 w-4 shrink-0 mt-0.5 text-slate-400" />
+      <div className="glass-card rounded-xl p-3 mb-4 flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+        <Globe className="h-4 w-4 shrink-0 mt-0.5 text-slate-600 dark:text-slate-400" />
         <span>
           Times use your organization&apos;s time zone. Make sure it&apos;s correct in{' '}
-          <span className="text-slate-100 font-medium">Company settings</span> so posts publish when you expect.
+          <span className="text-slate-900 dark:text-slate-100 font-medium">Company settings</span> so posts publish when you expect.
         </span>
       </div>
 
@@ -216,8 +216,8 @@ export default function SocialSchedulePage() {
         <div className="flex items-start gap-2.5 min-w-0">
           <Sparkles className="h-5 w-5 shrink-0 mt-0.5 text-amber-400" />
           <div className="min-w-0">
-            <div className="text-white font-medium">Publish like a human</div>
-            <p className="text-slate-400 text-sm mt-0.5">
+            <div className="text-slate-900 dark:text-white font-medium">Publish like a human</div>
+            <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">
               Posts publish within ±10 minutes of the scheduled time so your account looks natural rather than automated.
             </p>
           </div>
@@ -228,7 +228,7 @@ export default function SocialSchedulePage() {
           aria-checked={schedule.publishLikeAHuman}
           onClick={toggleHuman}
           className={`relative shrink-0 h-6 w-11 rounded-full transition-colors ${
-            schedule.publishLikeAHuman ? 'bg-sky-500' : 'bg-white/[0.12]'
+            schedule.publishLikeAHuman ? 'bg-sky-500' : 'bg-slate-900/[0.12] dark:bg-white/[0.12]'
           }`}
         >
           <span
@@ -244,7 +244,7 @@ export default function SocialSchedulePage() {
         {DAYS.map(day => (
           <div key={day} className="glass-card rounded-2xl p-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="text-white font-medium text-sm sm:w-24 shrink-0">
+              <div className="text-slate-900 dark:text-white font-medium text-sm sm:w-24 shrink-0">
                 {DAY_LABELS[day]}
               </div>
               <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
@@ -254,15 +254,15 @@ export default function SocialSchedulePage() {
                 {schedule.times[day].map(time => (
                   <span
                     key={time}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] pl-2.5 pr-1 py-1 text-sm text-slate-100"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-slate-900/[0.04] dark:bg-white/[0.06] border border-slate-900/10 dark:border-white/[0.08] pl-2.5 pr-1 py-1 text-sm text-slate-900 dark:text-slate-100"
                   >
-                    <Clock className="h-3 w-3 text-slate-400" />
+                    <Clock className="h-3 w-3 text-slate-600 dark:text-slate-400" />
                     {fmt(time)}
                     <button
                       type="button"
                       onClick={() => removeTime(day, time)}
                       aria-label={`Remove ${fmt(time)} on ${DAY_LABELS[day]}`}
-                      className="ml-0.5 rounded-full p-0.5 hover:bg-white/[0.1] text-slate-400 hover:text-white transition-colors"
+                      className="ml-0.5 rounded-full p-0.5 hover:bg-slate-900/[0.06] dark:hover:bg-white/[0.1] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -271,7 +271,7 @@ export default function SocialSchedulePage() {
                 <button
                   type="button"
                   onClick={() => openAdd(day)}
-                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-white/[0.15] px-2.5 py-1 text-sm text-slate-300 hover:text-white hover:border-white/[0.3] transition-colors"
+                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-900/[0.15] dark:border-white/[0.15] px-2.5 py-1 text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-900/20 dark:hover:border-white/[0.3] transition-colors"
                 >
                   <Plus className="h-3.5 w-3.5" /> Add time
                 </button>
@@ -280,9 +280,9 @@ export default function SocialSchedulePage() {
 
             {/* Add-time picker */}
             {addFor === day && (
-              <div className="mt-3 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 space-y-3">
+              <div className="mt-3 rounded-xl border border-slate-900/10 dark:border-white/[0.08] bg-slate-900/[0.04] dark:bg-white/[0.03] p-3 space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="text-sm text-slate-300">Publish at</label>
+                  <label className="text-sm text-slate-700 dark:text-slate-300">Publish at</label>
                   <input
                     type="time"
                     value={newTime}
@@ -291,7 +291,7 @@ export default function SocialSchedulePage() {
                   />
                 </div>
                 <div>
-                  <div className="text-xs text-slate-400 mb-1.5">Also add this time to:</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 mb-1.5">Also add this time to:</div>
                   <div className="flex flex-wrap gap-1.5">
                     {DAYS.filter(d => d !== day).map(d => (
                       <button
@@ -302,7 +302,7 @@ export default function SocialSchedulePage() {
                         className={`rounded-full px-2.5 py-1 text-xs border transition-colors ${
                           mirrorDays.has(d)
                             ? 'bg-sky-500/20 border-sky-400/40 text-sky-200'
-                            : 'bg-white/[0.04] border-white/[0.08] text-slate-300 hover:text-white'
+                            : 'bg-slate-900/[0.04] dark:bg-white/[0.04] border-slate-900/10 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         {DAY_SHORT[d]}
@@ -322,7 +322,7 @@ export default function SocialSchedulePage() {
                   <button
                     type="button"
                     onClick={() => setAddFor(null)}
-                    className="rounded-lg px-3 py-1.5 text-sm text-slate-300 hover:text-white"
+                    className="rounded-lg px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                   >
                     Cancel
                   </button>
