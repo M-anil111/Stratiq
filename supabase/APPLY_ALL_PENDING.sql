@@ -830,3 +830,54 @@ CREATE POLICY "org_media_assets" ON media_assets
   FOR ALL TO authenticated USING (
     organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
   );
+
+-- ===== 043_notification_prefs.sql =====
+-- Per-user notification preferences stored as a JSONB blob on the users row.
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS notification_preferences JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+
+-- >>>>>>>>>>>>>>>>>>>> supabase/migrations/042_report_definitions.sql <<<<<<<<<<<<<<<<<<<<
+-- Custom report builder + scheduled auto-send persistence. Idempotent, org-scoped, RLS.
+CREATE TABLE IF NOT EXISTS report_definitions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  blocks JSONB NOT NULL DEFAULT '[]'::jsonb,
+  date_range JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_by UUID,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_report_definitions_org ON report_definitions(organization_id);
+ALTER TABLE report_definitions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_report_definitions" ON report_definitions;
+CREATE POLICY "org_report_definitions" ON report_definitions
+  FOR ALL TO authenticated USING (
+    organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
+  );
+
+CREATE TABLE IF NOT EXISTS report_schedules (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID NOT NULL,
+  client_id UUID,
+  client_name TEXT,
+  report_type TEXT,
+  report_definition_id UUID,
+  frequency TEXT NOT NULL DEFAULT 'monthly',
+  day TEXT,
+  recipients JSONB NOT NULL DEFAULT '[]'::jsonb,
+  status TEXT NOT NULL DEFAULT 'active',
+  last_sent_at TIMESTAMPTZ,
+  created_by UUID,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_report_schedules_org ON report_schedules(organization_id);
+ALTER TABLE report_schedules ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_report_schedules" ON report_schedules;
+CREATE POLICY "org_report_schedules" ON report_schedules
+  FOR ALL TO authenticated USING (
+    organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
+  );

@@ -3,8 +3,10 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import {
   DollarSign, Eye, MousePointer, Percent, Target, Receipt, TrendingUp, BarChart2,
-  Settings, Columns3, ArrowUp, ArrowDown, ArrowUpDown, X, Loader2, Plug, Info,
+  Settings, Columns3, ArrowUp, ArrowDown, ArrowUpDown, X, Loader2, Plug, Info, Printer,
 } from 'lucide-react'
+import { TrendChart, BreakdownPie, ComparisonBar, colorAt } from '@/components/charts'
+import { openBrandedPrint, metricTableHtml } from '../_components/printReport'
 
 // ---------- Types ----------
 
@@ -210,7 +212,34 @@ export default function AdsAnalysisPage() {
     { label: isEstimate ? 'ROI (est.)' : 'ROAS', value: summary.spend > 0 ? `${summary.roas.toFixed(2)}x` : '—', icon: BarChart2, color: 'text-amber-400', bg: 'bg-amber-500/10' },
   ] : []
 
-  const maxChartValue = Math.max(1, ...(report?.by_month || []).map(m => Math.max(m.spend, m.revenue)))
+  const downloadPdf = () => {
+    if (!summary) return
+    openBrandedPrint({
+      title: 'Ads Analysis',
+      periodLabel: `Last ${months} months`,
+      sections: [
+        {
+          heading: isEstimate ? 'Summary (estimated ROI)' : 'Summary',
+          html: metricTableHtml([
+            ['Spend', fmtCurrency(summary.spend)],
+            ['Impressions', fmtNum(summary.impressions)],
+            ['Clicks', fmtNum(summary.clicks)],
+            ['CTR', `${summary.ctr.toFixed(2)}%`],
+            ['Conversions', fmtNum(summary.conversions)],
+            [isEstimate ? 'Est. Revenue' : 'Revenue', fmtCurrency(summary.revenue)],
+            [isEstimate ? 'ROI (est.)' : 'ROAS', summary.spend > 0 ? `${summary.roas.toFixed(2)}x` : '—'],
+          ]),
+        },
+        {
+          heading: 'By client & network',
+          html: metricTableHtml(
+            [...(report?.by_client || [])].sort((a, b) => b.spend - a.spend).slice(0, 20)
+              .map(r => [`${r.company_name} · ${r.network === 'meta' ? 'Meta' : 'Google'}`, fmtCurrency(r.spend)] as [string, string]),
+          ),
+        },
+      ],
+    })
+  }
 
   const saveRoiSettings = async () => {
     setRoiSaving(true)
@@ -254,13 +283,22 @@ export default function AdsAnalysisPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Ads Analysis</h1>
           <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">Meta &amp; Google ads performance across all clients</p>
         </div>
-        <button
-          onClick={() => setShowRoiModal(true)}
-          className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all"
-          title="ROI settings"
-        >
-          <Settings className="h-4 w-4" /> ROI Settings
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={downloadPdf}
+            disabled={!hasData}
+            className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50"
+          >
+            <Printer className="h-4 w-4" /> Download PDF
+          </button>
+          <button
+            onClick={() => setShowRoiModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all"
+            title="ROI settings"
+          >
+            <Settings className="h-4 w-4" /> ROI Settings
+          </button>
+        </div>
       </div>
 
       {/* Filter bar */}
@@ -350,37 +388,59 @@ export default function AdsAnalysisPage() {
           </div>
 
           {/* Spend over time chart */}
-          <div className="glass-card p-6 mb-6">
-            <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
-              <div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+            <div className="glass-card p-6 lg:col-span-2">
+              <div className="mb-4">
                 <h2 className="font-semibold text-slate-900 dark:text-white">Spend over time</h2>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Monthly ad spend with {isEstimate ? 'estimated revenue' : 'revenue'} overlay</p>
               </div>
-              <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-400">
-                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-sky-500" /> Spend</span>
-                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/70" /> {isEstimate ? 'Est. Revenue' : 'Revenue'}</span>
-              </div>
+              <TrendChart
+                data={report.by_month}
+                xKey="month"
+                xTickFormatter={fmtMonthLabel}
+                yTickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                series={[
+                  { key: 'spend', label: 'Spend', color: colorAt(0) },
+                  { key: 'revenue', label: isEstimate ? 'Est. Revenue' : 'Revenue', color: colorAt(2) },
+                ]}
+              />
             </div>
-            <div className="flex items-end gap-2 sm:gap-4 h-48 overflow-x-auto pb-1">
-              {report.by_month.map(m => (
-                <div key={m.month} className="flex-1 min-w-[48px] flex flex-col items-center gap-2 h-full">
-                  <div className="flex-1 w-full flex items-end justify-center gap-1">
-                    <div
-                      className="w-1/3 max-w-[26px] bg-sky-500 rounded-t hover:bg-sky-400 transition-colors"
-                      style={{ height: `${Math.max(m.spend > 0 ? 3 : 0, (m.spend / maxChartValue) * 100)}%` }}
-                      title={`${fmtMonthLabel(m.month)} — Spend: ${fmtCurrency(m.spend)}`}
-                    />
-                    <div
-                      className="w-1/3 max-w-[26px] bg-emerald-500/70 rounded-t hover:bg-emerald-400/80 transition-colors"
-                      style={{ height: `${Math.max(m.revenue > 0 ? 3 : 0, (m.revenue / maxChartValue) * 100)}%` }}
-                      title={`${fmtMonthLabel(m.month)} — ${isEstimate ? 'Est. revenue' : 'Revenue'}: ${fmtCurrency(m.revenue)}`}
-                    />
-                  </div>
-                  <span className="text-[10px] text-slate-500 whitespace-nowrap">{fmtMonthLabel(m.month)}</span>
-                </div>
-              ))}
+            <div className="glass-card p-6">
+              <div className="mb-4">
+                <h2 className="font-semibold text-slate-900 dark:text-white">Spend by network</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Meta vs Google</p>
+              </div>
+              <BreakdownPie
+                data={[
+                  { name: 'Meta', value: Number(report.by_network?.meta?.spend || 0), color: colorAt(1) },
+                  { name: 'Google', value: Number(report.by_network?.google?.spend || 0), color: colorAt(2) },
+                ]}
+                valueFormatter={(v) => fmtCurrency(v)}
+              />
             </div>
           </div>
+
+          {/* Spend by client */}
+          {report.by_client.length > 0 && (
+            <div className="glass-card p-6 mb-6">
+              <div className="mb-4">
+                <h2 className="font-semibold text-slate-900 dark:text-white">Top clients by spend</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Highest-spend client/network rows in this period</p>
+              </div>
+              <ComparisonBar
+                data={[...report.by_client].sort((a, b) => b.spend - a.spend).slice(0, 8).map(r => ({
+                  name: `${r.company_name} · ${r.network === 'meta' ? 'Meta' : 'Google'}`,
+                  spend: r.spend,
+                }))}
+                xKey="name"
+                layout="vertical"
+                height={300}
+                colorByCategory
+                yTickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                series={[{ key: 'spend', label: 'Spend' }]}
+              />
+            </div>
+          )}
 
           {/* High / low cost per conversion callouts */}
           {cpcCallouts && (

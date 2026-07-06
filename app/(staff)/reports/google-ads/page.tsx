@@ -1,6 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Download, TrendingUp, MousePointer, DollarSign, BarChart2, Percent, Target, RefreshCw, Loader2 } from 'lucide-react'
+import { Download, TrendingUp, MousePointer, DollarSign, BarChart2, Percent, Target, RefreshCw, Loader2, Printer } from 'lucide-react'
+import { ComparisonBar, BreakdownPie, colorAt } from '@/components/charts'
+import { openBrandedPrint, metricTableHtml } from '../_components/printReport'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const YEARS = [2026, 2025, 2024]
@@ -87,6 +89,31 @@ export default function GoogleAdsReportPage() {
   const campaigns: Campaign[] = report?.google_campaigns || []
   const selectedClient = clients.find(c => c.id === clientId)
 
+  const downloadPdf = () => {
+    openBrandedPrint({
+      title: 'Google Ads Report',
+      clientName: selectedClient?.company_name,
+      periodLabel: `${MONTHS[month]} ${year}`,
+      sections: [
+        {
+          heading: 'Performance',
+          html: metricTableHtml([
+            ['Impressions', fmt(report?.google_impressions)],
+            ['Clicks', fmt(report?.google_clicks)],
+            ['CTR', report?.google_ctr != null ? `${report.google_ctr.toFixed(2)}%` : '—'],
+            ['Conversions', fmt(report?.google_conversions)],
+            ['Ad Spend', fmt(report?.google_spend, '$', '', 2)],
+            ['ROAS', fmt(report?.google_roas, '', 'x', 2)],
+          ]),
+        },
+        ...(campaigns.length ? [{
+          heading: 'Campaigns',
+          html: metricTableHtml(campaigns.map(c => [c.name, `$${(c.spend || 0).toFixed(2)}`] as [string, string])),
+        }] : []),
+      ],
+    })
+  }
+
   const handleSync = async () => {
     if (!clientId) return
     setSyncing(true); setSyncMsg('')
@@ -146,6 +173,10 @@ export default function GoogleAdsReportPage() {
             className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50 whitespace-nowrap">
             <Download className="h-4 w-4" /> Export CSV
           </button>
+          <button onClick={downloadPdf} disabled={!report}
+            className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50 whitespace-nowrap">
+            <Printer className="h-4 w-4" /> Download PDF
+          </button>
         </div>
       </div>
 
@@ -187,6 +218,33 @@ export default function GoogleAdsReportPage() {
               )
             })}
           </div>
+
+          {/* Campaign charts */}
+          {campaigns.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+              <div className="glass-card p-5">
+                <h2 className="font-semibold text-slate-900 dark:text-white mb-1">Spend by campaign</h2>
+                <p className="text-xs text-slate-500 mb-4">Top campaigns by ad spend</p>
+                <ComparisonBar
+                  data={[...campaigns].sort((a, b) => (b.spend || 0) - (a.spend || 0)).slice(0, 8)
+                    .map(c => ({ name: c.name, spend: c.spend || 0 }))}
+                  xKey="name"
+                  layout="vertical"
+                  height={280}
+                  colorByCategory
+                  yTickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`}
+                  series={[{ key: 'spend', label: 'Spend' }]}
+                />
+              </div>
+              <div className="glass-card p-5">
+                <h2 className="font-semibold text-slate-900 dark:text-white mb-1">Clicks share</h2>
+                <p className="text-xs text-slate-500 mb-4">Click distribution across campaigns</p>
+                <BreakdownPie
+                  data={campaigns.map((c, i) => ({ name: c.name, value: c.clicks || 0, color: colorAt(i) }))}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Campaigns table */}
           <div className="glass-card">

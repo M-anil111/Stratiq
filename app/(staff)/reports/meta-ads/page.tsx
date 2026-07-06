@@ -1,6 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Download, TrendingUp, MousePointer, DollarSign, BarChart2, Percent, Users, RefreshCw, Loader2 } from 'lucide-react'
+import { Download, TrendingUp, MousePointer, DollarSign, BarChart2, Percent, Users, RefreshCw, Loader2, Printer } from 'lucide-react'
+import { ComparisonBar, colorAt } from '@/components/charts'
+import { openBrandedPrint, metricTableHtml } from '../_components/printReport'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const YEARS = [2026, 2025, 2024]
@@ -84,6 +86,27 @@ export default function MetaAdsReportPage() {
 
   const selectedClient = clients.find(c => c.id === clientId)
 
+  const downloadPdf = () => {
+    openBrandedPrint({
+      title: 'Meta Ads Report',
+      clientName: selectedClient?.company_name,
+      periodLabel: `${MONTHS[month]} ${year}`,
+      sections: [{
+        heading: 'Performance',
+        html: metricTableHtml([
+          ['Reach', fmt(report?.meta_reach)],
+          ['Impressions', fmt(report?.meta_impressions)],
+          ['Clicks', fmt(report?.meta_clicks)],
+          ['CTR', report?.meta_ctr != null ? `${report.meta_ctr.toFixed(2)}%` : '—'],
+          ['Conversions', fmt(report?.meta_conversions)],
+          ['Ad Spend', fmt(report?.meta_spend, '$', '', 2)],
+          ['Revenue', fmt(report?.meta_revenue, '$', '', 2)],
+          ['ROAS', fmt(report?.meta_roas, '', 'x', 2)],
+        ]),
+      }],
+    })
+  }
+
   const handleSync = async () => {
     if (!clientId) return
     setSyncing(true); setSyncMsg('')
@@ -141,6 +164,10 @@ export default function MetaAdsReportPage() {
           <button onClick={() => exportCSV(selectedClient, month, year, report)} disabled={!report}
             className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50 whitespace-nowrap">
             <Download className="h-4 w-4" /> Export CSV
+          </button>
+          <button onClick={downloadPdf} disabled={!report}
+            className="flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all disabled:opacity-50 whitespace-nowrap">
+            <Printer className="h-4 w-4" /> Download PDF
           </button>
         </div>
       </div>
@@ -213,6 +240,24 @@ export default function MetaAdsReportPage() {
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {report && (
+            <div className="glass-card p-5 mb-4">
+              <h2 className="font-semibold text-slate-900 dark:text-white mb-1">Funnel</h2>
+              <p className="text-xs text-slate-500 mb-4">Reach → Impressions → Clicks → Conversions</p>
+              <ComparisonBar
+                data={[
+                  { stage: 'Reach', value: report.meta_reach || 0 },
+                  { stage: 'Impressions', value: report.meta_impressions || 0 },
+                  { stage: 'Clicks', value: report.meta_clicks || 0 },
+                  { stage: 'Conversions', value: report.meta_conversions || 0 },
+                ]}
+                xKey="stage"
+                colorByCategory
+                series={[{ key: 'value', label: 'Count', color: colorAt(1) }]}
+              />
             </div>
           )}
 

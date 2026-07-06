@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Download, Send, ChevronDown, ChevronRight, Link2, Printer, BarChart3, ExternalLink } from 'lucide-react'
 import { buildLinkingUrl, toEmbedUrl } from '@/lib/looker'
+import { ComparisonBar, colorAt } from '@/components/charts'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const YEARS = [2026, 2025, 2024]
@@ -362,6 +363,25 @@ export default function MarketingReportsPage() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Google vs Meta comparison chart */}
+          <div className="glass-card mb-4 p-5">
+            <h2 className="font-semibold text-slate-900 dark:text-white mb-1">Google vs Meta</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">Side-by-side performance for this month</p>
+            <ComparisonBar
+              data={[
+                { metric: 'Impressions', Google: Number(form.google_impressions) || 0, Meta: Number(form.meta_impressions) || 0 },
+                { metric: 'Clicks', Google: Number(form.google_clicks) || 0, Meta: Number(form.meta_clicks) || 0 },
+                { metric: 'Conversions', Google: Number(form.google_conversions) || 0, Meta: Number(form.meta_conversions) || 0 },
+                { metric: 'Spend', Google: Number(form.google_spend) || 0, Meta: Number(form.meta_spend) || 0 },
+              ]}
+              xKey="metric"
+              series={[
+                { key: 'Google', label: 'Google', color: colorAt(2) },
+                { key: 'Meta', label: 'Meta', color: colorAt(1) },
+              ]}
+            />
           </div>
 
           {/* Notes */}

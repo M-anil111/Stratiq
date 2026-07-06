@@ -3,9 +3,13 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   CheckCircle2, XCircle, CalendarClock, Percent, Rocket, AlertTriangle,
-  BarChart3, Download, ExternalLink, Wrench,
+  BarChart3, Download, ExternalLink, Wrench, Printer,
 } from 'lucide-react'
 import { downloadCsv } from '@/lib/csv'
+import { BreakdownPie, ComparisonBar, colorAt } from '@/components/charts'
+import DateRangeControl, { DeltaChip } from '../_components/DateRangeControl'
+import { useDateRange, pctDelta } from '../_components/useDateRange'
+import { openBrandedPrint, metricTableHtml } from '../_components/printReport'
 
 interface EngagementTotals {
   likes: number; comments_count: number; shares: number
@@ -67,12 +71,15 @@ function PlatformBadge({ platform }: { platform: string }) {
   )
 }
 
-function Tile({ label, value, icon: Icon, tone }: { label: string; value: string; icon: any; tone?: string }) {
+function Tile({ label, value, icon: Icon, tone, delta, invert }: { label: string; value: string; icon: any; tone?: string; delta?: number | null; invert?: boolean }) {
   return (
     <div className="glass-card p-4">
-      <div className={`flex items-center gap-2 mb-2 ${tone || 'text-slate-600 dark:text-slate-400'}`}>
-        <Icon className="h-4 w-4" />
-        <p className="text-xs font-medium uppercase tracking-wide">{label}</p>
+      <div className="flex items-center justify-between mb-2">
+        <div className={`flex items-center gap-2 ${tone || 'text-slate-600 dark:text-slate-400'}`}>
+          <Icon className="h-4 w-4" />
+          <p className="text-xs font-medium uppercase tracking-wide">{label}</p>
+        </div>
+        {delta != null && <DeltaChip delta={delta} invert={invert} />}
       </div>
       <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
     </div>
@@ -80,22 +87,25 @@ function Tile({ label, value, icon: Icon, tone }: { label: string; value: string
 }
 
 export default function SocialPublishingReportPage() {
-  const [start, setStart] = useState('')
-  const [end, setEnd] = useState('')
+  const range = useDateRange('30d')
   const [data, setData] = useState<ReportData | null>(null)
+  const [prev, setPrev] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setLoading(true)
-    const params = new URLSearchParams()
-    if (start) params.set('start', start)
-    if (end) params.set('end', end)
-    fetch(`/api/reports/social?${params.toString()}`)
-      .then(r => r.json())
-      .then(d => setData(d))
-      .catch(() => setData(null))
-      .finally(() => setLoading(false))
-  }, [start, end])
+    const params = new URLSearchParams({ start: range.start, end: range.end })
+    const jobs: Promise<any>[] = [
+      fetch(`/api/reports/social?${params.toString()}`).then(r => r.json()).then(setData).catch(() => setData(null)),
+    ]
+    if (range.compare) {
+      const pc = new URLSearchParams({ start: range.compareStart, end: range.compareEnd })
+      jobs.push(fetch(`/api/reports/social?${pc.toString()}`).then(r => r.json()).then(setPrev).catch(() => setPrev(null)))
+    } else {
+      setPrev(null)
+    }
+    Promise.all(jobs).finally(() => setLoading(false))
+  }, [range.start, range.end, range.compare, range.compareStart, range.compareEnd])
 
   const exportPlatforms = () => {
     if (!data?.by_platform?.length) return
@@ -123,32 +133,43 @@ export default function SocialPublishingReportPage() {
     })))
   }
 
+  const downloadPdf = () => {
+    if (!data) return
+    openBrandedPrint({
+      title: 'Social Publishing Report',
+      periodLabel: range.rangeLabel,
+      sections: [
+        {
+          heading: 'Summary',
+          html: metricTableHtml([
+            ['Published', fmt(data.summary.published)],
+            ['Failed', fmt(data.summary.failed)],
+            ['Scheduled', fmt(data.summary.scheduled)],
+            ['Success rate', `${data.summary.success_rate}%`],
+          ]),
+        },
+        {
+          heading: 'By platform',
+          html: metricTableHtml(data.by_platform.map(p =>
+            [labelize(p.platform), `${fmt(p.published)} published · ${fmt(p.engagement.impressions)} impressions`] as [string, string])),
+        },
+      ],
+    })
+  }
+
   return (
     <div className="p-4 lg:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Social Publishing Report</h1>
-        <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">Publishing success, failures, and recent launches</p>
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Social Publishing Report</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">Publishing success, failures, and recent launches</p>
+        </div>
+        <button onClick={downloadPdf} className="btn-brand inline-flex items-center gap-1.5 text-sm px-4 py-2.5">
+          <Printer className="h-4 w-4" /> Download PDF
+        </button>
       </div>
 
-      {/* Filter bar */}
-      <div className="glass-card p-4 mb-6 flex flex-wrap gap-3 items-end">
-        <div>
-          <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">From</label>
-          <input type="date" value={start} onChange={e => setStart(e.target.value)} className={selectClass} />
-        </div>
-        <div>
-          <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">To</label>
-          <input type="date" value={end} onChange={e => setEnd(e.target.value)} className={selectClass} />
-        </div>
-        {(start || end) && (
-          <button
-            onClick={() => { setStart(''); setEnd('') }}
-            className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white px-3 py-2.5"
-          >
-            Clear
-          </button>
-        )}
-      </div>
+      <DateRangeControl range={range} className="mb-6" />
 
       {loading && (
         <div className="space-y-6">
@@ -169,11 +190,45 @@ export default function SocialPublishingReportPage() {
         <>
           {/* Summary tiles */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            <Tile label="Published" value={fmt(data.summary.published)} icon={CheckCircle2} tone="text-emerald-400" />
-            <Tile label="Failed" value={fmt(data.summary.failed)} icon={XCircle} tone="text-rose-400" />
+            <Tile label="Published" value={fmt(data.summary.published)} icon={CheckCircle2} tone="text-emerald-400"
+              delta={range.compare && prev ? pctDelta(data.summary.published, prev.summary.published) : null} />
+            <Tile label="Failed" value={fmt(data.summary.failed)} icon={XCircle} tone="text-rose-400" invert
+              delta={range.compare && prev ? pctDelta(data.summary.failed, prev.summary.failed) : null} />
             <Tile label="Scheduled" value={fmt(data.summary.scheduled)} icon={CalendarClock} tone="text-sky-400" />
-            <Tile label="Success Rate" value={`${data.summary.success_rate}%`} icon={Percent} tone="text-amber-400" />
+            <Tile label="Success Rate" value={`${data.summary.success_rate}%`} icon={Percent} tone="text-amber-400"
+              delta={range.compare && prev ? pctDelta(data.summary.success_rate, prev.summary.success_rate) : null} />
           </div>
+
+          {/* Charts */}
+          {data.by_platform.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+              <div className="glass-card p-5">
+                <h2 className="font-semibold text-slate-900 dark:text-white mb-1">Published by platform</h2>
+                <p className="text-xs text-slate-500 mb-4">Share of posts published in this range</p>
+                <BreakdownPie
+                  data={data.by_platform.map((p, i) => ({ name: labelize(p.platform), value: p.published, color: colorAt(i) }))}
+                />
+              </div>
+              <div className="glass-card p-5">
+                <h2 className="font-semibold text-slate-900 dark:text-white mb-1">Engagement by platform</h2>
+                <p className="text-xs text-slate-500 mb-4">Likes, comments and shares</p>
+                <ComparisonBar
+                  data={data.by_platform.map(p => ({
+                    platform: labelize(p.platform),
+                    likes: p.engagement.likes,
+                    comments: p.engagement.comments_count,
+                    shares: p.engagement.shares,
+                  }))}
+                  xKey="platform"
+                  series={[
+                    { key: 'likes', label: 'Likes', color: colorAt(0) },
+                    { key: 'comments', label: 'Comments', color: colorAt(3) },
+                    { key: 'shares', label: 'Shares', color: colorAt(2) },
+                  ]}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Per-platform breakdown */}
           <div className="glass-card p-5 mb-6">
