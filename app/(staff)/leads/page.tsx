@@ -170,7 +170,7 @@ function LeadFormFields({ form, setForm }: { form: FormState; setForm: React.Dis
           className="input-glass w-full px-3 py-2 rounded-xl text-sm"
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-slate-400 mb-1.5">Contact name</label>
           <input
@@ -371,7 +371,7 @@ export default function LeadsPage() {
   return (
     <div className="p-4 lg:p-6 w-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div>
           <h1 className="text-xl font-semibold text-white">Leads</h1>
           <p className="text-sm text-slate-400 mt-0.5">Track prospects from first touch to signed client</p>
@@ -401,9 +401,9 @@ export default function LeadsPage() {
         </div>
       ) : (
         <div className="overflow-x-auto pb-2">
-          <div className="grid grid-cols-5 gap-3 min-w-[900px]">
+          <div className="flex sm:grid sm:grid-cols-5 gap-3 sm:min-w-[900px]">
             {columns.map(col => (
-              <div key={col.key} className="flex flex-col gap-2">
+              <div key={col.key} className="flex flex-col gap-2 min-w-[80%] sm:min-w-0 shrink-0 sm:shrink">
                 <div className="px-1 flex items-baseline justify-between gap-2">
                   <h2 className={cn('text-xs font-semibold uppercase tracking-wider truncate', col.accent)}>
                     {col.label}

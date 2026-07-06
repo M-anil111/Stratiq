@@ -240,7 +240,7 @@ function DashboardsManager() {
   return (
     <div className="p-5 lg:p-8 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 animate-float-up">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-8 animate-float-up">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <LayoutDashboard className="h-4 w-4 text-sky-400" />

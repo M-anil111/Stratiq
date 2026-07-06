@@ -205,7 +205,7 @@ export default function ProjectDetailPage() {
 
       {/* Invoices section */}
       <div className="glass-card overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-white/[0.06]">
           <h2 className="font-semibold text-white flex items-center gap-2"><FileText size={16} className="text-sky-400" /> Invoices</h2>
           <button onClick={() => setShowPicker(true)} className="text-sm text-sky-400 hover:text-sky-300 inline-flex items-center gap-1">
             <Plus size={14} /> Add invoice to project

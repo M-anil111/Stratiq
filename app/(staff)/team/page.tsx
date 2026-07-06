@@ -623,7 +623,7 @@ export default function TeamPage() {
 
   return (
     <div className="p-4 lg:p-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Team</h1>
           <p className="text-slate-400 text-sm">Manage users, roles, and permissions</p>

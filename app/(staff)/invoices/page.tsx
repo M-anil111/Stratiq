@@ -328,7 +328,7 @@ export default function InvoicesPage() {
       </div>
 
       {/* Summary tiles */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {[
           { label: 'Total Invoiced', value: fmt(totals.total), color: 'text-white' },
           { label: 'Total Paid', value: fmt(totals.paid), color: 'text-emerald-400' },

@@ -86,7 +86,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Briefcase size={24} className="text-sky-400" /> Projects
@@ -260,7 +260,7 @@ function NewProjectModal({ clients, onClose, onCreated }: { clients: ClientLite[
               {clients.map((c) => <option key={c.id} value={c.id}>{c.company_name}</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-slate-400 mb-1">Status</label>
               <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={`${selectClass} w-full`}>
@@ -272,7 +272,7 @@ function NewProjectModal({ clients, onClose, onCreated }: { clients: ClientLite[
               <input value={form.domain} onChange={(e) => setForm({ ...form, domain: e.target.value })} className="input-glass w-full" placeholder="(defaults to client website)" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-slate-400 mb-1">Start date</label>
               <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className={`${selectClass} w-full`} />
