@@ -1,8 +1,9 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
-import { Plus, X, Target, AlertTriangle, UserPlus, ExternalLink } from 'lucide-react'
+import { Plus, X, Target, AlertTriangle, UserPlus, ExternalLink, Download, CheckSquare, Square } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { downloadCsv } from '@/lib/csv'
 
 type Lead = {
   id: string
@@ -80,17 +81,29 @@ function LeadCard({
   onStageChange,
   onConvert,
   converting,
+  selected,
+  onToggleSelect,
 }: {
   lead: Lead
   onEdit: (lead: Lead) => void
   onStageChange: (lead: Lead, stage: string) => void
   onConvert: (lead: Lead) => void
   converting: boolean
+  selected: boolean
+  onToggleSelect: (id: string) => void
 }) {
   const value = formatValue(lead.estimated_value)
   const canConvert = (lead.stage === 'proposal_sent' || lead.stage === 'won') && !lead.converted_client_id
   return (
-    <div className="glass-card rounded-xl p-3 hover:bg-white/[0.04] transition-colors duration-200">
+    <div className={cn('glass-card rounded-xl p-3 hover:bg-white/[0.04] transition-colors duration-200 flex gap-2', selected && 'ring-1 ring-sky-500/50 bg-sky-500/[0.05]')}>
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggleSelect(lead.id) }}
+        aria-label={selected ? 'Deselect lead' : 'Select lead'}
+        className="shrink-0 pt-0.5 text-slate-500 hover:text-sky-400 transition-colors"
+      >
+        {selected ? <CheckSquare className="h-4 w-4 text-sky-400" /> : <Square className="h-4 w-4" />}
+      </button>
+      <div className="min-w-0 flex-1">
       <button onClick={() => onEdit(lead)} className="w-full text-left">
         <div className="text-sm font-medium text-white truncate">{lead.company_name}</div>
         {lead.contact_name && <div className="text-xs text-slate-400 mt-0.5 truncate">{lead.contact_name}</div>}
@@ -141,6 +154,7 @@ function LeadCard({
             Client
           </Link>
         )}
+      </div>
       </div>
     </div>
   )
@@ -260,6 +274,10 @@ export default function LeadsPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [convertingId, setConvertingId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkStage, setBulkStage] = useState('')
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkMsg, setBulkMsg] = useState('')
 
   const fetchLeads = useCallback(async (withSpinner = true) => {
     if (withSpinner) setLoading(true)
@@ -293,6 +311,60 @@ export default function LeadsPage() {
       }),
     [leads]
   )
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  const clearSelection = () => { setSelectedIds(new Set()); setBulkStage(''); setBulkMsg('') }
+
+  const toCsvRows = (list: Lead[]) =>
+    list.map(l => ({
+      company_name: l.company_name || '',
+      contact_name: l.contact_name || '',
+      email: l.email || '',
+      phone: l.phone || '',
+      stage: l.stage || '',
+      estimated_value: l.estimated_value ?? '',
+      source: l.source || '',
+    }))
+
+  const exportAll = () => {
+    if (!leads.length) return
+    downloadCsv(`leads-${new Date().toISOString().slice(0, 10)}.csv`, toCsvRows(leads))
+  }
+  const exportSelected = () => {
+    const list = leads.filter(l => selectedIds.has(l.id))
+    if (!list.length) return
+    downloadCsv(`leads-selected-${new Date().toISOString().slice(0, 10)}.csv`, toCsvRows(list))
+  }
+
+  async function applyBulkStage() {
+    const ids = Array.from(selectedIds)
+    if (!bulkStage || !ids.length || bulkBusy) return
+    setBulkBusy(true)
+    setBulkMsg('')
+    let ok = 0
+    for (const id of ids) {
+      try {
+        const res = await fetch('/api/leads', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, stage: bulkStage }),
+        })
+        if (res.ok) ok++
+      } catch { /* skip */ }
+    }
+    setBulkMsg(`Moved ${ok} of ${ids.length}`)
+    setBulkBusy(false)
+    setSelectedIds(new Set())
+    setBulkStage('')
+    fetchLeads(false)
+  }
 
   function openNewModal() {
     setEditingLead(null)
@@ -376,10 +448,17 @@ export default function LeadsPage() {
           <h1 className="text-xl font-semibold text-white">Leads</h1>
           <p className="text-sm text-slate-400 mt-0.5">Track prospects from first touch to signed client</p>
         </div>
-        <button onClick={openNewModal} className="btn-brand inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium">
-          <Plus className="h-4 w-4" />
-          New Lead
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportAll} disabled={!leads.length}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-300 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] transition-colors disabled:opacity-40">
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Export all</span>
+          </button>
+          <button onClick={openNewModal} className="btn-brand inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium">
+            <Plus className="h-4 w-4" />
+            New Lead
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -430,6 +509,8 @@ export default function LeadsPage() {
                         onStageChange={changeStage}
                         onConvert={convertLead}
                         converting={convertingId === lead.id}
+                        selected={selectedIds.has(lead.id)}
+                        onToggleSelect={toggleSelect}
                       />
                     ))
                   )}
@@ -470,6 +551,33 @@ export default function LeadsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="sticky bottom-3 z-40 mt-4">
+          <div className="glass-card rounded-2xl px-3 py-2.5 flex flex-wrap items-center gap-2 shadow-2xl border border-sky-500/20 bg-sky-500/[0.08]">
+            <span className="text-xs font-medium text-white">{selectedIds.size} selected</span>
+            <button onClick={exportSelected}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.06] border border-white/[0.1] text-slate-200 hover:bg-white/[0.1] transition-colors">
+              <Download className="h-3.5 w-3.5" /> Export CSV
+            </button>
+            <select value={bulkStage} onChange={e => setBulkStage(e.target.value)}
+              className="input-glass px-2 py-1.5 rounded-lg text-xs">
+              <option value="">Move to stage…</option>
+              {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+            </select>
+            <button onClick={applyBulkStage} disabled={!bulkStage || bulkBusy}
+              className="btn-brand inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40">
+              {bulkBusy ? 'Moving…' : 'Apply'}
+            </button>
+            <button onClick={clearSelection}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white transition-colors">
+              <X className="h-3.5 w-3.5" /> Clear
+            </button>
+            {bulkMsg && <span className="text-xs text-emerald-400 ml-auto">{bulkMsg}</span>}
           </div>
         </div>
       )}

@@ -5,9 +5,20 @@ import {
   ChevronRight, Edit2, FileText, Loader2, X, Star, TrendingUp,
   DollarSign, Briefcase, Calendar, Award, CreditCard, Wrench,
   ChevronDown, ClipboardList, MessageSquare, PhoneCall,
+  Download, CheckSquare, Square,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { downloadCsv } from '@/lib/csv'
+
+const BULK_STATUS_OPTIONS = [
+  { label: 'Active', value: 'active' },
+  { label: 'Onboarding', value: 'in_onboarding' },
+  { label: 'Prospect', value: 'prospect' },
+  { label: 'On Hold', value: 'on_hold' },
+  { label: 'Completed', value: 'completed' },
+  { label: 'Cancelled', value: 'cancelled' },
+]
 
 const STATUS_COLORS: Record<string, string> = {
   active: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
@@ -111,6 +122,10 @@ export default function ClientsPage() {
   const [showNewMenu, setShowNewMenu] = useState(false)
   const newMenuRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<NodeJS.Timeout>()
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkStatus, setBulkStatus] = useState('')
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkMsg, setBulkMsg] = useState('')
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -201,6 +216,76 @@ export default function ClientsPage() {
   // Derive a short client ID from UUID
   const clientShortId = client?.id ? 'SC' + client.id.replace(/-/g, '').slice(0, 4).toUpperCase() : '—'
 
+  // ── Bulk selection helpers ──
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  const clearSelection = () => { setSelectedIds(new Set()); setBulkStatus(''); setBulkMsg('') }
+  const allFilteredSelected = sortedClients.length > 0 && sortedClients.every(c => selectedIds.has(c.id))
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) clearSelection()
+    else setSelectedIds(new Set(sortedClients.map(c => c.id)))
+  }
+
+  const toCsvRows = (list: any[]) =>
+    list.map(c => {
+      const mrr = (c.service_packages || []).reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0)
+      return {
+        company_name: c.company_name || '',
+        email: c.email || '',
+        phone: c.phone || '',
+        website: c.website || '',
+        city: c.city || '',
+        project_status: c.project_status || '',
+        mrr,
+        active_project_count: c.active_project_count ?? 0,
+      }
+    })
+
+  const exportAll = () => {
+    if (!sortedClients.length) return
+    downloadCsv(`clients-${new Date().toISOString().slice(0, 10)}.csv`, toCsvRows(sortedClients))
+  }
+  const exportSelected = () => {
+    const list = sortedClients.filter(c => selectedIds.has(c.id))
+    if (!list.length) return
+    downloadCsv(`clients-selected-${new Date().toISOString().slice(0, 10)}.csv`, toCsvRows(list))
+  }
+
+  const applyBulkStatus = async () => {
+    const ids = Array.from(selectedIds)
+    if (!bulkStatus || !ids.length || bulkBusy) return
+    setBulkBusy(true)
+    setBulkMsg('')
+    try {
+      const res = await fetch('/api/clients/bulk', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, project_status: bulkStatus }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setBulkMsg(`Updated ${data.updated ?? ids.length}`)
+        fetchClients(search, statusFilter)
+        setSelectedIds(new Set())
+        setBulkStatus('')
+      } else {
+        setBulkMsg(data.error || 'Update failed')
+      }
+    } catch {
+      setBulkMsg('Update failed')
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
+  const selectedCount = selectedIds.size
+
   return (
     <div className="flex h-screen overflow-hidden">
 
@@ -208,10 +293,17 @@ export default function ClientsPage() {
       <div className="w-full lg:w-72 shrink-0 border-r border-white/[0.08] flex flex-col bg-[#070f1c]">
         <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white">Client List</h2>
-          <Link href="/clients/new"
-            className="w-6 h-6 rounded-lg bg-sky-500/20 border border-sky-500/30 text-sky-400 flex items-center justify-center hover:bg-sky-500/30 transition-colors">
-            <Plus className="h-3.5 w-3.5" />
-          </Link>
+          <div className="flex items-center gap-1.5">
+            <button onClick={exportAll} disabled={!sortedClients.length}
+              title="Export all (filtered) to CSV"
+              className="w-6 h-6 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-40">
+              <Download className="h-3.5 w-3.5" />
+            </button>
+            <Link href="/clients/new"
+              className="w-6 h-6 rounded-lg bg-sky-500/20 border border-sky-500/30 text-sky-400 flex items-center justify-center hover:bg-sky-500/30 transition-colors">
+              <Plus className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </div>
 
         {/* Search */}
@@ -254,6 +346,44 @@ export default function ClientsPage() {
           ))}
         </div>
 
+        {/* Select all (filtered) */}
+        {!loading && sortedClients.length > 0 && (
+          <div className="px-3 py-1.5 flex items-center gap-2 border-b border-white/[0.06]">
+            <button onClick={toggleSelectAll}
+              className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-white transition-colors">
+              {allFilteredSelected
+                ? <CheckSquare className="h-3.5 w-3.5 text-sky-400" />
+                : <Square className="h-3.5 w-3.5" />}
+              Select all
+            </button>
+            {selectedCount > 0 && <span className="text-[10px] text-sky-400 ml-auto">{selectedCount} selected</span>}
+          </div>
+        )}
+
+        {/* Bulk action bar */}
+        {selectedCount > 0 && (
+          <div className="px-3 py-2 border-b border-sky-500/20 bg-sky-500/[0.06] flex flex-wrap items-center gap-2">
+            <button onClick={exportSelected}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-white/[0.06] border border-white/[0.1] text-slate-200 hover:bg-white/[0.1] transition-colors">
+              <Download className="h-3 w-3" /> Export CSV
+            </button>
+            <select value={bulkStatus} onChange={e => setBulkStatus(e.target.value)}
+              className="bg-white/[0.06] border border-white/[0.1] text-[11px] text-white rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-sky-500/50">
+              <option value="">Change status…</option>
+              {BULK_STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <button onClick={applyBulkStatus} disabled={!bulkStatus || bulkBusy}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-sky-500 text-white hover:bg-sky-400 transition-colors disabled:opacity-40">
+              {bulkBusy ? 'Applying…' : 'Apply'}
+            </button>
+            <button onClick={clearSelection}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-slate-400 hover:text-white transition-colors">
+              <X className="h-3 w-3" /> Clear
+            </button>
+            {bulkMsg && <span className="text-[10px] text-emerald-400 w-full">{bulkMsg}</span>}
+          </div>
+        )}
+
         {/* Client list */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
@@ -291,11 +421,23 @@ export default function ClientsPage() {
                 {group.clients.map(c => {
                   const displayName = c.display_name || c.company_name
                   const mrr = (c.service_packages || []).reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0)
+                  const isChecked = selectedIds.has(c.id)
                   return (
-                    <button key={c.id} onClick={() => onClientClick(c.id)}
-                      className={`w-full text-left border-b border-white/[0.04] transition-colors flex items-center gap-3
-                        ${isMulti ? 'pl-6 pr-3 py-2.5' : 'px-3 py-3'}
-                        ${selectedId === c.id ? 'bg-sky-500/10 border-l-2 border-l-sky-500' : 'hover:bg-white/[0.04]'}`}>
+                    <div key={c.id}
+                      className={`w-full border-b border-white/[0.04] transition-colors flex items-center
+                        ${selectedId === c.id ? 'bg-sky-500/10 border-l-2 border-l-sky-500' : isChecked ? 'bg-sky-500/[0.05]' : 'hover:bg-white/[0.04]'}`}>
+                      <span
+                        role="checkbox"
+                        aria-checked={isChecked}
+                        tabIndex={0}
+                        onClick={(e) => { e.stopPropagation(); toggleSelect(c.id) }}
+                        onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); toggleSelect(c.id) } }}
+                        className={`shrink-0 flex items-center justify-center cursor-pointer text-slate-500 hover:text-sky-400 ${isMulti ? 'pl-4 pr-1 py-2.5' : 'pl-3 pr-1 py-3'}`}>
+                        {isChecked ? <CheckSquare className="h-4 w-4 text-sky-400" /> : <Square className="h-4 w-4" />}
+                      </span>
+                    <button onClick={() => onClientClick(c.id)}
+                      className={`flex-1 min-w-0 text-left transition-colors flex items-center gap-3
+                        ${isMulti ? 'pl-1 pr-3 py-2.5' : 'pl-1 pr-3 py-3'}`}>
                       {isMulti && <span className="text-slate-700 text-xs mr-0.5">└</span>}
                       <AvatarBadge name={displayName} size="sm" />
                       <div className="flex-1 min-w-0">
@@ -319,6 +461,7 @@ export default function ClientsPage() {
                         </div>
                       </div>
                     </button>
+                    </div>
                   )
                 })}
               </div>
