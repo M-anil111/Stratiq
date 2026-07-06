@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
       await sendEmail({
         to: email,
         subject: inviteEmailSubject(orgName),
-        html: inviteEmailHtml(orgName, `${appUrl}/login?invite=${token}`, role),
+        html: inviteEmailHtml(orgName, `${appUrl}/accept-invite?token=${token}`, role),
       })
       sent.push({ email })
     } catch (e: any) {

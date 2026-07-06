@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     await sendEmail({
       to: invite.email,
       subject: inviteEmailSubject(orgName),
-      html: inviteEmailHtml(orgName, `${appUrl}/login?invite=${invite.token}`, invite.role),
+      html: inviteEmailHtml(orgName, `${appUrl}/accept-invite?token=${invite.token}`, invite.role),
     })
   } catch (e: any) {
     return NextResponse.json({ error: `Failed to send email: ${e?.message || 'unknown error'}` }, { status: 500 })
