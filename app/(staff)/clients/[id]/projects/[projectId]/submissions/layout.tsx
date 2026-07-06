@@ -53,6 +53,15 @@ export default function SubmissionsLayout({
             </Link>
           )
         })}
+        <Link
+          href={`/clients/${params.id}/projects/${params.projectId}/keywords`}
+          className={cn(
+            'flex-1 text-center px-3 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors',
+            'text-gray-600 hover:bg-gray-100'
+          )}
+        >
+          Keywords
+        </Link>
       </div>
 
       {children}
