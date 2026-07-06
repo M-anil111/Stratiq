@@ -64,14 +64,24 @@ export async function POST(request: NextRequest) {
   // Resolve scheduled_date + status. For "later" we schedule to the provided
   // datetime; if it's in the future the post is 'scheduled'. For "now" we store
   // as 'draft' since we cannot auto-publish without platform credentials.
+  // Approval workflow: when the caller requests approval (or a team_member
+  // composes), the post enters pending_approval and won't publish until an
+  // approver moves it to approved/scheduled.
+  const requireApproval = body?.require_approval === true || userData.role === 'team_member'
+
   let scheduledDate: string | null = today
-  let status = 'draft'
+  let status: string = requireApproval ? 'pending_approval' : 'draft'
   if (mode === 'later' && schedule.datetime) {
     const dt = new Date(schedule.datetime)
     if (!isNaN(dt.getTime())) {
       scheduledDate = dt.toISOString()
-      status = dt.getTime() > now.getTime() ? 'scheduled' : 'draft'
+      if (!requireApproval) status = dt.getTime() > now.getTime() ? 'scheduled' : 'scheduled'
     }
+  } else if (mode === 'now' && !requireApproval) {
+    // "Publish now": schedule at the current moment so the publish cron picks
+    // it up on its next tick (single, uniform publish path).
+    scheduledDate = new Date().toISOString()
+    status = 'scheduled'
   }
 
   // Map content_type → posting `type` column.
@@ -93,10 +103,15 @@ export async function POST(request: NextRequest) {
         organization_id: userData.organization_id,
         platform,
         type: postType,
+        content_type: contentType,
         status,
         live_link: link,
+        link,
         post_content: caption,
         media_url: mediaUrl,
+        media_drive_file_ids: Array.isArray(body?.media_drive_file_ids) ? body.media_drive_file_ids : [],
+        first_comment: firstComment || null,
+        social_account_id: a.social_account_id || a.id || null,
         scheduled_date: scheduledDate,
         submission_date: today,
         comment,
