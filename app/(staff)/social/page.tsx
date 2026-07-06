@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import SocialCalendar from '@/components/SocialCalendar'
 import SchedulePicker from '@/components/SchedulePicker'
+import MediaUpload, { type MediaItem } from '@/components/MediaUpload'
+import { SOCIAL_MEDIA_SPECS } from '@/lib/social-media-specs'
 
 // NOTE: posts composed here are drafted / scheduled / stored and previewed only.
 // Auto-publishing to each network activates once that platform's credentials are
@@ -121,7 +123,8 @@ export default function SocialPage() {
   const [projectId, setProjectId] = useState('')
   const [contentType, setContentType] = useState<'post' | 'story' | 'reel'>('post')
   const [caption, setCaption] = useState('')
-  const [mediaUrl, setMediaUrl] = useState('')
+  const [media, setMedia] = useState<MediaItem[]>([])
+  const [showMediaReqs, setShowMediaReqs] = useState(false)
   const [link, setLink] = useState('')
   const [campaign, setCampaign] = useState('')
   const [firstComment, setFirstComment] = useState('')
@@ -186,6 +189,10 @@ export default function SocialPage() {
     return Array.from(set)
   }, [selectedAccounts, accounts])
 
+  // Primary media URL kept for the existing compose payload so nothing downstream
+  // breaks; additional media items are still previewed.
+  const primaryMediaUrl = media[0]?.url || ''
+
   // Keep the active per-network tab valid.
   useEffect(() => {
     if (selectedPlatforms.length && !selectedPlatforms.includes(activeNetworkTab)) {
@@ -220,7 +227,7 @@ export default function SocialPage() {
 
   // Clear only the message content (used by "Create another").
   function clearContent() {
-    setCaption(''); setMediaUrl(''); setLink(''); setFirstComment('')
+    setCaption(''); setMedia([]); setLink(''); setFirstComment('')
     setPerNetwork({})
   }
   // Full reset back to a blank composer.
@@ -247,7 +254,7 @@ export default function SocialPage() {
           content_type: contentType,
           caption,
           per_network: perNetwork,
-          media_url: mediaUrl || undefined,
+          media_url: primaryMediaUrl || undefined,
           link: link || undefined,
           campaign: campaign || undefined,
           first_comment: firstComment || undefined,
@@ -394,11 +401,45 @@ export default function SocialPage() {
                 </div>
               )}
 
+              {/* Media */}
+              <div className="pt-1">
+                <label className={labelClass}><ImageIcon className="inline h-3.5 w-3.5 mr-1" />Media</label>
+                <MediaUpload
+                  platforms={selectedPlatforms}
+                  clientId={clientId}
+                  media={media}
+                  onChange={setMedia}
+                />
+                {selectedPlatforms.length > 0 && (
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowMediaReqs(v => !v)}
+                      className="text-xs font-medium text-sky-400 hover:text-sky-300 transition-colors"
+                    >
+                      {showMediaReqs ? 'Hide' : 'Show'} media requirements
+                    </button>
+                    {showMediaReqs && (
+                      <div className="mt-2 space-y-2">
+                        {selectedPlatforms.map(p => {
+                          const spec = SOCIAL_MEDIA_SPECS[p]
+                          if (!spec) return null
+                          return (
+                            <div key={p} className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5 text-[11px] text-slate-400">
+                              <div className="text-slate-200 font-medium mb-1">{spec.label}</div>
+                              <div>Images: up to {spec.image.maxImagesPerPost}/post, ≤{spec.image.maxFileSizeMB}MB, aspect {spec.image.aspectRatioMin}–{spec.image.aspectRatioMax}{spec.image.gifSupport ? ', GIF ok' : ', no GIF'}</div>
+                              <div>Video: ≤{spec.video.maxFileSizeMB}MB, {spec.video.minLenSec}–{spec.video.maxLenSec}s, aspect {spec.video.aspectRatioMin}–{spec.video.aspectRatioMax}, {spec.video.fileTypes.join('/')}</div>
+                            </div>
+                          )
+                        })}
+                        <p className="text-[11px] text-slate-500">Requirements are advisory — they warn but don&apos;t block. Video is validated only, never transcoded.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                <div>
-                  <label className={labelClass}><ImageIcon className="inline h-3.5 w-3.5 mr-1" />Media URL</label>
-                  <input value={mediaUrl} onChange={e => setMediaUrl(e.target.value)} placeholder="https://…" className={inputClass} />
-                </div>
                 <div>
                   <label className={labelClass}><Link2 className="inline h-3.5 w-3.5 mr-1" />Link (optional)</label>
                   <input value={link} onChange={e => setLink(e.target.value)} placeholder="https://…" className={inputClass} />
@@ -510,9 +551,9 @@ export default function SocialPage() {
                       <div className="ml-auto"><PlatformBadge platform={p} /></div>
                     </div>
                     <p className="text-sm text-slate-200 whitespace-pre-wrap break-words">{text || <span className="text-slate-500">Your caption will appear here…</span>}</p>
-                    {mediaUrl && (
+                    {primaryMediaUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={mediaUrl} alt="media preview" className="mt-3 rounded-lg w-full max-h-56 object-cover border border-white/[0.08]" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                      <img src={primaryMediaUrl} alt="media preview" className="mt-3 rounded-lg w-full max-h-56 object-cover border border-white/[0.08]" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                     )}
                     {link && <div className="mt-2 text-xs text-sky-400 truncate flex items-center gap-1"><Link2 className="h-3 w-3" /> {link}</div>}
                     {firstComment && <div className="mt-2 text-xs text-slate-500 border-t border-white/[0.06] pt-2">First comment: {firstComment}</div>}
@@ -586,9 +627,9 @@ export default function SocialPage() {
                 const text = perNetwork[p]?.caption?.trim() || caption
                 return (
                   <div key={a.id} className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 flex gap-3">
-                    {mediaUrl ? (
+                    {primaryMediaUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={mediaUrl} alt="media" className="w-16 h-16 rounded-lg object-cover border border-white/[0.08] shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                      <img src={primaryMediaUrl} alt="media" className="w-16 h-16 rounded-lg object-cover border border-white/[0.08] shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                     ) : (
                       <div className="w-16 h-16 rounded-lg bg-white/[0.04] border border-white/[0.08] shrink-0 flex items-center justify-center text-slate-600"><ImageIcon className="h-5 w-5" /></div>
                     )}
