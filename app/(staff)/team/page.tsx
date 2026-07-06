@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { Edit2, UserX, Shield, Loader2, X, Check, Mail, Upload, Copy, Send, Trash2, Users, FolderKey, Briefcase, UserCircle } from 'lucide-react'
+import { Edit2, UserX, Shield, Loader2, X, Check, Mail, Upload, Copy, Send, Trash2, Users, FolderKey, Briefcase, UserCircle, Eye } from 'lucide-react'
 import AddButton from '@/components/ui/AddButton'
 
 const tabs = ['Employees', 'Invitations', 'Roles & Permissions', 'Client Accounts']
@@ -127,6 +127,11 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
+  // Current user role — gates the super_admin-only "View as user" action.
+  const [currentRole, setCurrentRole] = useState<string | null>(null)
+  const [impersonatingId, setImpersonatingId] = useState('')
+  const [impersonateError, setImpersonateError] = useState('')
+
   // Add users modal (HubSpot-style)
   const [showAdd, setShowAdd] = useState(false)
   const [clientMode, setClientMode] = useState(false)
@@ -191,7 +196,37 @@ export default function TeamPage() {
       .catch(() => setMembers([]))
       .finally(() => setLoading(false))
     loadInvites()
+    fetch('/api/me')
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => { if (data?.role) setCurrentRole(data.role) })
+      .catch(() => {})
   }, [])
+
+  // Start an app-level "view as" session (super_admin only, enforced server-side).
+  async function handleImpersonate(member: any) {
+    setImpersonateError('')
+    setImpersonatingId(member.id)
+    try {
+      const res = await fetch(`/api/team/${member.id}/impersonate`, { method: 'POST' })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setImpersonateError(d.error || 'Failed to start view-as session')
+        return
+      }
+      window.location.href = '/dashboard'
+    } catch {
+      setImpersonateError('Network error. Please try again.')
+    } finally {
+      setImpersonatingId('')
+    }
+  }
+
+  // Visible only to super admins, and never for super_admin/billing_admin targets.
+  function canImpersonate(member: any): boolean {
+    return currentRole === 'super_admin'
+      && member.role !== 'super_admin'
+      && member.role !== 'billing_admin'
+  }
 
   function loadInvites() {
     setInvitesLoading(true)
@@ -643,6 +678,12 @@ export default function TeamPage() {
         ))}
       </div>
 
+      {impersonateError && (
+        <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-2.5 text-sm text-red-300">
+          {impersonateError}
+        </div>
+      )}
+
       {activeTab === 0 && (
         <div className="glass-card">
           <div className="p-4 border-b border-white/[0.08]">
@@ -693,6 +734,11 @@ export default function TeamPage() {
                       {ROLES[user.role]?.label || user.role}
                     </span>
                     <div className="flex gap-1">
+                      {canImpersonate(user) && (
+                        <button onClick={() => handleImpersonate(user)} disabled={impersonatingId === user.id} title="View as user" className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-white/[0.06] disabled:opacity-50">
+                          {impersonatingId === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      )}
                       <button onClick={() => openAccess(user)} title="Manage project access" className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06]"><FolderKey className="h-4 w-4" /></button>
                       <button onClick={() => openEdit(user)} className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06]"><Edit2 className="h-4 w-4" /></button>
                       <button onClick={() => openRemove(user)} className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-white/[0.06]"><UserX className="h-4 w-4" /></button>
@@ -877,6 +923,11 @@ export default function TeamPage() {
                     <div className="flex items-center gap-3">
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-300">Client</span>
                       <div className="flex gap-1">
+                        {canImpersonate(user) && (
+                          <button onClick={() => handleImpersonate(user)} disabled={impersonatingId === user.id} title="View as user" className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-white/[0.06] disabled:opacity-50">
+                            {impersonatingId === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        )}
                         <button onClick={() => openAccess(user)} title="Manage project access" className="p-1.5 text-slate-400 hover:text-sky-400 rounded-lg hover:bg-white/[0.06]"><FolderKey className="h-4 w-4" /></button>
                         <button onClick={() => openRemove(user)} className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-white/[0.06]"><UserX className="h-4 w-4" /></button>
                       </div>
