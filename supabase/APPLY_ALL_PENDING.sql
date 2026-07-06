@@ -534,3 +534,15 @@ CREATE INDEX IF NOT EXISTS idx_invoices_qb_invoice_id ON invoices(qb_invoice_id)
 -- per-client dashboard via iframe. Tolerant/idempotent so it is safe to re-run.
 
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS looker_report_url text;
+
+
+
+-- >>>>>>>>>>>>>>>>>>>> supabase/migrations/034_client_logo.sql <<<<<<<<<<<<<<<<<<<<
+-- 034_client_logo.sql
+-- Store a single primary logo URL for a client, auto-derived from their website
+-- (Clearbit Logo API / Google favicon) in the add-client wizard.
+-- The existing clients.logo_urls (jsonb array) is left untouched; this adds a
+-- dedicated single-value column used for the auto-picked site logo.
+-- Tolerant/idempotent so it is safe to re-run.
+
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS logo_url text;

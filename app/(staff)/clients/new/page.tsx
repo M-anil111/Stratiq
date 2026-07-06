@@ -460,6 +460,7 @@ interface FormData {
   hashtags: string[]; categories: string[]; target_audience: string
   goals: string[]; stakeholder_expectations: string[]
   proposal_url: string; project_status: string
+  logo_url: string
   sales_manager_id: string; dm_manager_id: string; marketing_manager_id: string
   // Hosting & domain
   domain_name: string; domain_registrar: string
@@ -477,6 +478,7 @@ const defaultForm: FormData = {
   hashtags: [], categories: [], target_audience: '',
   goals: [], stakeholder_expectations: [],
   proposal_url: '', project_status: 'in_onboarding',
+  logo_url: '',
   sales_manager_id: '', dm_manager_id: '', marketing_manager_id: '',
   domain_name: '', domain_registrar: '',
   hosting_provider: '', hosting_notes: '',
@@ -519,6 +521,32 @@ export default function NewClientPage() {
   const parentSearchRef = useRef<NodeJS.Timeout>()
   // Display name mode
   const [displayNameMode, setDisplayNameMode] = useState<'business' | 'contact' | 'custom'>('business')
+  // Auto logo from website
+  const [logoCandidates, setLogoCandidates] = useState<{ logo_url: string; favicon_url: string } | null>(null)
+  const [logoFallback, setLogoFallback] = useState(false)
+
+  // Fetch logo candidates + auto-fill hosting domain from the website.
+  const fetchLogoForWebsite = useCallback(async (website: string) => {
+    const raw = (website || '').trim()
+    if (!raw) return
+    try {
+      const res = await fetch(`/api/logo?domain=${encodeURIComponent(raw)}`)
+      if (!res.ok) return
+      const d = await res.json()
+      if (d.error) return
+      setLogoCandidates({ logo_url: d.logo_url, favicon_url: d.favicon_url })
+      setLogoFallback(false)
+      setForm(f => ({
+        ...f,
+        // Default the client logo to the Clearbit logo; <img onError> below
+        // swaps to the favicon and updates this value if Clearbit 404s.
+        logo_url: f.logo_url || d.logo_url,
+        // Mirror the server-side hosting-domain auto-fill so the user sees it
+        // prefilled when they reach the Hosting step (kept editable).
+        domain_name: f.domain_name || d.domain || '',
+      }))
+    } catch { /* non-fatal — logo preview is best-effort */ }
+  }, [])
 
   useEffect(() => {
     fetch('/api/users').then(r => r.json()).then(d => Array.isArray(d) && setUsers(d))
@@ -815,8 +843,41 @@ export default function NewClientPage() {
                   }} />
               </Field>
             </div>
-            <Field label={<>Website / Domain <InfoTooltip content="Enter the root domain only — e.g. example.com (no https://). This is used to auto-suggest the client email and for SEO tracking." /></>} required hint="Domain only: example.com" filled={autoFilled.has('website')}>
-              <input className="input-glass" value={form.website} onChange={e => { setFE('website')(e); setAutoFilled(s => { const n = new Set(s); n.delete('website'); return n }) }} placeholder="example.com" required />
+            <Field label={<>Website / Domain <InfoTooltip content="Enter the root domain only — e.g. example.com (no https://). We auto-pick the client's logo from their site, auto-suggest their email, and prefill the hosting domain." /></>} required hint="Domain only: example.com — logo is picked from the site automatically" filled={autoFilled.has('website')}>
+              <input className="input-glass" value={form.website}
+                onChange={e => { setFE('website')(e); setAutoFilled(s => { const n = new Set(s); n.delete('website'); return n }) }}
+                onBlur={e => fetchLogoForWebsite(e.target.value)}
+                placeholder="example.com" required />
+              {(form.logo_url || logoCandidates) && (
+                <div className="mt-2.5 flex items-center gap-3 rounded-lg border border-white/[0.10] bg-white/[0.03] px-3 py-2">
+                  <div className="h-10 w-10 rounded-lg bg-white/[0.06] border border-white/[0.08] flex items-center justify-center overflow-hidden shrink-0">
+                    {form.logo_url ? (
+                      <img src={form.logo_url} alt="Client logo"
+                        className="max-h-9 max-w-9 object-contain"
+                        onError={() => {
+                          // Clearbit had no logo — fall back to the favicon.
+                          if (!logoFallback && logoCandidates?.favicon_url) {
+                            setLogoFallback(true)
+                            setForm(f => ({ ...f, logo_url: logoCandidates.favicon_url }))
+                          }
+                        }} />
+                    ) : (
+                      <Building2 className="h-4 w-4 text-slate-500" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-slate-300">Logo from website</p>
+                    <p className="text-[11px] text-slate-500 truncate">{form.logo_url ? 'Auto-picked — saved with the client' : 'No logo found'}</p>
+                  </div>
+                  {form.logo_url && (
+                    <button type="button"
+                      onClick={() => { setForm(f => ({ ...f, logo_url: '' })); setLogoCandidates(null); setLogoFallback(false) }}
+                      className="text-slate-500 hover:text-red-400 transition-colors shrink-0" title="Remove logo">
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              )}
             </Field>
             <Field label={<>Industry <InfoTooltip content="Used to categorize the client and match reporting templates. Auto-filled from Google Business where possible." /></>} required filled={autoFilled.has('industry')}>
               <select className={sel} value={form.industry} onChange={e => { setFE('industry')(e); setAutoFilled(s => { const n = new Set(s); n.delete('industry'); return n }) }} required>

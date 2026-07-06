@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClientFolder } from '@/lib/google-drive'
 import { sendEmail } from '@/lib/email/index'
 import { logAudit } from '@/lib/audit'
+import { domainFromUrl } from '@/lib/logo'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -77,6 +78,14 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
 
+  // Hosting domain auto-fill: if the domain field is empty but a website was
+  // provided, derive the bare domain from the website. Tolerant — the column is
+  // only set below if it exists (missing-column retry strips it otherwise).
+  const websiteDomain = domainFromUrl(body.website)
+  const autoDomainName = (body.domain_name && String(body.domain_name).trim())
+    ? body.domain_name
+    : (websiteDomain || null)
+
   // Build the insert row. Some columns come from migrations that may not yet be
   // applied to this database (e.g. marketing_manager_id from 007). Rather than
   // hard-failing the whole insert, we retry while stripping any column PostgREST
@@ -113,6 +122,8 @@ export async function POST(request: NextRequest) {
     proposal_url: body.proposal_url || null,
     google_place_id: body.google_place_id || null,
     proposal_status: 'pending_approval',
+    logo_url: body.logo_url || null,
+    domain_name: autoDomainName,
   }
 
   let data: any = null
