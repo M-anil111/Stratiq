@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
     proposal_status: 'pending_approval',
     logo_url: body.logo_url || null,
     domain_name: autoDomainName,
+    proofhub_project_id: body.proofhub_project_id ? String(body.proofhub_project_id) : null,
   }
 
   let data: any = null

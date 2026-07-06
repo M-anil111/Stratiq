@@ -49,6 +49,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     notes: body.notes || null,
     sales_manager_id: body.sales_manager_id || null,
     dm_manager_id: body.dm_manager_id || null,
+    proofhub_project_id: body.proofhub_project_id ? String(body.proofhub_project_id) : null,
   }
 
   let project: any = null

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Loader2, CheckCircle, Building2, AlertCircle } from 'lucide-react'
 import AddButton from '@/components/ui/AddButton'
+import ProofHubProjectPicker from '@/components/ProofHubProjectPicker'
 
 const SERVICES = [
   'SEO (Local)', 'SEO (National)', 'SEO (E-commerce)', 'Content Marketing',
@@ -78,6 +79,7 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
     start_date: '',
     end_date: '',
     notes: '',
+    proofhub_project_id: '' as string,
   })
 
   // Load the linked client + team so we can prominently show and prefill from them.
@@ -133,6 +135,7 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
           domain: normalizeDomain(form.domain),
           start_date: form.start_date || null,
           end_date: form.end_date || null,
+          proofhub_project_id: form.proofhub_project_id || null,
         }),
       })
       if (res.ok) {
@@ -281,6 +284,19 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
               <textarea className="input-glass min-h-[90px]" value={form.notes} onChange={setField('notes')} placeholder="Anything the team should know about this project…" />
             </div>
           </div>
+        </div>
+
+        {/* ProofHub */}
+        <div className="glass-card p-6 animate-float-up animate-delay-200">
+          <div className="mb-6 pb-4 border-b border-slate-900/10 dark:border-white/[0.08]">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">ProofHub</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Optionally link this project to a ProofHub project, or create a new one.</p>
+          </div>
+          <ProofHubProjectPicker
+            value={form.proofhub_project_id || null}
+            onChange={(id) => setForm(f => ({ ...f, proofhub_project_id: id || '' }))}
+            defaultName={form.name}
+          />
         </div>
 
         {error && (

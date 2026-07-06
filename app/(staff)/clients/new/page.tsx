@@ -8,6 +8,7 @@ import {
   AlertCircle, Plus,
 } from 'lucide-react'
 import { InfoTooltip } from '@/components/ui/tooltip'
+import ProofHubProjectPicker from '@/components/ProofHubProjectPicker'
 
 const INDUSTRIES = [
   'Restaurant / Food & Beverage', 'Retail / E-commerce', 'Healthcare / Medical',
@@ -468,6 +469,7 @@ interface FormData {
   hosting_includes_backup: string; backup_frequency: string; support_type: string
   display_name: string
   parent_client_id: string
+  proofhub_project_id: string
 }
 
 const defaultForm: FormData = {
@@ -485,6 +487,7 @@ const defaultForm: FormData = {
   hosting_includes_backup: '', backup_frequency: '', support_type: '',
   display_name: '',
   parent_client_id: '',
+  proofhub_project_id: '',
 }
 
 const defaultPkg = (service: string): ServicePackage => ({
@@ -1159,6 +1162,7 @@ export default function NewClientPage() {
       )}
 
       {step === 3 && (
+        <>
         <div className="glass-card p-6 space-y-6">
           <div>
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-0.5">Hosting & Domain Details</h2>
@@ -1223,6 +1227,18 @@ export default function NewClientPage() {
             </div>
           </div>
         </div>
+        <div className="glass-card p-6 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-0.5">ProofHub</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Optionally link this client to a ProofHub project, or create a new one for tasks.</p>
+          </div>
+          <ProofHubProjectPicker
+            value={form.proofhub_project_id || null}
+            onChange={(id) => setForm(f => ({ ...f, proofhub_project_id: id || '' }))}
+            defaultName={form.company_name}
+          />
+        </div>
+        </>
       )}
 
       {step === 4 && (
