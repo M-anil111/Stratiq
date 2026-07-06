@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CalendarClock, ChevronLeft, ChevronRight, Clock, Globe, X } from 'lucide-react'
+import { CalendarClock, ChevronLeft, ChevronRight, Clock, Globe, Sparkles, X } from 'lucide-react'
 
 // A nicer "Schedule for later" control: a popover with a mini month calendar,
 // a Posting Slots section (org's saved times for the chosen weekday), a manual
@@ -20,19 +20,42 @@ function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
 
+// Shape returned by /api/social/recommended-times.
+type RecRange = { start: string; end: string; score: number }
+type RecDay = { day: number; ranges: RecRange[] }
+
 export default function SchedulePicker({
   value,
   onChange,
   savedTimes,
   timezone,
+  platform,
 }: {
   value: string
   onChange: (val: string) => void
   savedTimes: Record<string, string[]>
   timezone?: string
+  platform?: string
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+
+  // Recommended times (org history or industry defaults), lazy-loaded on open.
+  const [recommended, setRecommended] = useState<RecDay[] | null>(null)
+  const [recSource, setRecSource] = useState<'history' | 'industry' | null>(null)
+  useEffect(() => {
+    if (!open || recommended) return
+    const qs = platform ? `?platform=${encodeURIComponent(platform)}` : ''
+    fetch(`/api/social/recommended-times${qs}`)
+      .then(r => r.json())
+      .then((d) => {
+        if (Array.isArray(d?.recommended)) {
+          setRecommended(d.recommended)
+          setRecSource(d.source === 'history' ? 'history' : 'industry')
+        }
+      })
+      .catch(() => {})
+  }, [open, recommended, platform])
 
   const selected = useMemo(() => {
     if (!value) return null
@@ -83,6 +106,7 @@ export default function SchedulePicker({
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(viewMonth.getFullYear(), viewMonth.getMonth(), d))
 
   const slotsForDay = savedTimes[DAY_KEYS[pickedDay.getDay()]] || []
+  const recForDay = (recommended?.find(r => r.day === pickedDay.getDay())?.ranges) || []
 
   function commit(hh: number, mm: number) {
     onChange(toValue(pickedDay, hh, mm))
@@ -193,6 +217,32 @@ export default function SchedulePicker({
               <p className="text-xs text-slate-500">No saved slots for this day. Use a custom time below.</p>
             )}
           </div>
+
+          {/* Recommended times — distinct from saved Posting Slots (amber accent) */}
+          {recForDay.length > 0 && (
+            <div>
+              <p className="text-xs text-amber-300/90 mb-1 flex items-center gap-1"><Sparkles className="h-3.5 w-3.5" /> Recommended times</p>
+              <p className="text-[10px] text-slate-500 mb-2">{recSource === 'history' ? 'Based on your posting history' : 'Based on industry standards'}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {recForDay.map((r) => {
+                  const active = manualTime === r.start
+                  return (
+                    <button
+                      key={r.start}
+                      type="button"
+                      onClick={() => pickSlot(r.start)}
+                      title={`Recommended ${r.start}–${r.end}`}
+                      className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${active
+                        ? 'bg-amber-400/90 text-slate-900 border-amber-300 font-semibold'
+                        : 'bg-amber-400/10 text-amber-200 border-amber-400/30 hover:bg-amber-400/20'}`}
+                    >
+                      {r.start}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Manual time */}
           <div>

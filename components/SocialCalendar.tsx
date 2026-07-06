@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, Link2, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Link2, Sparkles, X } from 'lucide-react'
 
 // Content calendar over org-wide scheduled social posts. Fetches the shared
 // /api/social/scheduled feed by visible date range. Pure CSS/SVG — no calendar lib.
@@ -30,6 +30,9 @@ function meta(platform: string) {
 }
 
 type View = 'month' | 'week' | 'day'
+type Client = { id: string; company_name: string }
+type RecRange = { start: string; end: string; score: number }
+type RecDay = { day: number; ranges: RecRange[] }
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -98,7 +101,34 @@ export default function SocialCalendar() {
   const [selected, setSelected] = useState<CalPost | null>(null)
   const reqId = useRef(0)
 
+  // Filters.
+  const [clients, setClients] = useState<Client[]>([])
+  const [fClient, setFClient] = useState('')   // client_name
+  const [fPlatform, setFPlatform] = useState('')
+  const [fStatus, setFStatus] = useState('')
+
+  // Recommended-times overlay (Hootsuite-style faint markers).
+  const [showRec, setShowRec] = useState(true)
+  const [recommended, setRecommended] = useState<RecDay[] | null>(null)
+
   const range = useMemo(() => rangeFor(view, anchor), [view, anchor])
+
+  // Client list for the filter (best-effort).
+  useEffect(() => {
+    fetch('/api/clients?limit=200')
+      .then(r => r.json())
+      .then((d) => { if (Array.isArray(d?.clients)) setClients(d.clients) })
+      .catch(() => {})
+  }, [])
+
+  // Recommended posting times (org history or industry defaults).
+  useEffect(() => {
+    const qs = fPlatform ? `?platform=${encodeURIComponent(fPlatform)}` : ''
+    fetch(`/api/social/recommended-times${qs}`)
+      .then(r => r.json())
+      .then((d) => { if (Array.isArray(d?.recommended)) setRecommended(d.recommended) })
+      .catch(() => {})
+  }, [fPlatform])
 
   useEffect(() => {
     const id = ++reqId.current
@@ -115,10 +145,32 @@ export default function SocialCalendar() {
       .catch(() => { if (id === reqId.current) setPosts([]) })
   }, [range])
 
+  // Apply client-side filters.
+  const filtered = useMemo(() => {
+    return (posts || []).filter(p => {
+      if (fClient && (p.client_name || '') !== fClient) return false
+      if (fPlatform && (p.platform || '').toLowerCase() !== fPlatform.toLowerCase()) return false
+      if (fStatus && (p.status || '') !== fStatus) return false
+      return true
+    })
+  }, [posts, fClient, fPlatform, fStatus])
+
+  // Distinct platforms / statuses present, for filter dropdowns.
+  const platformOptions = useMemo(() => {
+    const s = new Set<string>()
+    for (const p of posts || []) if (p.platform) s.add(p.platform.toLowerCase())
+    return Array.from(s).sort()
+  }, [posts])
+  const statusOptions = useMemo(() => {
+    const s = new Set<string>()
+    for (const p of posts || []) if (p.status) s.add(p.status)
+    return Array.from(s).sort()
+  }, [posts])
+
   // Group posts by day key (local).
   const byDay = useMemo(() => {
     const m: Record<string, CalPost[]> = {}
-    for (const p of posts || []) {
+    for (const p of filtered) {
       if (!p.scheduled_date) continue
       const d = new Date(p.scheduled_date)
       const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
@@ -128,8 +180,31 @@ export default function SocialCalendar() {
       m[k].sort((a: CalPost, b: CalPost) => (a.scheduled_date || '').localeCompare(b.scheduled_date || ''))
     })
     return m
-  }, [posts])
+  }, [filtered])
   function postsOn(d: Date) { return byDay[`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`] || [] }
+
+  // Per-day status counts (scheduled / draft / published) for headers.
+  function statusCounts(d: Date) {
+    const list = postsOn(d)
+    const c = { scheduled: 0, draft: 0, published: 0 }
+    for (const p of list) {
+      const s = (p.status || '').toLowerCase()
+      if (s === 'scheduled') c.scheduled++
+      else if (s === 'draft') c.draft++
+      else if (s === 'published' || s === 'live') c.published++
+    }
+    return c
+  }
+
+  // Recommended ranges for a given weekday (for the overlay markers).
+  function recFor(d: Date): RecRange[] {
+    if (!showRec || !recommended) return []
+    return (recommended.find(r => r.day === d.getDay())?.ranges || []).slice(0, 3)
+  }
+  function recTitle(d: Date): string {
+    const platLabel = fPlatform ? ` for ${meta(fPlatform).label}` : ''
+    return `Recommended time${platLabel}`
+  }
 
   function navigate(dir: -1 | 0 | 1) {
     if (dir === 0) { setAnchor(startOfDay(new Date())); return }
@@ -173,6 +248,47 @@ export default function SocialCalendar() {
         </div>
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <select
+          value={fClient}
+          onChange={e => setFClient(e.target.value)}
+          className="bg-white/[0.06] border border-white/[0.12] text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+        >
+          <option value="">All clients</option>
+          {clients.map(c => <option key={c.id} value={c.company_name}>{c.company_name}</option>)}
+        </select>
+        <select
+          value={fPlatform}
+          onChange={e => setFPlatform(e.target.value)}
+          className="bg-white/[0.06] border border-white/[0.12] text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+        >
+          <option value="">All platforms</option>
+          {platformOptions.map(p => <option key={p} value={p}>{meta(p).label}</option>)}
+        </select>
+        <select
+          value={fStatus}
+          onChange={e => setFStatus(e.target.value)}
+          className="bg-white/[0.06] border border-white/[0.12] text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+        >
+          <option value="">All statuses</option>
+          {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        {(fClient || fPlatform || fStatus) && (
+          <button onClick={() => { setFClient(''); setFPlatform(''); setFStatus('') }} className="text-xs text-slate-400 hover:text-white px-1.5 py-1">Clear</button>
+        )}
+        <button
+          onClick={() => setShowRec(s => !s)}
+          aria-pressed={showRec}
+          title="Overlay recommended posting times"
+          className={`ml-auto inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${showRec
+            ? 'bg-amber-400/15 text-amber-200 border-amber-400/30'
+            : 'bg-white/[0.06] text-slate-400 border-white/[0.12] hover:text-white'}`}
+        >
+          <Sparkles className="h-3.5 w-3.5" /> Recommended times
+        </button>
+      </div>
+
       {loading ? (
         <div className="glass-card p-4">
           <div className="grid grid-cols-7 gap-2">
@@ -199,9 +315,29 @@ export default function SocialCalendar() {
                     const dayPosts = postsOn(d)
                     const shown = dayPosts.slice(0, 3)
                     const extra = dayPosts.length - shown.length
+                    const counts = statusCounts(d)
+                    const rec = recFor(d)
                     return (
                       <div key={d.toISOString()} className={`min-h-[96px] rounded-lg border p-1.5 flex flex-col gap-1 ${inMonth ? 'border-white/[0.08] bg-white/[0.02]' : 'border-white/[0.04] bg-transparent opacity-50'}`}>
-                        <div className={`text-xs mb-0.5 ${isToday ? 'inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-500 text-white font-semibold' : 'text-slate-400'}`}>{d.getDate()}</div>
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className={`text-xs ${isToday ? 'inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-500 text-white font-semibold' : 'text-slate-400'}`}>{d.getDate()}</span>
+                          {(counts.scheduled + counts.draft + counts.published) > 0 && (
+                            <span className="flex items-center gap-1 text-[9px]">
+                              {counts.scheduled > 0 && <span className="text-sky-300" title="Scheduled">{counts.scheduled}s</span>}
+                              {counts.draft > 0 && <span className="text-slate-400" title="Draft">{counts.draft}d</span>}
+                              {counts.published > 0 && <span className="text-emerald-300" title="Published">{counts.published}p</span>}
+                            </span>
+                          )}
+                        </div>
+                        {rec.length > 0 && (
+                          <div className="flex flex-wrap gap-1" title={recTitle(d)}>
+                            {rec.map(r => (
+                              <span key={r.start} className="text-[9px] px-1 py-0.5 rounded bg-amber-400/10 text-amber-300/70 border border-amber-400/20" title={`${recTitle(d)} · ${r.start}–${r.end}`}>
+                                <Sparkles className="inline h-2.5 w-2.5 -mt-0.5" /> {r.start}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         {shown.map(p => <PostChip key={p.id} post={p} onClick={() => setSelected(p)} />)}
                         {extra > 0 && (
                           <button onClick={() => { setView('day'); setAnchor(startOfDay(d)) }} className="text-[10px] text-sky-400 hover:underline text-left px-1.5">+{extra} more</button>
@@ -221,12 +357,30 @@ export default function SocialCalendar() {
                 {weekDays.map(d => {
                   const isToday = sameDay(d, today)
                   const dayPosts = postsOn(d)
+                  const counts = statusCounts(d)
+                  const rec = recFor(d)
                   return (
                     <div key={d.toISOString()} className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 flex flex-col gap-1.5 min-h-[200px]">
                       <div className="text-center mb-1">
                         <div className="text-xs text-slate-400">{DOW[d.getDay()]}</div>
                         <div className={`text-sm ${isToday ? 'inline-flex items-center justify-center w-6 h-6 rounded-full bg-sky-500 text-white font-semibold mt-0.5' : 'text-white'}`}>{d.getDate()}</div>
+                        {(counts.scheduled + counts.draft + counts.published) > 0 && (
+                          <div className="flex items-center justify-center gap-1.5 text-[9px] mt-0.5">
+                            {counts.scheduled > 0 && <span className="text-sky-300" title="Scheduled">{counts.scheduled}s</span>}
+                            {counts.draft > 0 && <span className="text-slate-400" title="Draft">{counts.draft}d</span>}
+                            {counts.published > 0 && <span className="text-emerald-300" title="Published">{counts.published}p</span>}
+                          </div>
+                        )}
                       </div>
+                      {rec.length > 0 && (
+                        <div className="flex flex-wrap gap-1 justify-center" title={recTitle(d)}>
+                          {rec.map(r => (
+                            <span key={r.start} className="text-[9px] px-1 py-0.5 rounded bg-amber-400/10 text-amber-300/70 border border-amber-400/20" title={`${recTitle(d)} · ${r.start}–${r.end}`}>
+                              <Sparkles className="inline h-2.5 w-2.5 -mt-0.5" /> {r.start}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {dayPosts.length === 0 ? (
                         <div className="text-[10px] text-slate-600 text-center pt-2">—</div>
                       ) : dayPosts.map(p => <PostChip key={p.id} post={p} onClick={() => setSelected(p)} />)}
@@ -260,7 +414,7 @@ export default function SocialCalendar() {
             </div>
           )}
 
-          {(posts || []).length === 0 && view !== 'day' && (
+          {filtered.length === 0 && view !== 'day' && (
             <p className="text-center text-xs text-slate-500 mt-3">No posts scheduled in this period.</p>
           )}
         </>
