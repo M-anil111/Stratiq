@@ -5,7 +5,7 @@ import { useState } from 'react'
 import {
   Building2, Plug, Bell, Sliders, Shield, Globe,
   ShieldCheck, ListChecks, Users, CreditCard, Mail,
-  Search, History, Menu, X, Database,
+  Search, History, Menu, X, Database, Share2,
 } from 'lucide-react'
 
 type NavItem = { href: string; icon: React.ComponentType<{ className?: string }>; label: string }
@@ -41,6 +41,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: 'Tools',
     items: [
       { href: '/settings/integrations', icon: Plug, label: 'Integrations' },
+      { href: '/settings/social-accounts', icon: Share2, label: 'Social Accounts' },
       { href: '/settings/notifications', icon: Bell, label: 'Notifications' },
       { href: '/settings/security', icon: Shield, label: 'Security' },
     ],
