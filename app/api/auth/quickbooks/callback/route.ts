@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const orgId = searchParams.get('state')
 
   // Must match the redirect_uri used at authorize time (connect route).
-  const base = (process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin).replace(/\/$/, '')
+  const base = (process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin).replace(/\/$/, '')
 
   if (!code || !realmId || !orgId) {
     return NextResponse.redirect(`${base}/settings/integrations?error=qb_auth_failed`)
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 
   const tokens = await tokenRes.json()
   if (!tokens.access_token) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings/integrations?error=qb_token_failed`)
+    return NextResponse.redirect(`${base}/settings/integrations?error=qb_token_failed`)
   }
 
   const supabase = await createClient()
@@ -55,5 +55,5 @@ export async function GET(req: NextRequest) {
     detail: { provider: 'quickbooks' },
   })
 
-  return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings/integrations?connected=quickbooks`)
+  return NextResponse.redirect(`${base}/settings/integrations?connected=quickbooks`)
 }
