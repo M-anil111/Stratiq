@@ -2,7 +2,7 @@
 import { useCallback, useRef, useState } from 'react'
 import {
   Image as ImageIcon, Video, UploadCloud, Link2, X, Loader2,
-  CheckCircle2, AlertTriangle, Plus,
+  CheckCircle2, AlertTriangle, Plus, BookmarkPlus, Bookmark,
 } from 'lucide-react'
 import {
   SOCIAL_MEDIA_SPECS, validateMedia, aspectRatioLabel,
@@ -27,6 +27,8 @@ interface Props {
   clientId: string
   media: MediaItem[]
   onChange: (media: MediaItem[]) => void
+  onSaveToLibrary?: (m: MediaItem) => void
+  savedUrls?: Set<string>
 }
 
 const inputClass = 'w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 placeholder:text-slate-500'
@@ -114,7 +116,7 @@ async function compressImage(file: File, targetMB: number): Promise<{ blob: Blob
   }
 }
 
-export default function MediaUpload({ platforms, clientId, media, onChange }: Props) {
+export default function MediaUpload({ platforms, clientId, media, onChange, onSaveToLibrary, savedUrls }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -291,7 +293,14 @@ export default function MediaUpload({ platforms, clientId, media, onChange }: Pr
                 <div className="flex items-center gap-2">
                   {m.kind === 'video' ? <Video className="h-3.5 w-3.5 text-slate-400 shrink-0" /> : <ImageIcon className="h-3.5 w-3.5 text-slate-400 shrink-0" />}
                   <span className="text-xs text-slate-300 truncate">{m.name || m.url}</span>
-                  <button type="button" onClick={() => removeAt(i)} aria-label="Remove" className="ml-auto text-slate-500 hover:text-red-400 shrink-0"><X className="h-4 w-4" /></button>
+                  {onSaveToLibrary && (
+                    savedUrls?.has(m.url) ? (
+                      <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-emerald-400 shrink-0" title="Saved to library"><Bookmark className="h-3.5 w-3.5" /> Saved</span>
+                    ) : (
+                      <button type="button" onClick={() => onSaveToLibrary(m)} title="Save to library" className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-sky-400 shrink-0"><BookmarkPlus className="h-3.5 w-3.5" /> Save</button>
+                    )
+                  )}
+                  <button type="button" onClick={() => removeAt(i)} aria-label="Remove" className={`${onSaveToLibrary ? '' : 'ml-auto '}text-slate-500 hover:text-red-400 shrink-0`}><X className="h-4 w-4" /></button>
                 </div>
                 <div className="text-[11px] text-slate-500 mt-0.5">
                   {m.width && m.height ? `${m.width}×${m.height} · ${aspectRatioLabel(m.width, m.height)}` : null}

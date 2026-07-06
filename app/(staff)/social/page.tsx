@@ -4,7 +4,7 @@ import Link from 'next/link'
 import {
   Share2, Send, CalendarClock, Image as ImageIcon, Link2, Megaphone,
   MessageSquare, CheckCircle2, AlertTriangle, Loader2, PlugZap,
-  X, Check, FileText,
+  X, Check, FileText, Sparkles, FolderOpen, Upload, Download, Video,
 } from 'lucide-react'
 import SocialCalendar from '@/components/SocialCalendar'
 import SchedulePicker from '@/components/SchedulePicker'
@@ -24,6 +24,69 @@ type ScheduledPost = {
   status: string | null; project_name: string | null; client_name: string | null
   failed_reason?: string | null
 }
+
+type LibraryAsset = {
+  id: string; drive_file_id?: string | null; name: string; url: string
+  mime_type?: string | null; kind: 'image' | 'video' | 'gif' | string
+}
+type BulkRow = {
+  date: string; time: string; platforms: string[]; caption: string
+  media_url?: string; link?: string
+}
+
+// Splits a single CSV line respecting double-quoted fields ("" escapes a quote).
+function splitCSVLine(line: string): string[] {
+  const out: string[] = []
+  let cur = ''
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') { cur += '"'; i++ } else { inQuotes = false }
+      } else { cur += ch }
+    } else if (ch === '"') { inQuotes = true }
+    else if (ch === ',') { out.push(cur); cur = '' }
+    else { cur += ch }
+  }
+  out.push(cur)
+  return out.map(s => s.trim())
+}
+
+// Parses pasted CSV into scheduler rows plus human-readable warnings.
+function parseBulkCSV(text: string): { rows: BulkRow[]; warnings: string[] } {
+  const rows: BulkRow[] = []
+  const warnings: string[] = []
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0)
+  if (lines.length === 0) return { rows, warnings }
+  let start = 0
+  if (/date/i.test(lines[0]) && /caption/i.test(lines[0])) start = 1
+  for (let i = start; i < lines.length; i++) {
+    const cols = splitCSVLine(lines[i])
+    const date = (cols[0] || '').trim()
+    const time = (cols[1] || '').trim()
+    const platforms = (cols[2] || '').split(/[,;|]/).map(s => s.trim().toLowerCase()).filter(Boolean)
+    const caption = (cols[3] || '').trim()
+    const media_url = (cols[4] || '').trim()
+    const link = (cols[5] || '').trim()
+    const rowNo = i + 1
+    if (!date || !caption) { warnings.push(`Row ${rowNo}: missing date or caption — skipped.`); continue }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) warnings.push(`Row ${rowNo}: date "${date}" is not YYYY-MM-DD.`)
+    if (time && !/^\d{1,2}:\d{2}$/.test(time)) warnings.push(`Row ${rowNo}: time "${time}" is not HH:MM.`)
+    if (platforms.length === 0) warnings.push(`Row ${rowNo}: no platforms listed.`)
+    rows.push({
+      date, time: time || '09:00', platforms, caption,
+      media_url: media_url || undefined, link: link || undefined,
+    })
+  }
+  return { rows, warnings }
+}
+
+const BULK_SAMPLE = 'data:text/csv;charset=utf-8,' + encodeURIComponent(
+  'Date,Time,Platforms,Caption,Media URL,Link\n' +
+  '2026-07-10,09:30,"instagram,facebook","Launch day is here! Meet the new collection.",https://example.com/img.jpg,https://example.com/shop\n' +
+  '2026-07-11,14:00,linkedin,"Behind the scenes of this week\'s build.",,\n'
+)
 
 const PLATFORM_META: Record<string, { label: string; color: string; limit: number }> = {
   facebook: { label: 'Facebook', color: '#1877F2', limit: 2500 },
@@ -140,6 +203,25 @@ export default function SocialPage() {
   const [savingDraft, setSavingDraft] = useState(false)
   const [result, setResult] = useState<{ created: number; skipped: number } | null>(null)
   const [error, setError] = useState('')
+
+  // AI caption assist
+  const [showAI, setShowAI] = useState(false)
+  const [aiTopic, setAiTopic] = useState('')
+  const [aiTone, setAiTone] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState('')
+
+  // Media library picker
+  const [showLibrary, setShowLibrary] = useState(false)
+  const [libAssets, setLibAssets] = useState<LibraryAsset[] | null>(null)
+  const [libSaved, setLibSaved] = useState<Set<string>>(new Set())
+
+  // Bulk upload
+  const [showBulk, setShowBulk] = useState(false)
+  const [bulkText, setBulkText] = useState('')
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [bulkError, setBulkError] = useState('')
+  const [bulkResult, setBulkResult] = useState<{ created: number; errors: string[] } | null>(null)
 
   // scheduled list
   const [posts, setPosts] = useState<ScheduledPost[] | null>(null)
@@ -302,6 +384,103 @@ export default function SocialPage() {
   const submit = () => compose(false)
   const saveDraft = () => compose(true)
 
+  // ---- AI caption ----
+  async function generateCaption() {
+    setAiError('')
+    if (!aiTopic.trim()) { setAiError('Tell me what this post is about.'); return }
+    setAiLoading(true)
+    try {
+      const platform = selectedPlatforms[0] || 'instagram'
+      const res = await fetch('/api/social/ai-caption', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: aiTopic,
+          platform,
+          tone: aiTone || undefined,
+          existing: caption || undefined,
+          want_hashtags: true,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.status === 503) {
+        setAiError(data?.error || 'AI captions aren’t configured yet (ANTHROPIC_API_KEY unset).')
+        return
+      }
+      if (!res.ok) { setAiError(data?.error || 'Couldn’t generate a caption. Try again.'); return }
+      const tags: string[] = Array.isArray(data?.hashtags) ? data.hashtags : []
+      const tagStr = tags.map(t => (t.startsWith('#') ? t : `#${t}`)).join(' ')
+      const next = [String(data?.caption || '').trim(), tagStr].filter(Boolean).join('\n\n')
+      if (next) setCaption(next)
+      setShowAI(false)
+      setAiTopic('')
+    } catch {
+      setAiError('Network error. Please try again.')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  // ---- Media library ----
+  function openLibrary() {
+    setShowLibrary(true)
+    setLibAssets(null)
+    fetch('/api/media-library')
+      .then(r => r.json())
+      .then(d => setLibAssets(Array.isArray(d) ? d : []))
+      .catch(() => setLibAssets([]))
+  }
+  function pickAsset(a: LibraryAsset) {
+    const kind: MediaItem['kind'] = a.kind === 'video' ? 'video' : a.kind === 'gif' ? 'gif' : 'image'
+    setMedia(prev => [...prev, { url: a.url, file_id: a.drive_file_id || undefined, kind, name: a.name }])
+    setShowLibrary(false)
+  }
+  async function saveToLibrary(m: MediaItem) {
+    const mime = m.kind === 'video' ? 'video/mp4' : m.kind === 'gif' ? 'image/gif' : 'image/jpeg'
+    try {
+      const res = await fetch('/api/media-library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: m.url,
+          name: m.name || m.url,
+          mime_type: mime,
+          kind: m.kind === 'gif' ? 'image' : m.kind,
+          drive_file_id: m.file_id || undefined,
+        }),
+      })
+      if (res.ok) setLibSaved(prev => new Set(prev).add(m.url))
+    } catch {
+      /* noop — non-blocking */
+    }
+  }
+
+  // ---- Bulk upload ----
+  const bulkParsed = useMemo(() => parseBulkCSV(bulkText), [bulkText])
+  async function submitBulk() {
+    setBulkError('')
+    setBulkResult(null)
+    if (!projectId) { setBulkError('Pick a client and project first.'); return }
+    if (bulkParsed.rows.length === 0) { setBulkError('No valid rows to schedule.'); return }
+    setBulkLoading(true)
+    try {
+      const res = await fetch('/api/social/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_id: projectId, rows: bulkParsed.rows }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setBulkError(data?.error || 'Bulk scheduling failed.'); return }
+      setBulkResult({ created: data?.created || 0, errors: Array.isArray(data?.errors) ? data.errors : [] })
+      setPosts(null)
+      loadScheduled()
+    } catch {
+      setBulkError('Network error. Please try again.')
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
   return (
     <div className="p-4 lg:p-8 max-w-[1400px] mx-auto">
       <div className="mb-6 flex items-start gap-3">
@@ -321,16 +500,25 @@ export default function SocialPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-slate-900/[0.04] dark:bg-white/[0.04] p-1 rounded-xl w-fit">
-        {([['compose', 'Create post'], ['calendar', 'Calendar'], ['scheduled', 'Scheduled posts'], ['approvals', 'Approvals']] as const).map(([k, l]) => (
-          <button
-            key={k}
-            onClick={() => setTab(k)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === k ? 'bg-sky-500 text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
-          >
-            {l}
-          </button>
-        ))}
+      <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+        <div className="flex gap-1 bg-slate-900/[0.04] dark:bg-white/[0.04] p-1 rounded-xl w-fit">
+          {([['compose', 'Create post'], ['calendar', 'Calendar'], ['scheduled', 'Scheduled posts'], ['approvals', 'Approvals']] as const).map(([k, l]) => (
+            <button
+              key={k}
+              onClick={() => setTab(k)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === k ? 'bg-sky-500 text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => { setBulkError(''); setBulkResult(null); setShowBulk(true) }}
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-900/[0.04] dark:bg-white/[0.06] hover:bg-slate-900/[0.08] dark:hover:bg-white/[0.12] transition-colors"
+        >
+          <Upload className="h-4 w-4" /> Bulk upload
+        </button>
       </div>
 
       {tab === 'calendar' ? (
@@ -408,7 +596,58 @@ export default function SocialPage() {
             <div className="glass-card p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold text-slate-900 dark:text-white">Caption</h2>
+                <button
+                  type="button"
+                  onClick={() => { setAiError(''); setShowAI(v => !v) }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-sky-600 dark:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 transition-colors"
+                >
+                  <Sparkles className="h-3.5 w-3.5" /> AI caption
+                </button>
               </div>
+
+              {showAI && (
+                <div className="rounded-xl border border-sky-500/30 bg-sky-500/[0.06] p-3.5 space-y-3">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-200">
+                    <Sparkles className="h-3.5 w-3.5 text-sky-500" /> Generate a caption
+                    <button type="button" onClick={() => setShowAI(false)} aria-label="Close" className="ml-auto text-slate-500 hover:text-slate-900 dark:hover:text-white"><X className="h-3.5 w-3.5" /></button>
+                  </div>
+                  <div>
+                    <label className={labelClass}>What&apos;s this post about?</label>
+                    <textarea
+                      value={aiTopic}
+                      onChange={e => setAiTopic(e.target.value)}
+                      rows={2}
+                      placeholder="e.g. Summer sale on running shoes, 20% off this weekend"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                    <div>
+                      <label className={labelClass}>Tone (optional)</label>
+                      <select value={aiTone} onChange={e => setAiTone(e.target.value)} className={inputClass}>
+                        <option value="">Default</option>
+                        <option value="professional">Professional</option>
+                        <option value="casual">Casual</option>
+                        <option value="playful">Playful</option>
+                        <option value="inspirational">Inspirational</option>
+                        <option value="bold">Bold</option>
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={generateCaption}
+                      disabled={aiLoading}
+                      className="btn-brand inline-flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      Generate
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-500">Uses your first selected platform ({selectedPlatforms[0] || 'instagram'}). Fills the caption and appends hashtags.</p>
+                  {aiError && <div className="text-xs text-red-400 flex items-center gap-1.5"><AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {aiError}</div>}
+                </div>
+              )}
+
               <textarea value={caption} onChange={e => setCaption(e.target.value)} rows={5} placeholder="Write your post…" className={inputClass} />
               {selectedPlatforms.length > 0 && (
                 <div className="flex flex-wrap gap-2">
@@ -427,12 +666,23 @@ export default function SocialPage() {
 
               {/* Media */}
               <div className="pt-1">
-                <label className={labelClass}><ImageIcon className="inline h-3.5 w-3.5 mr-1" />Media</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400"><ImageIcon className="inline h-3.5 w-3.5 mr-1" />Media</label>
+                  <button
+                    type="button"
+                    onClick={openLibrary}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-900/[0.04] dark:bg-white/[0.06] hover:bg-slate-900/[0.08] dark:hover:bg-white/[0.12] transition-colors"
+                  >
+                    <FolderOpen className="h-3.5 w-3.5" /> Library
+                  </button>
+                </div>
                 <MediaUpload
                   platforms={selectedPlatforms}
                   clientId={clientId}
                   media={media}
                   onChange={setMedia}
+                  onSaveToLibrary={saveToLibrary}
+                  savedUrls={libSaved}
                 />
                 {selectedPlatforms.length > 0 && (
                   <div className="mt-3">
@@ -773,6 +1023,136 @@ export default function SocialPage() {
               <button onClick={submit} disabled={submitting} className="btn-brand inline-flex items-center gap-2 disabled:opacity-50">
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 {scheduleMode === 'later' ? 'Schedule' : 'Publish'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Media library picker modal */}
+      {showLibrary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowLibrary(false)}>
+          <div className="glass-card w-full max-w-3xl mx-4 max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2"><FolderOpen className="h-5 w-5 text-sky-500" /> Media library</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Pick a saved asset to add to this post.</p>
+              </div>
+              <button onClick={() => setShowLibrary(false)} aria-label="Close" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"><X className="h-4 w-4" /></button>
+            </div>
+
+            {libAssets === null ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[0, 1, 2, 3].map(i => <div key={i} className="aspect-square rounded-xl bg-slate-900/[0.04] dark:bg-white/[0.04] animate-pulse" />)}
+              </div>
+            ) : libAssets.length === 0 ? (
+              <div className="glass-card p-8 text-center text-sm text-slate-600 dark:text-slate-400">No saved media yet.</div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {libAssets.map(a => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => pickAsset(a)}
+                    title={a.name}
+                    className="group text-left rounded-xl overflow-hidden border border-slate-900/10 dark:border-white/[0.08] bg-slate-900/[0.03] dark:bg-white/[0.02] hover:border-sky-500/50 transition-colors"
+                  >
+                    <div className="aspect-square bg-slate-900/[0.04] dark:bg-white/[0.04] flex items-center justify-center overflow-hidden">
+                      {a.kind === 'video' ? (
+                        <div className="flex flex-col items-center gap-1 text-slate-500"><Video className="h-6 w-6" /><span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-900/[0.06] dark:bg-white/[0.08] max-w-[90%] truncate">{a.name}</span></div>
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={a.url} alt={a.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                      )}
+                    </div>
+                    <div className="px-2 py-1.5 text-[11px] text-slate-600 dark:text-slate-400 truncate">{a.name}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Bulk upload modal */}
+      {showBulk && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => !bulkLoading && setShowBulk(false)}>
+          <div className="glass-card w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2"><Upload className="h-5 w-5 text-sky-500" /> Bulk upload</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Paste CSV to schedule many posts at once.</p>
+              </div>
+              <button onClick={() => !bulkLoading && setShowBulk(false)} aria-label="Close" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"><X className="h-4 w-4" /></button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className={labelClass}>Client</label>
+                <select value={clientId} onChange={e => setClientId(e.target.value)} className={inputClass}>
+                  <option value="">Select client…</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>Project</label>
+                <select value={projectId} onChange={e => setProjectId(e.target.value)} disabled={!clientId} className={inputClass}>
+                  <option value="">{clientId ? 'Select project…' : 'Pick a client first'}</option>
+                  {projects.map(p => <option key={p.id} value={p.id}>{p.name || p.domain || p.id}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between mb-1.5">
+              <label className={labelClass + ' mb-0'}>CSV</label>
+              <a href={BULK_SAMPLE} download="social-bulk-sample.csv" className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-600 dark:text-sky-300 hover:underline">
+                <Download className="h-3.5 w-3.5" /> Sample CSV
+              </a>
+            </div>
+            <textarea
+              value={bulkText}
+              onChange={e => setBulkText(e.target.value)}
+              rows={8}
+              placeholder="Date,Time,Platforms,Caption,Media URL,Link"
+              className={inputClass + ' font-mono text-xs'}
+            />
+            <p className="text-[11px] text-slate-500 mt-1.5">Columns: Date (YYYY-MM-DD), Time (HH:MM 24h), Platforms (comma-separated), Caption, optional Media URL, optional Link. A header row is auto-detected.</p>
+
+            {bulkText.trim() && (
+              <div className="mt-3 space-y-2">
+                <div className="text-xs text-slate-700 dark:text-slate-300">
+                  {bulkParsed.rows.length} row{bulkParsed.rows.length !== 1 ? 's' : ''} ready to schedule.
+                </div>
+                {bulkParsed.warnings.length > 0 && (
+                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-2.5 space-y-0.5">
+                    {bulkParsed.warnings.map((w, i) => (
+                      <div key={i} className="text-[11px] text-amber-600 dark:text-amber-300 flex items-start gap-1.5"><AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" /> {w}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {bulkResult && (
+              <div className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] p-3">
+                <div className="text-sm text-emerald-600 dark:text-emerald-300 flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" /> {bulkResult.created} post{bulkResult.created !== 1 ? 's' : ''} scheduled.</div>
+                {bulkResult.errors.length > 0 && (
+                  <div className="mt-2 space-y-0.5">
+                    {bulkResult.errors.map((e, i) => (
+                      <div key={i} className="text-[11px] text-red-400 flex items-start gap-1.5"><AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" /> {String(e)}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {bulkError && <p className="text-sm text-red-400 flex items-center gap-1 mt-3"><AlertTriangle className="h-4 w-4" /> {bulkError}</p>}
+
+            <div className="flex flex-wrap items-center justify-end gap-3 mt-5">
+              <button onClick={() => setShowBulk(false)} disabled={bulkLoading} className="px-4 py-2 rounded-xl text-sm text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-900/[0.04] dark:bg-white/[0.06] hover:bg-slate-900/[0.08] dark:hover:bg-white/[0.12] transition-colors disabled:opacity-50">Close</button>
+              <button onClick={submitBulk} disabled={bulkLoading || bulkParsed.rows.length === 0} className="btn-brand inline-flex items-center gap-2 disabled:opacity-50">
+                {bulkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                Schedule {bulkParsed.rows.length || ''} post{bulkParsed.rows.length !== 1 ? 's' : ''}
               </button>
             </div>
           </div>
