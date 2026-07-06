@@ -74,10 +74,14 @@ async function publishOne(supabase: any, post: any, result: PublishRunResult) {
     return
   }
 
+  const isVideo = ['video', 'reel'].includes(post.type) || ['video', 'reel'].includes(post.content_type)
+  const mediaUrls: string[] = post.media_url ? [post.media_url] : []
   const pub = await publishToPlatform(post.platform, tok.token, {
     platform: post.platform,
     text: post.post_content || '',
     mediaUrl: post.media_url || null,
+    mediaUrls,
+    isVideo,
     link: post.link || null,
     externalAccountId: account.external_id || null,
     firstComment: post.first_comment || null,

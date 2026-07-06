@@ -609,7 +609,7 @@ export default function SocialPage() {
                   <div className="flex items-center gap-2 shrink-0">
                     <PlatformBadge platform={p.platform} />
                     {p.status && (
-                      <span className={`text-[11px] px-2 py-0.5 rounded-md ${p.status === 'scheduled' ? 'bg-sky-500/15 text-sky-300' : p.status === 'live' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-900/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-400'}`}>{p.status}</span>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-md ${p.status === 'scheduled' ? 'bg-sky-500/15 text-sky-700 dark:text-sky-300' : p.status === 'live' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'bg-slate-900/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-400'}`}>{p.status}</span>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -661,7 +661,7 @@ export default function SocialPage() {
                           <button
                             onClick={() => actionPost(p.id, 'approve')}
                             disabled={actioningId === p.id}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 transition-colors disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 transition-colors disabled:opacity-50"
                           >
                             {actioningId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                             Approve
@@ -669,7 +669,7 @@ export default function SocialPage() {
                           <button
                             onClick={() => actionPost(p.id, 'reject')}
                             disabled={actioningId === p.id}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-red-300 bg-red-500/15 hover:bg-red-500/25 transition-colors disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-red-700 dark:text-red-300 bg-red-500/15 hover:bg-red-500/25 transition-colors disabled:opacity-50"
                           >
                             <X className="h-3.5 w-3.5" /> Reject
                           </button>
@@ -705,7 +705,7 @@ export default function SocialPage() {
                         <button
                           onClick={() => actionPost(p.id, 'retry')}
                           disabled={actioningId === p.id}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-sky-300 bg-sky-500/15 hover:bg-sky-500/25 transition-colors disabled:opacity-50 shrink-0"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-sky-700 dark:text-sky-300 bg-sky-500/15 hover:bg-sky-500/25 transition-colors disabled:opacity-50 shrink-0"
                         >
                           {actioningId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlugZap className="h-3.5 w-3.5" />}
                           Retry

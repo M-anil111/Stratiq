@@ -22,10 +22,10 @@ type Lead = {
 
 const STAGES = [
   { key: 'prospect', label: 'Prospect', accent: 'text-slate-700 dark:text-slate-300' },
-  { key: 'contacted', label: 'Contacted', accent: 'text-sky-400' },
-  { key: 'proposal_sent', label: 'Proposal Sent', accent: 'text-amber-400' },
-  { key: 'won', label: 'Won', accent: 'text-emerald-400' },
-  { key: 'lost', label: 'Lost', accent: 'text-red-400' },
+  { key: 'contacted', label: 'Contacted', accent: 'text-sky-600 dark:text-sky-400' },
+  { key: 'proposal_sent', label: 'Proposal Sent', accent: 'text-amber-600 dark:text-amber-400' },
+  { key: 'won', label: 'Won', accent: 'text-emerald-600 dark:text-emerald-400' },
+  { key: 'lost', label: 'Lost', accent: 'text-red-600 dark:text-red-400' },
 ] as const
 
 const EMPTY_FORM = {
@@ -109,7 +109,7 @@ function LeadCard({
         {lead.contact_name && <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 truncate">{lead.contact_name}</div>}
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           {value && (
-            <span className="inline-flex px-1.5 py-0.5 rounded-md text-[11px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
+            <span className="inline-flex px-1.5 py-0.5 rounded-md text-[11px] font-medium bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
               {value}
             </span>
           )}
@@ -148,7 +148,7 @@ function LeadCard({
         {lead.converted_client_id && (
           <Link
             href={`/clients/${lead.converted_client_id}`}
-            className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 hover:bg-emerald-500/25 transition-colors"
+            className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 hover:bg-emerald-500/25 transition-colors"
           >
             <ExternalLink className="h-3 w-3" />
             Client

@@ -247,7 +247,7 @@ export default function MarketingReportsPage() {
 
       {!clientId && (
         <div className="bg-sky-500/10 border border-sky-500/20 rounded-xl p-4 mb-6">
-          <p className="text-sky-300 text-sm font-medium">Select a client to view their monthly report</p>
+          <p className="text-sky-700 dark:text-sky-300 text-sm font-medium">Select a client to view their monthly report</p>
         </div>
       )}
 

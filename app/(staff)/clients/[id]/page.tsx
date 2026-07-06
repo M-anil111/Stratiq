@@ -40,14 +40,14 @@ function msgInitials(name: string | null | undefined, fallback: string): string 
 }
 
 const statusColors: Record<string, string> = {
-  active: 'bg-emerald-500/20 text-emerald-400',
-  hold: 'bg-amber-500/20 text-amber-400',
-  on_hold: 'bg-amber-500/20 text-amber-400',
-  cancelled: 'bg-red-500/20 text-red-400',
-  completed: 'bg-slate-500/20 text-slate-600 dark:text-slate-400',
-  onboarding: 'bg-violet-500/20 text-violet-400',
-  in_onboarding: 'bg-violet-500/20 text-violet-400',
-  prospect: 'bg-blue-500/20 text-blue-400',
+  active: 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400',
+  hold: 'bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400',
+  on_hold: 'bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400',
+  cancelled: 'bg-red-500/15 text-red-700 dark:bg-red-500/20 dark:text-red-400',
+  completed: 'bg-slate-500/15 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400',
+  onboarding: 'bg-violet-500/15 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400',
+  in_onboarding: 'bg-violet-500/15 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400',
+  prospect: 'bg-blue-500/15 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400',
 }
 
 const NOTE_ICONS: Record<string, any> = {
@@ -766,7 +766,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                   <p className="text-xs text-slate-500 mb-1.5">Goals</p>
                   <div className="flex flex-wrap gap-1.5">
                     {client.goals.map((g: string) => (
-                      <span key={g} className="px-2 py-0.5 rounded-full text-xs bg-sky-500/10 text-sky-300 border border-sky-500/20">{g}</span>
+                      <span key={g} className="px-2 py-0.5 rounded-full text-xs bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20">{g}</span>
                     ))}
                   </div>
                 </div>
@@ -1243,7 +1243,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
               return (
                 <div key={msg.id} className={`flex items-end gap-2 ${isStaff ? 'flex-row-reverse' : ''}`}>
                   {/* Avatar */}
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${isStaff ? 'bg-sky-500/30 text-sky-300' : 'bg-slate-900/[0.04] dark:bg-white/[0.08] text-slate-600 dark:text-slate-400'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${isStaff ? 'bg-sky-500/30 text-sky-700 dark:text-sky-300' : 'bg-slate-900/[0.04] dark:bg-white/[0.08] text-slate-600 dark:text-slate-400'}`}>
                     {msgInitials(msg.sender_name, isStaff ? 'ST' : 'CL')}
                   </div>
                   {/* Bubble */}
@@ -1669,11 +1669,11 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             <div className="glass-card rounded-2xl overflow-hidden divide-y divide-slate-900/10 dark:divide-white/[0.04]">
               {invoices.map(inv => {
                 const statusColors: Record<string, string> = {
-                  draft: 'bg-slate-500/20 text-slate-600 dark:text-slate-400',
-                  sent: 'bg-sky-500/20 text-sky-400',
-                  paid: 'bg-emerald-500/20 text-emerald-400',
-                  overdue: 'bg-red-500/20 text-red-400',
-                  voided: 'bg-slate-700/20 text-slate-600',
+                  draft: 'bg-slate-500/15 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400',
+                  sent: 'bg-sky-500/15 text-sky-700 dark:bg-sky-500/20 dark:text-sky-400',
+                  paid: 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400',
+                  overdue: 'bg-red-500/15 text-red-700 dark:bg-red-500/20 dark:text-red-400',
+                  voided: 'bg-slate-500/15 text-slate-600 dark:bg-slate-700/20 dark:text-slate-600',
                 }
                 return (
                   <div key={inv.id} className="flex items-center gap-4 px-5 py-3.5">
@@ -1747,10 +1747,10 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                       project: FolderOpen,
                     }
                     const colorMap: Record<string, string> = {
-                      message: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-                      invoice: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-                      report: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
-                      project: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+                      message: 'bg-blue-500/15 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 border-blue-500/30',
+                      invoice: 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-500/30',
+                      report: 'bg-violet-500/15 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400 border-violet-500/30',
+                      project: 'bg-orange-500/15 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400 border-orange-500/30',
                     }
                     const Icon = iconMap[item.type] || ClipboardList
                     const colorCls = colorMap[item.type] || 'bg-slate-500/20 text-slate-600 dark:text-slate-400 border-slate-500/30'

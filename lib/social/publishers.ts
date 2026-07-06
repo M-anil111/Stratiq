@@ -13,6 +13,8 @@ export type PublishPayload = {
   platform: string
   text: string
   mediaUrl?: string | null
+  mediaUrls?: string[] | null   // for carousels / multi-image
+  isVideo?: boolean             // true when the media is a video/reel
   link?: string | null
   externalAccountId?: string | null // page id / ig user id / channel id
   firstComment?: string | null
@@ -26,8 +28,15 @@ export type PublishResult = {
   pending?: boolean // accepted by platform but not yet confirmed live
 }
 
+import { fetchMediaBytes, isVideoType, chunk } from '@/lib/social/media'
+
 async function j(res: Response) {
   try { return await res.json() } catch { return {} }
+}
+
+function mediaList(p: PublishPayload): string[] {
+  if (p.mediaUrls && p.mediaUrls.length) return p.mediaUrls.filter(Boolean)
+  return p.mediaUrl ? [p.mediaUrl] : []
 }
 
 export async function publishToPlatform(
@@ -78,27 +87,68 @@ async function publishFacebook(token: string, p: PublishPayload): Promise<Publis
   return { ok: true, externalId: d.id, permalink: d.id ? `https://facebook.com/${d.id}` : undefined }
 }
 
-// ---------- Instagram (container → publish) ----------
+// ---------- Instagram (container → publish; image / video-Reels / carousel) ----------
 async function publishInstagram(token: string, p: PublishPayload): Promise<PublishResult> {
   const igUser = p.externalAccountId
   if (!igUser) return { ok: false, error: 'Instagram user id missing (reconnect the account).' }
-  if (!p.mediaUrl) return { ok: false, error: 'Instagram requires an image or video.' }
+  const media = mediaList(p)
+  if (media.length === 0) return { ok: false, error: 'Instagram requires an image or video.' }
   const base = `https://graph.facebook.com/v19.0/${igUser}`
-  const create = await fetch(`${base}/media`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image_url: p.mediaUrl, caption: p.text, access_token: token }),
-  })
-  const cd = await j(create)
-  if (!create.ok || !cd.id) return { ok: false, error: cd?.error?.message || 'IG container failed' }
-  // Give the container a moment to process, then publish.
+
+  const createContainer = async (body: Record<string, any>): Promise<{ id?: string; error?: string }> => {
+    const res = await fetch(`${base}/media`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...body, access_token: token }),
+    })
+    const d = await j(res)
+    if (!res.ok || !d.id) return { error: d?.error?.message || 'IG container failed' }
+    return { id: d.id }
+  }
+
+  // Poll a container until it's FINISHED (videos process asynchronously).
+  const waitReady = async (containerId: string) => {
+    for (let i = 0; i < 20; i++) {
+      const res = await fetch(`${base.replace(`/${igUser}`, '')}/${containerId}?fields=status_code&access_token=${encodeURIComponent(token)}`)
+      const d = await j(res)
+      if (d.status_code === 'FINISHED') return true
+      if (d.status_code === 'ERROR' || d.status_code === 'EXPIRED') return false
+      await new Promise(r => setTimeout(r, 3000))
+    }
+    return false
+  }
+
+  let creationId: string | undefined
+
+  if (media.length > 1) {
+    // Carousel: one child container per item, then a CAROUSEL parent.
+    const childIds: string[] = []
+    for (const url of media.slice(0, 10)) {
+      const child = await createContainer(p.isVideo ? { video_url: url, media_type: 'VIDEO', is_carousel_item: true } : { image_url: url, is_carousel_item: true })
+      if (!child.id) return { ok: false, error: child.error }
+      if (p.isVideo) await waitReady(child.id)
+      childIds.push(child.id)
+    }
+    const parent = await createContainer({ media_type: 'CAROUSEL', caption: p.text, children: childIds.join(',') })
+    if (!parent.id) return { ok: false, error: parent.error }
+    creationId = parent.id
+  } else if (p.isVideo) {
+    const c = await createContainer({ video_url: media[0], media_type: 'REELS', caption: p.text })
+    if (!c.id) return { ok: false, error: c.error }
+    const ready = await waitReady(c.id)
+    if (!ready) return { ok: true, pending: true, externalId: c.id, error: 'Video still processing.' }
+    creationId = c.id
+  } else {
+    const c = await createContainer({ image_url: media[0], caption: p.text })
+    if (!c.id) return { ok: false, error: c.error }
+    creationId = c.id
+  }
+
   const pub = await fetch(`${base}/media_publish`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ creation_id: cd.id, access_token: token }),
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ creation_id: creationId, access_token: token }),
   })
   const pd = await j(pub)
-  if (!pub.ok || !pd.id) return { ok: true, pending: true, externalId: cd.id, error: pd?.error?.message }
+  if (!pub.ok || !pd.id) return { ok: true, pending: true, externalId: creationId, error: pd?.error?.message }
   return { ok: true, externalId: pd.id, permalink: `https://instagram.com/p/${pd.id}` }
 }
 
@@ -122,18 +172,84 @@ async function publishThreads(token: string, p: PublishPayload): Promise<Publish
   return { ok: true, externalId: pd.id }
 }
 
-// ---------- X / Twitter ----------
+// ---------- X / Twitter (text + chunked media upload) ----------
 async function publishX(token: string, p: PublishPayload): Promise<PublishResult> {
-  // Text-only publish (media requires the chunked v2 upload flow — see report).
+  const media = mediaList(p)
+  let mediaIds: string[] = []
+
+  if (media.length) {
+    try {
+      // X allows up to 4 images or 1 video per post.
+      const toUpload = p.isVideo ? media.slice(0, 1) : media.slice(0, 4)
+      for (const url of toUpload) {
+        const id = await xUploadMedia(token, url, p.isVideo === true)
+        if (id) mediaIds.push(id)
+      }
+    } catch (e: any) {
+      return { ok: false, error: `X media upload failed: ${e?.message || 'error'}` }
+    }
+  }
+
+  const body: any = { text: p.link ? `${p.text}\n${p.link}` : p.text }
+  if (mediaIds.length) body.media = { media_ids: mediaIds }
   const res = await fetch('https://api.x.com/2/tweets', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: p.link ? `${p.text}\n${p.link}` : p.text }),
+    body: JSON.stringify(body),
   })
   const d = await j(res)
   if (!res.ok) return { ok: false, error: d?.detail || d?.title || 'X post failed' }
   const id = d?.data?.id
   return { ok: true, externalId: id, permalink: id ? `https://x.com/i/web/status/${id}` : undefined }
+}
+
+// Chunked upload (INIT → APPEND → FINALIZE), polling processing for video.
+async function xUploadMedia(token: string, url: string, isVideo: boolean): Promise<string | null> {
+  const { bytes, contentType } = await fetchMediaBytes(url)
+  const category = isVideo || isVideoType(contentType) ? 'tweet_video' : 'tweet_image'
+  const auth = { Authorization: `Bearer ${token}` }
+  const CHUNK = 5 * 1024 * 1024 // 5MB max per APPEND
+
+  // INIT
+  const initForm = new FormData()
+  initForm.set('command', 'INIT')
+  initForm.set('total_bytes', String(bytes.byteLength))
+  initForm.set('media_type', contentType)
+  initForm.set('media_category', category)
+  const initRes = await fetch('https://api.x.com/2/media/upload', { method: 'POST', headers: auth, body: initForm })
+  const initData = await j(initRes)
+  const mediaId = initData?.data?.id || initData?.media_id_string || initData?.media_id
+  if (!initRes.ok || !mediaId) throw new Error(initData?.detail || 'INIT failed')
+
+  // APPEND
+  for (const { index, blob } of chunk(bytes, CHUNK)) {
+    const form = new FormData()
+    form.set('command', 'APPEND')
+    form.set('media_id', String(mediaId))
+    form.set('segment_index', String(index))
+    form.set('media', blob)
+    const apRes = await fetch('https://api.x.com/2/media/upload', { method: 'POST', headers: auth, body: form })
+    if (!apRes.ok) throw new Error('APPEND failed')
+  }
+
+  // FINALIZE
+  const finForm = new FormData()
+  finForm.set('command', 'FINALIZE')
+  finForm.set('media_id', String(mediaId))
+  const finRes = await fetch('https://api.x.com/2/media/upload', { method: 'POST', headers: auth, body: finForm })
+  const finData = await j(finRes)
+  if (!finRes.ok) throw new Error('FINALIZE failed')
+
+  // Poll processing (videos)
+  let info = finData?.data?.processing_info || finData?.processing_info
+  for (let i = 0; info && info.state && info.state !== 'succeeded' && i < 20; i++) {
+    if (info.state === 'failed') throw new Error('media processing failed')
+    await new Promise(r => setTimeout(r, (info.check_after_secs || 3) * 1000))
+    const stRes = await fetch(`https://api.x.com/2/media/upload?command=STATUS&media_id=${mediaId}`, { headers: auth })
+    const st = await j(stRes)
+    info = st?.data?.processing_info || st?.processing_info
+  }
+  return String(mediaId)
 }
 
 // ---------- LinkedIn ----------
@@ -225,11 +341,42 @@ async function publishTikTok(token: string, p: PublishPayload): Promise<PublishR
   return { ok: true, pending: true, externalId: d?.data?.publish_id }
 }
 
-// ---------- YouTube (resumable upload of a binary — needs the file) ----------
-async function publishYouTube(_token: string, _p: PublishPayload): Promise<PublishResult> {
-  // videos.insert requires a resumable binary upload of the actual video file
-  // plus a verified OAuth project; scheduling can be offloaded via
-  // status.publishAt. This path is completed once the Drive→binary streaming
-  // uploader is wired. Surface a clear, actionable reason for now.
-  return { ok: false, error: 'YouTube publishing requires a verified OAuth app + video file upload (not yet enabled).' }
+// ---------- YouTube (resumable upload) ----------
+async function publishYouTube(token: string, p: PublishPayload): Promise<PublishResult> {
+  const media = mediaList(p)
+  if (!media.length) return { ok: false, error: 'YouTube requires a video file.' }
+  let fetched
+  try { fetched = await fetchMediaBytes(media[0]) } catch (e: any) { return { ok: false, error: `Fetch video failed: ${e?.message}` } }
+
+  const title = (p.text || 'Video').slice(0, 100)
+  const meta = {
+    snippet: { title, description: p.text || '' },
+    status: { privacyStatus: 'public' as const },
+  }
+
+  // 1) Start a resumable session.
+  const start = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json; charset=UTF-8',
+      'X-Upload-Content-Type': fetched.contentType || 'video/*',
+      'X-Upload-Content-Length': String(fetched.size),
+    },
+    body: JSON.stringify(meta),
+  })
+  if (!start.ok) { const d = await j(start); return { ok: false, error: d?.error?.message || 'YouTube session init failed' } }
+  const uploadUrl = start.headers.get('location')
+  if (!uploadUrl) return { ok: false, error: 'YouTube upload URL missing' }
+
+  // 2) Upload the bytes (single PUT — Vercel body limits permitting; large
+  //    videos may need chunked PUTs with Content-Range in a follow-up).
+  const put = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': fetched.contentType || 'video/*' },
+    body: fetched.bytes,
+  })
+  const pd = await j(put)
+  if (!put.ok || !pd.id) return { ok: false, error: pd?.error?.message || 'YouTube upload failed' }
+  return { ok: true, externalId: pd.id, permalink: `https://youtube.com/watch?v=${pd.id}` }
 }

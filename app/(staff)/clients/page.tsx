@@ -21,14 +21,14 @@ const BULK_STATUS_OPTIONS = [
 ]
 
 const STATUS_COLORS: Record<string, string> = {
-  active: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-  hold: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  on_hold: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  cancelled: 'bg-red-500/20 text-red-400 border-red-500/30',
-  completed: 'bg-slate-500/20 text-slate-600 dark:text-slate-400 border-slate-500/30',
-  onboarding: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
-  in_onboarding: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
-  prospect: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  active: 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-500/30',
+  hold: 'bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 border-amber-500/30',
+  on_hold: 'bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 border-amber-500/30',
+  cancelled: 'bg-red-500/15 text-red-700 dark:bg-red-500/20 dark:text-red-400 border-red-500/30',
+  completed: 'bg-slate-500/15 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400 border-slate-500/30',
+  onboarding: 'bg-violet-500/15 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400 border-violet-500/30',
+  in_onboarding: 'bg-violet-500/15 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400 border-violet-500/30',
+  prospect: 'bg-blue-500/15 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 border-blue-500/30',
 }
 
 const STATUS_DOT: Record<string, string> = {
@@ -512,11 +512,11 @@ export default function ClientsPage() {
                 <div ref={newMenuRef} className="relative flex items-center px-3 border-l border-slate-900/10 dark:border-white/[0.08] shrink-0">
                   <div className="flex rounded-lg overflow-hidden border border-sky-500/40">
                     <Link href={`/clients/${client.id}`}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs font-semibold transition-colors">
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-500/20 hover:bg-sky-500/30 text-sky-700 dark:text-sky-300 text-xs font-semibold transition-colors">
                       <Plus className="h-3.5 w-3.5" /> New
                     </Link>
                     <button onClick={() => setShowNewMenu(v => !v)}
-                      className="px-1.5 py-1.5 bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border-l border-sky-500/30 transition-colors">
+                      className="px-1.5 py-1.5 bg-sky-500/20 hover:bg-sky-500/30 text-sky-700 dark:text-sky-300 border-l border-sky-500/30 transition-colors">
                       <ChevronDown className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -695,7 +695,7 @@ export default function ClientsPage() {
                   {selectedProject.services?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-4">
                       {selectedProject.services.map((s: string) => (
-                        <span key={s} className="px-2 py-0.5 rounded-full text-xs bg-sky-500/10 text-sky-300 border border-sky-500/20">{s}</span>
+                        <span key={s} className="px-2 py-0.5 rounded-full text-xs bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20">{s}</span>
                       ))}
                     </div>
                   )}

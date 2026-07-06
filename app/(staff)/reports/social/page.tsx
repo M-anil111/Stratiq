@@ -212,7 +212,7 @@ export default function SocialPublishingReportPage() {
                     {data.by_platform.map(p => (
                       <tr key={p.platform} className="border-t border-slate-900/10 dark:border-white/[0.08]">
                         <td className="py-2.5"><PlatformBadge platform={p.platform} /></td>
-                        <td className="py-2.5 text-right text-emerald-300">{fmt(p.published)}</td>
+                        <td className="py-2.5 text-right text-emerald-700 dark:text-emerald-300">{fmt(p.published)}</td>
                         <td className="py-2.5 text-right text-rose-300">{fmt(p.failed)}</td>
                         <td className="py-2.5 text-right text-slate-700 dark:text-slate-300">{fmt(p.engagement.likes)}</td>
                         <td className="py-2.5 text-right text-slate-700 dark:text-slate-300">{fmt(p.engagement.comments_count)}</td>

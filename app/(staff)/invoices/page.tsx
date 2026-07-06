@@ -42,11 +42,11 @@ interface QbInvoicePreview {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-slate-500/20 text-slate-300',
-  sent: 'bg-sky-500/20 text-sky-300',
-  paid: 'bg-emerald-500/20 text-emerald-300',
-  overdue: 'bg-red-500/20 text-red-300',
-  voided: 'bg-slate-700/40 text-slate-500',
+  draft: 'bg-slate-500/15 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300',
+  sent: 'bg-sky-500/15 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300',
+  paid: 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300',
+  overdue: 'bg-red-500/15 text-red-700 dark:bg-red-500/20 dark:text-red-300',
+  voided: 'bg-slate-500/15 text-slate-600 dark:bg-slate-700/40 dark:text-slate-500',
 }
 
 const selectClass = "bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
@@ -527,7 +527,7 @@ export default function InvoicesPage() {
                       <select
                         value={inv.status}
                         onChange={e => updateStatus(inv, e.target.value)}
-                        className={`text-xs font-medium px-2.5 py-1 rounded-full border-0 focus:ring-1 focus:ring-sky-500/50 cursor-pointer ${STATUS_COLORS[inv.status] || 'bg-slate-500/20 text-slate-300'}`}
+                        className={`text-xs font-medium px-2.5 py-1 rounded-full border-0 focus:ring-1 focus:ring-sky-500/50 cursor-pointer ${STATUS_COLORS[inv.status] || 'bg-slate-500/15 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300'}`}
                         style={{ background: 'transparent' }}
                       >
                         {['draft', 'sent', 'paid', 'overdue', 'voided'].map(s => (
