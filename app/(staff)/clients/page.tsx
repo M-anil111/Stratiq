@@ -7,6 +7,7 @@ import {
   ChevronDown, ClipboardList, MessageSquare, PhoneCall,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 const STATUS_COLORS: Record<string, string> = {
   active: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
@@ -96,6 +97,7 @@ function yearsAgo(dateStr: string | null | undefined) {
 }
 
 export default function ClientsPage() {
+  const router = useRouter()
   const [clients, setClients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -140,6 +142,15 @@ export default function ClientsPage() {
   const onStatus = (s: string) => {
     setStatusFilter(s)
     fetchClients(search, s)
+  }
+
+  const onClientClick = (id: string) => {
+    // On mobile the detail pane is hidden — navigate to the full detail page instead.
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      router.push(`/clients/${id}`)
+      return
+    }
+    selectClient(id)
   }
 
   const selectClient = (id: string) => {
@@ -194,7 +205,7 @@ export default function ClientsPage() {
     <div className="flex h-screen overflow-hidden">
 
       {/* ── LEFT SIDEBAR: Client List ── */}
-      <div className="w-72 shrink-0 border-r border-white/[0.08] flex flex-col bg-[#070f1c]">
+      <div className="w-full lg:w-72 shrink-0 border-r border-white/[0.08] flex flex-col bg-[#070f1c]">
         <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white">Client List</h2>
           <Link href="/clients/new"
@@ -281,7 +292,7 @@ export default function ClientsPage() {
                   const displayName = c.display_name || c.company_name
                   const mrr = (c.service_packages || []).reduce((s: number, p: any) => s + (parseFloat(p.price) || 0), 0)
                   return (
-                    <button key={c.id} onClick={() => selectClient(c.id)}
+                    <button key={c.id} onClick={() => onClientClick(c.id)}
                       className={`w-full text-left border-b border-white/[0.04] transition-colors flex items-center gap-3
                         ${isMulti ? 'pl-6 pr-3 py-2.5' : 'px-3 py-3'}
                         ${selectedId === c.id ? 'bg-sky-500/10 border-l-2 border-l-sky-500' : 'hover:bg-white/[0.04]'}`}>
@@ -320,8 +331,8 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* ── RIGHT PANEL ── */}
-      <div className="flex-1 overflow-y-auto bg-[#080f1e]">
+      {/* ── RIGHT PANEL (hidden on mobile — tapping a client navigates to /clients/[id]) ── */}
+      <div className="hidden lg:block flex-1 overflow-y-auto bg-[#080f1e]">
         {!selectedId ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <div className="w-20 h-20 rounded-full bg-white/[0.04] flex items-center justify-center mb-5">

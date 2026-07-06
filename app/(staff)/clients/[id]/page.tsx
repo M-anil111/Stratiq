@@ -664,7 +664,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             <div className="glass-card p-5">
               <h2 className="font-semibold text-white mb-4">Service Packages</h2>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[560px] text-sm">
                   <thead>
                     <tr className="border-b border-white/[0.08]">
                       <th className="text-left py-2 px-3 text-xs text-slate-500 font-medium">Service</th>
