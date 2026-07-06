@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const tokenParams = new URLSearchParams({
       client_id: process.env.META_APP_ID!,
       client_secret: process.env.META_APP_SECRET!,
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/meta/callback`,
+      redirect_uri: `${(process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin).replace(/\/$/, '')}/api/auth/meta/callback`,
       code,
     })
     const shortRes = await fetch(
