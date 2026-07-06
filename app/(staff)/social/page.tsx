@@ -4,7 +4,9 @@ import Link from 'next/link'
 import {
   Share2, Send, CalendarClock, Image as ImageIcon, Link2, Megaphone,
   MessageSquare, CheckCircle2, AlertTriangle, Loader2, Clock, PlugZap,
+  CalendarDays, X,
 } from 'lucide-react'
+import SocialCalendar from '@/components/SocialCalendar'
 
 // NOTE: posts composed here are drafted / scheduled / stored and previewed only.
 // Auto-publishing to each network activates once that platform's credentials are
@@ -49,7 +51,8 @@ function PlatformBadge({ platform }: { platform: string }) {
 }
 
 export default function SocialPage() {
-  const [tab, setTab] = useState<'compose' | 'scheduled'>('compose')
+  const [tab, setTab] = useState<'compose' | 'calendar' | 'scheduled'>('compose')
+  const [showReview, setShowReview] = useState(false)
 
   // data
   const [accounts, setAccounts] = useState<Account[] | null>(null)
@@ -167,13 +170,24 @@ export default function SocialPage() {
     }
   }
 
-  async function submit() {
+  // Validate and open the "Review & Schedule" gate before actually composing.
+  function openReview() {
     setError('')
     setResult(null)
     if (selectedAccounts.length === 0) { setError('Select at least one connected account.'); return }
     if (!projectId) { setError('Pick the client and project these posts belong to.'); return }
     if (!caption.trim()) { setError('Write a caption.'); return }
     if (scheduleMode === 'later' && !datetime) { setError('Choose a date and time to schedule.'); return }
+    setShowReview(true)
+  }
+
+  const reviewWhen = scheduleMode === 'later' && datetime
+    ? `Post on ${new Date(datetime).toLocaleString()}`
+    : 'Publish now'
+
+  async function submit() {
+    setError('')
+    setResult(null)
 
     const chosen = (accounts || []).filter(a => selectedAccounts.includes(a.id))
     setSubmitting(true)
@@ -196,6 +210,7 @@ export default function SocialPage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data?.error || 'Failed to compose posts.'); return }
+      setShowReview(false)
       setResult({ created: data.created || 0, skipped: data.skipped || 0 })
       // reset content but keep account/project selection
       setCaption(''); setMediaUrl(''); setLink(''); setCampaign(''); setFirstComment('')
@@ -228,7 +243,7 @@ export default function SocialPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-white/[0.04] p-1 rounded-xl w-fit">
-        {([['compose', 'Create post'], ['scheduled', 'Scheduled posts']] as const).map(([k, l]) => (
+        {([['compose', 'Create post'], ['calendar', 'Calendar'], ['scheduled', 'Scheduled posts']] as const).map(([k, l]) => (
           <button
             key={k}
             onClick={() => setTab(k)}
@@ -239,7 +254,9 @@ export default function SocialPage() {
         ))}
       </div>
 
-      {tab === 'compose' ? (
+      {tab === 'calendar' ? (
+        <SocialCalendar />
+      ) : tab === 'compose' ? (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
           {/* ---- Composer ---- */}
           <div className="space-y-5 min-w-0">
@@ -412,9 +429,9 @@ export default function SocialPage() {
 
             {/* Submit */}
             <div className="flex flex-wrap items-center gap-3">
-              <button onClick={submit} disabled={submitting} className="btn-brand inline-flex items-center gap-2 disabled:opacity-50">
+              <button onClick={openReview} disabled={submitting} className="btn-brand inline-flex items-center gap-2 disabled:opacity-50">
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {scheduleMode === 'later' ? 'Schedule posts' : 'Create posts'}
+                {scheduleMode === 'later' ? 'Review & schedule' : 'Review & publish'}
               </button>
               {error && <span className="text-sm text-red-400 flex items-center gap-1"><AlertTriangle className="h-4 w-4" /> {error}</span>}
               {result && (
@@ -496,6 +513,65 @@ export default function SocialPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Review & Schedule modal */}
+      {showReview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => !submitting && setShowReview(false)}>
+          <div className="glass-card w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-white">Review &amp; {scheduleMode === 'later' ? 'Schedule' : 'Publish'}</h2>
+                <p className="text-sm text-slate-400 mt-0.5 flex items-center gap-1.5">
+                  {scheduleMode === 'later' ? <CalendarClock className="h-4 w-4" /> : <Send className="h-4 w-4" />} {reviewWhen}
+                </p>
+              </div>
+              <button onClick={() => !submitting && setShowReview(false)} aria-label="Close" className="text-slate-400 hover:text-white"><X className="h-4 w-4" /></button>
+            </div>
+
+            {campaign && (
+              <div className="mb-4 text-xs text-slate-400 flex items-center gap-1.5"><Megaphone className="h-3.5 w-3.5" /> Campaign: <span className="text-slate-200">{campaign}</span></div>
+            )}
+
+            <div className="space-y-3">
+              {(accounts || []).filter(a => selectedAccounts.includes(a.id)).map(a => {
+                const p = a.platform.toLowerCase()
+                const m = meta(p)
+                const text = perNetwork[p]?.caption?.trim() || caption
+                return (
+                  <div key={a.id} className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 flex gap-3">
+                    {mediaUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={mediaUrl} alt="media" className="w-16 h-16 rounded-lg object-cover border border-white/[0.08] shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                    ) : (
+                      <div className="w-16 h-16 rounded-lg bg-white/[0.04] border border-white/[0.08] shrink-0 flex items-center justify-center text-slate-600"><ImageIcon className="h-5 w-5" /></div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <PlatformBadge platform={p} />
+                        <span className="text-sm text-white truncate">{a.account_name}</span>
+                      </div>
+                      <p className="text-sm text-slate-200 whitespace-pre-wrap break-words line-clamp-4">{text}</p>
+                      {(perNetwork[p]?.first_comment?.trim() || firstComment) && (
+                        <p className="text-xs text-slate-500 mt-1.5 truncate">First comment: {perNetwork[p]?.first_comment?.trim() || firstComment}</p>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {error && <p className="text-sm text-red-400 flex items-center gap-1 mt-4"><AlertTriangle className="h-4 w-4" /> {error}</p>}
+
+            <div className="flex flex-wrap items-center justify-end gap-3 mt-5">
+              <button onClick={() => setShowReview(false)} disabled={submitting} className="px-4 py-2 rounded-xl text-sm text-slate-300 hover:text-white bg-white/[0.06] hover:bg-white/[0.12] transition-colors disabled:opacity-50">Back</button>
+              <button onClick={submit} disabled={submitting} className="btn-brand inline-flex items-center gap-2 disabled:opacity-50">
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {scheduleMode === 'later' ? 'Schedule' : 'Publish'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
