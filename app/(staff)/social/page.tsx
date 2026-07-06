@@ -3,10 +3,11 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   Share2, Send, CalendarClock, Image as ImageIcon, Link2, Megaphone,
-  MessageSquare, CheckCircle2, AlertTriangle, Loader2, Clock, PlugZap,
-  CalendarDays, X,
+  MessageSquare, CheckCircle2, AlertTriangle, Loader2, PlugZap,
+  X, Check, FileText,
 } from 'lucide-react'
 import SocialCalendar from '@/components/SocialCalendar'
+import SchedulePicker from '@/components/SchedulePicker'
 
 // NOTE: posts composed here are drafted / scheduled / stored and previewed only.
 // Auto-publishing to each network activates once that platform's credentials are
@@ -33,10 +34,63 @@ function meta(platform: string) {
   return PLATFORM_META[platform?.toLowerCase()] || { label: platform || 'Unknown', color: '#64748b', limit: 5000 }
 }
 
-const DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const
-
 const inputClass = 'w-full bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 placeholder:text-slate-500'
 const labelClass = 'block text-xs font-medium text-slate-400 mb-1.5'
+
+// Brand colors for the small platform badge overlaid on avatar chips.
+const BADGE_META: Record<string, { color: string; short: string }> = {
+  facebook: { color: '#1877F2', short: 'f' },
+  instagram: { color: '#E4405F', short: 'IG' },
+  linkedin: { color: '#0A66C2', short: 'in' },
+  x: { color: '#000000', short: 'X' },
+  tiktok: { color: '#000000', short: 'TT' },
+  youtube: { color: '#FF0000', short: 'YT' },
+}
+function badgeMeta(platform: string) {
+  return BADGE_META[platform?.toLowerCase()] || { color: '#64748b', short: (platform || '?').slice(0, 2) }
+}
+function initials(name: string) {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+function AccountChip({ account, selected, onToggle }: { account: Account; selected: boolean; onToggle: () => void }) {
+  const p = account.platform.toLowerCase()
+  const m = meta(p)
+  const b = badgeMeta(p)
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      title={`${account.account_name}${account.account_handle ? ' · ' + account.account_handle : ''}`}
+      aria-pressed={selected}
+      className="flex flex-col items-center gap-1.5 w-[72px] shrink-0 group"
+    >
+      <span className="relative">
+        <span
+          className={`w-14 h-14 rounded-full flex items-center justify-center text-white text-sm font-bold transition-all ${selected ? 'ring-2 ring-offset-2 ring-offset-[#0b1220]' : 'opacity-50 grayscale group-hover:opacity-80 group-hover:grayscale-0'}`}
+          style={{ backgroundColor: m.color, ...(selected ? { ['--tw-ring-color' as any]: m.color } : {}) }}
+        >
+          {initials(account.account_name)}
+        </span>
+        <span
+          className="absolute -bottom-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[9px] font-bold text-white border-2 border-[#0b1220]"
+          style={{ backgroundColor: b.color }}
+        >
+          {b.short}
+        </span>
+        {selected && (
+          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-sky-500 border-2 border-[#0b1220] flex items-center justify-center">
+            <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+          </span>
+        )}
+      </span>
+      <span className={`text-[11px] leading-tight text-center truncate w-full ${selected ? 'text-white' : 'text-slate-500'}`}>{account.account_name}</span>
+    </button>
+  )
+}
 
 function PlatformBadge({ platform }: { platform: string }) {
   const m = meta(platform)
@@ -75,8 +129,10 @@ export default function SocialPage() {
   const [activeNetworkTab, setActiveNetworkTab] = useState<string>('')
   const [scheduleMode, setScheduleMode] = useState<'now' | 'later'>('now')
   const [datetime, setDatetime] = useState('')
+  const [createAnother, setCreateAnother] = useState(false)
 
   const [submitting, setSubmitting] = useState(false)
+  const [savingDraft, setSavingDraft] = useState(false)
   const [result, setResult] = useState<{ created: number; skipped: number } | null>(null)
   const [error, setError] = useState('')
 
@@ -137,37 +193,14 @@ export default function SocialPage() {
     }
   }, [selectedPlatforms]) // eslint-disable-line
 
-  // Group accounts by platform.
-  const grouped = useMemo(() => {
-    const g: Record<string, Account[]> = {}
-    for (const a of accounts || []) {
-      const key = a.platform.toLowerCase()
-      ;(g[key] = g[key] || []).push(a)
-    }
-    return g
-  }, [accounts])
-
   function toggleAccount(id: string) {
     setSelectedAccounts(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
 
-  // "Your saved times" → fill datetime with next matching day/time.
-  function fillNextSlot(dayIdx: number, time: string) {
-    const [hh, mm] = time.split(':').map(Number)
-    const now = new Date()
-    for (let add = 0; add < 8; add++) {
-      const d = new Date(now)
-      d.setDate(now.getDate() + add)
-      if (d.getDay() !== dayIdx) continue
-      d.setHours(hh, mm, 0, 0)
-      if (d.getTime() <= now.getTime()) continue
-      // Format as local datetime-local value.
-      const pad = (n: number) => String(n).padStart(2, '0')
-      const val = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-      setScheduleMode('later')
-      setDatetime(val)
-      return
-    }
+  const allAccountIds = useMemo(() => (accounts || []).map(a => a.id), [accounts])
+  const allSelected = allAccountIds.length > 0 && selectedAccounts.length === allAccountIds.length
+  function toggleAll() {
+    setSelectedAccounts(allSelected ? [] : allAccountIds)
   }
 
   // Validate and open the "Review & Schedule" gate before actually composing.
@@ -185,12 +218,25 @@ export default function SocialPage() {
     ? `Post on ${new Date(datetime).toLocaleString()}`
     : 'Publish now'
 
-  async function submit() {
+  // Clear only the message content (used by "Create another").
+  function clearContent() {
+    setCaption(''); setMediaUrl(''); setLink(''); setFirstComment('')
+    setPerNetwork({})
+  }
+  // Full reset back to a blank composer.
+  function resetComposer() {
+    clearContent()
+    setCampaign(''); setDatetime(''); setScheduleMode('now')
+  }
+
+  // Shared compose call. `draft` forces the API's now-branch (yields draft status).
+  async function compose(draft: boolean) {
     setError('')
     setResult(null)
-
     const chosen = (accounts || []).filter(a => selectedAccounts.includes(a.id))
-    setSubmitting(true)
+    const useLater = !draft && scheduleMode === 'later'
+    const busy = draft ? setSavingDraft : setSubmitting
+    busy(true)
     try {
       const res = await fetch('/api/social/compose', {
         method: 'POST',
@@ -205,23 +251,25 @@ export default function SocialPage() {
           link: link || undefined,
           campaign: campaign || undefined,
           first_comment: firstComment || undefined,
-          schedule: { mode: scheduleMode, datetime: scheduleMode === 'later' ? datetime : undefined },
+          draft,
+          schedule: { mode: useLater ? 'later' : 'now', datetime: useLater ? datetime : undefined },
         }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data?.error || 'Failed to compose posts.'); return }
       setShowReview(false)
       setResult({ created: data.created || 0, skipped: data.skipped || 0 })
-      // reset content but keep account/project selection
-      setCaption(''); setMediaUrl(''); setLink(''); setCampaign(''); setFirstComment('')
-      setPerNetwork({}); setDatetime(''); setScheduleMode('now')
+      if (createAnother) clearContent()
+      else resetComposer()
       setPosts(null) // force refresh of scheduled list next time
     } catch {
       setError('Network error. Please try again.')
     } finally {
-      setSubmitting(false)
+      busy(false)
     }
   }
+  const submit = () => compose(false)
+  const saveDraft = () => compose(true)
 
   return (
     <div className="p-4 lg:p-8 max-w-[1400px] mx-auto">
@@ -262,7 +310,18 @@ export default function SocialPage() {
           <div className="space-y-5 min-w-0">
             {/* Accounts */}
             <div className="glass-card p-5">
-              <h2 className="font-semibold text-white mb-3">Accounts</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold text-white">Accounts</h2>
+                {accounts && accounts.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={toggleAll}
+                    className="text-xs font-medium text-sky-400 hover:text-sky-300 transition-colors"
+                  >
+                    {allSelected ? 'Clear all' : 'Select all'}
+                  </button>
+                )}
+              </div>
               {accounts === null ? (
                 <div className="h-16 rounded-lg bg-white/[0.04] animate-pulse" />
               ) : accountsUnavailable || accounts.length === 0 ? (
@@ -271,22 +330,14 @@ export default function SocialPage() {
                   <Link href="/settings/social-accounts" className="text-sky-400 hover:underline">Connect one in Settings → Social Accounts</Link>.
                 </p>
               ) : (
-                <div className="space-y-4">
-                  {Object.entries(grouped).map(([platform, accts]) => (
-                    <div key={platform}>
-                      <div className="mb-2"><PlatformBadge platform={platform} /></div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {accts.map(a => (
-                          <label key={a.id} className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${selectedAccounts.includes(a.id) ? 'border-sky-500/60 bg-sky-500/10' : 'border-white/[0.08] hover:border-white/20'}`}>
-                            <input type="checkbox" checked={selectedAccounts.includes(a.id)} onChange={() => toggleAccount(a.id)} className="accent-sky-500" />
-                            <div className="min-w-0">
-                              <div className="text-sm text-white truncate">{a.account_name}</div>
-                              {a.account_handle && <div className="text-xs text-slate-500 truncate">{a.account_handle}</div>}
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
+                <div className="flex flex-wrap gap-3">
+                  {(accounts || []).map(a => (
+                    <AccountChip
+                      key={a.id}
+                      account={a}
+                      selected={selectedAccounts.includes(a.id)}
+                      onToggle={() => toggleAccount(a.id)}
+                    />
                   ))}
                 </div>
               )}
@@ -409,30 +460,24 @@ export default function SocialPage() {
                 </label>
               </div>
               {scheduleMode === 'later' && (
-                <div>
-                  <input type="datetime-local" value={datetime} onChange={e => setDatetime(e.target.value)} className={inputClass} />
-                  {Object.values(savedTimes).some(arr => arr.length > 0) && (
-                    <div className="mt-3">
-                      <p className="text-xs text-slate-400 mb-2 flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Your saved times — click to fill the next matching slot</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {DAYS.map((d, idx) => (savedTimes[d] || []).map(t => (
-                          <button key={d + t} onClick={() => fillNextSlot(idx, t)} className="text-[11px] px-2 py-1 rounded-md bg-white/[0.06] text-slate-300 hover:bg-sky-500/20 hover:text-sky-300 transition-colors capitalize">
-                            {d} {t}
-                          </button>
-                        )))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <SchedulePicker value={datetime} onChange={setDatetime} savedTimes={savedTimes} />
               )}
             </div>
 
             {/* Submit */}
             <div className="flex flex-wrap items-center gap-3">
-              <button onClick={openReview} disabled={submitting} className="btn-brand inline-flex items-center gap-2 disabled:opacity-50">
+              <button onClick={openReview} disabled={submitting || savingDraft} className="btn-brand inline-flex items-center gap-2 disabled:opacity-50">
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 {scheduleMode === 'later' ? 'Review & schedule' : 'Review & publish'}
               </button>
+              <button onClick={saveDraft} disabled={submitting || savingDraft} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-slate-300 hover:text-white bg-white/[0.06] hover:bg-white/[0.12] transition-colors disabled:opacity-50">
+                {savingDraft ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                Save draft
+              </button>
+              <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer select-none">
+                <input type="checkbox" checked={createAnother} onChange={e => setCreateAnother(e.target.checked)} className="accent-sky-500" />
+                Create another
+              </label>
               {error && <span className="text-sm text-red-400 flex items-center gap-1"><AlertTriangle className="h-4 w-4" /> {error}</span>}
               {result && (
                 <span className="text-sm text-emerald-400 flex items-center gap-1">
