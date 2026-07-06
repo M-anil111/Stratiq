@@ -29,7 +29,7 @@ export default function TargetsPage() {
   async function saveDefaultTargets() {
     setSaving(true)
     try {
-      await fetch('/api/targets', {
+      const res = await fetch('/api/targets', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -42,9 +42,16 @@ export default function TargetsPage() {
           group_target: defaultTargets.group,
         }),
       })
-      setSavedLabel(true)
-      setTimeout(() => setSavedLabel(false), 2000)
-    } catch {}
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        alert(d.error || 'Failed to save targets. Please try again.')
+      } else {
+        setSavedLabel(true)
+        setTimeout(() => setSavedLabel(false), 2000)
+      }
+    } catch {
+      alert('Failed to save targets. Please check your connection and try again.')
+    }
     setSaving(false)
   }
 
@@ -60,15 +67,15 @@ export default function TargetsPage() {
   return (
     <div className="p-4 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Activity & Targets</h1>
-        <p className="text-slate-400 text-sm">{now.toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Activity & Targets</h1>
+        <p className="text-slate-600 dark:text-slate-400 text-sm">{now.toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
       </div>
 
       {/* Tab bar */}
-      <div className="flex border-b border-white/[0.08] mb-6 overflow-x-auto">
+      <div className="flex border-b border-slate-900/10 dark:border-white/[0.08] mb-6 overflow-x-auto">
         {tabs.map((tab, i) => (
           <button key={tab} onClick={() => setActiveTab(i)}
-            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === i ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-400 hover:text-slate-300'}`}>
+            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === i ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-300'}`}>
             {tab}
           </button>
         ))}
@@ -93,8 +100,8 @@ export default function TargetsPage() {
                 { label: 'No Targets Set', value: teamData.filter(m => m.targets.social === 0 && m.targets.offpage === 0 && m.targets.blog === 0).length },
               ].map(card => (
                 <div key={card.label} className="glass-card p-4 text-center">
-                  <p className="text-2xl font-bold text-white">{card.value}</p>
-                  <p className="text-xs text-slate-400 mt-1">{card.label}</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white">{card.value}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{card.label}</p>
                 </div>
               ))
             )}
@@ -102,22 +109,22 @@ export default function TargetsPage() {
 
           {/* Team table */}
           <div className="glass-card overflow-hidden">
-            <div className="p-4 border-b border-white/[0.08] flex items-center justify-between">
-              <h2 className="font-semibold text-white">Team Performance</h2>
-              <select className="bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50">
+            <div className="p-4 border-b border-slate-900/10 dark:border-white/[0.08] flex items-center justify-between">
+              <h2 className="font-semibold text-slate-900 dark:text-white">Team Performance</h2>
+              <select className="bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50">
                 <option>All Clients</option>
               </select>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-white/[0.03]">
+                <thead className="bg-slate-900/[0.04] dark:bg-white/[0.03]">
                   <tr>
                     {['Team Member', 'Social Media', 'Off-Page', 'Blog Posts', 'Actions'].map(h => (
-                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
+                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.06]">
+                <tbody className="divide-y divide-slate-900/10 dark:divide-white/[0.06]">
                   {loading ? (
                     Array.from({ length: 3 }).map((_, i) => (
                       <tr key={i}>
@@ -130,12 +137,13 @@ export default function TargetsPage() {
                         {[0, 1, 2].map(j => (
                           <td key={j} className="px-4 py-3"><div className="h-3 skeleton rounded w-24" /></td>
                         ))}
+                        <td className="px-4 py-3"><div className="h-3 skeleton rounded w-24" /></td>
                         <td className="px-4 py-3"><div className="h-3 skeleton rounded w-16" /></td>
                       </tr>
                     ))
                   ) : teamData.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-sm">No team members found</td>
+                      <td colSpan={5} className="px-4 py-8 text-center text-slate-600 dark:text-slate-400 text-sm">No team members found</td>
                     </tr>
                   ) : (
                     teamData.map(member => {
@@ -149,14 +157,14 @@ export default function TargetsPage() {
                               {member.avatar_url ? (
                                 <img src={member.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
                               ) : (
-                                <div className="w-8 h-8 rounded-full bg-white/[0.08] text-slate-300 flex items-center justify-center text-xs font-bold">{member.avatar_initials}</div>
+                                <div className="w-8 h-8 rounded-full bg-slate-900/10 dark:bg-white/[0.08] text-slate-700 dark:text-slate-300 flex items-center justify-center text-xs font-bold">{member.avatar_initials}</div>
                               )}
-                              <span className="font-medium text-white">{member.full_name}</span>
+                              <span className="font-medium text-slate-900 dark:text-white">{member.full_name}</span>
                             </div>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <div className="flex-1 h-1.5 bg-white/[0.08] rounded-full min-w-[60px]">
+                              <div className="flex-1 h-1.5 bg-slate-900/10 dark:bg-white/[0.08] rounded-full min-w-[60px]">
                                 <div className={`h-full rounded-full ${barColor(sp)}`} style={{ width: `${Math.min(sp, 100)}%` }} />
                               </div>
                               <span className={`text-xs font-medium ${pctColor(sp)}`}>{member.actuals.social}/{member.targets.social}</span>
@@ -164,7 +172,7 @@ export default function TargetsPage() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <div className="flex-1 h-1.5 bg-white/[0.08] rounded-full min-w-[60px]">
+                              <div className="flex-1 h-1.5 bg-slate-900/10 dark:bg-white/[0.08] rounded-full min-w-[60px]">
                                 <div className={`h-full rounded-full ${barColor(op)}`} style={{ width: `${Math.min(op, 100)}%` }} />
                               </div>
                               <span className={`text-xs font-medium ${pctColor(op)}`}>{member.actuals.offpage}/{member.targets.offpage}</span>
@@ -188,7 +196,7 @@ export default function TargetsPage() {
       )}
 
       {activeTab === 1 && (
-        <div className="glass-card p-8 text-center text-slate-400">
+        <div className="glass-card p-8 text-center text-slate-600 dark:text-slate-400">
           <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-30" />
           <p className="font-medium">No missed activities requiring explanation</p>
           <p className="text-sm mt-1">Missed weekly targets will appear here when team members fall behind</p>
@@ -197,8 +205,8 @@ export default function TargetsPage() {
 
       {activeTab === 2 && (
         <div className="glass-card p-6">
-          <h2 className="font-semibold text-white mb-4">Monthly Target Settings</h2>
-          <p className="text-sm text-slate-400 mb-6">Set targets per project. Navigate to Clients → Project → Submission Details to set targets for a specific project.</p>
+          <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Monthly Target Settings</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">Set targets per project. Navigate to Clients → Project → Submission Details to set targets for a specific project.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {([
               { key: 'social', label: 'Social Media Posts' },
@@ -207,8 +215,8 @@ export default function TargetsPage() {
               { key: 'onpage', label: 'OnPage URLs' },
               { key: 'group', label: 'Group Postings' },
             ] as const).map(({ key, label }) => (
-              <div key={key} className="border border-white/[0.08] rounded-xl p-4">
-                <label className="block text-sm font-medium text-slate-300 mb-2">{label} (default/month)</label>
+              <div key={key} className="border border-slate-900/10 dark:border-white/[0.08] rounded-xl p-4">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{label} (default/month)</label>
                 <input
                   type="number"
                   placeholder="0"

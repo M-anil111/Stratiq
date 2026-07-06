@@ -15,9 +15,9 @@ export async function GET(request: NextRequest, { params }: { params: { projectI
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const decrypted = (data || []).map(({ encrypted_password, ...rest }: any) => ({
+  const decrypted = (data || []).map(({ encrypted_password, password_encrypted, ...rest }: any) => ({
     ...rest,
-    password: decryptIfPresent(encrypted_password),
+    password: decryptIfPresent(encrypted_password ?? password_encrypted),
   }))
 
   return NextResponse.json(decrypted)
@@ -29,7 +29,7 @@ export async function PUT(request: NextRequest, { params }: { params: { projectI
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { platform, username, password, profile_url } = body
+  const { platform, username, password, profile_url, access_level, status } = body
 
   if (!platform?.trim()) {
     return NextResponse.json({ error: 'platform is required' }, { status: 400 })
@@ -48,6 +48,8 @@ export async function PUT(request: NextRequest, { params }: { params: { projectI
     platform,
     username,
     profile_url,
+    access_level: access_level ?? null,
+    status: status ?? 'active',
   }
   if (password !== undefined) {
     payload.encrypted_password = encryptIfPresent(password)
@@ -70,6 +72,6 @@ export async function PUT(request: NextRequest, { params }: { params: { projectI
   }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  const { encrypted_password, ...rest } = data as any
-  return NextResponse.json({ ...rest, password: decryptIfPresent(encrypted_password) })
+  const { encrypted_password, password_encrypted, ...rest } = data as any
+  return NextResponse.json({ ...rest, password: decryptIfPresent(encrypted_password ?? password_encrypted) })
 }

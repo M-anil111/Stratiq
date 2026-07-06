@@ -10,7 +10,7 @@ export async function sendEmail({
   to,
   subject,
   html,
-  from = 'Stratiq <noreply@stratiq.app>',
+  from = process.env.EMAIL_FROM || 'Stratiq <noreply@stratiqnow.com>',
 }: {
   to: string | string[]
   subject: string

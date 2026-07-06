@@ -1,24 +1,26 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { googleClientId, googleScopes, googleRedirectUri, appBaseUrl } from '@/lib/google-oauth'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const origin = request.nextUrl.origin
+  const clientId = googleClientId()
+  if (!clientId) {
+    return NextResponse.redirect(`${appBaseUrl(origin)}/settings/integrations?error=google_client_id_missing`)
+  }
+
   const params = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID!,
-    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`,
+    client_id: clientId,
+    redirect_uri: googleRedirectUri(origin),
     response_type: 'code',
-    scope: [
-      'https://www.googleapis.com/auth/adwords',
-      'https://www.googleapis.com/auth/drive',
-      'https://www.googleapis.com/auth/analytics.readonly',
-      'https://www.googleapis.com/auth/webmasters.readonly',
-      'https://www.googleapis.com/auth/userinfo.email',
-    ].join(' '),
+    scope: googleScopes(),
     access_type: 'offline',
     prompt: 'consent',
+    include_granted_scopes: 'true',
     state: Buffer.from(JSON.stringify({ user_id: user.id })).toString('base64'),
   })
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { encryptIfPresent, decryptIfPresent } from '@/lib/encryption'
+import { encryptIfPresent } from '@/lib/encryption'
 
 export async function GET(request: NextRequest, { params }: { params: { projectId: string } }) {
   const supabase = await createClient()
@@ -15,12 +15,13 @@ export async function GET(request: NextRequest, { params }: { params: { projectI
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const decrypted = (data || []).map(({ encrypted_password, ...rest }: any) => ({
+  // Strip encrypted_password — passwords are fetched on demand via the /decrypt endpoint
+  const safe = (data || []).map(({ encrypted_password, ...rest }: any) => ({
     ...rest,
-    password: decryptIfPresent(encrypted_password),
+    has_password: !!encrypted_password,
   }))
 
-  return NextResponse.json(decrypted)
+  return NextResponse.json(safe)
 }
 
 export async function POST(request: NextRequest, { params }: { params: { projectId: string } }) {
@@ -45,5 +46,5 @@ export async function POST(request: NextRequest, { params }: { params: { project
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const { encrypted_password, ...rest } = data as any
-  return NextResponse.json({ ...rest, password: decryptIfPresent(encrypted_password) }, { status: 201 })
+  return NextResponse.json({ ...rest, has_password: !!encrypted_password }, { status: 201 })
 }

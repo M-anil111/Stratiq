@@ -7,11 +7,11 @@ export async function PUT(request: NextRequest, { params }: { params: { projectI
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { tool_name, profile_id, account_email } = body
+  const { tool_name, profile_id, account_email, access_type, notes, url } = body
 
   const { data, error } = await supabase
     .from('tracking_tools')
-    .update({ tool_name, profile_id, account_email })
+    .update({ tool_name, profile_id, account_email, access_type: access_type ?? null, notes: notes ?? null, url: url ?? null })
     .eq('id', params.toolId)
     .eq('project_id', params.projectId)
     .select()

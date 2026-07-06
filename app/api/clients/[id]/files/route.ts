@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { listFilesInFolder } from '@/lib/google-drive'
+import { listFiles, listFilesInFolder } from '@/lib/google-drive'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
   const { data: client } = await supabase
     .from('clients')
-    .select('company_name')
+    .select('company_name, google_drive_folder_id')
     .eq('id', params.id)
     .eq('organization_id', userData?.organization_id)
     .single()
@@ -19,6 +19,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   try {
+    if (client.google_drive_folder_id) {
+      const files = await listFiles(supabase, client.google_drive_folder_id)
+      return NextResponse.json(files)
+    }
     const files = await listFilesInFolder(client.company_name)
     return NextResponse.json(files)
   } catch {

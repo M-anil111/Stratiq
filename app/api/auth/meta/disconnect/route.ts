@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logAudit } from '@/lib/audit'
 
 export async function POST() {
   const supabase = await createClient()
@@ -13,7 +14,7 @@ export async function POST() {
     .eq('id', user.id)
     .single()
 
-  if (!['super_admin', 'admin'].includes(userData?.role)) {
+  if (!userData || !['super_admin', 'admin'].includes(userData.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -25,5 +26,15 @@ export async function POST() {
     .in('key', ['meta_access_token', 'meta_token_expiry', 'meta_connected'])
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logAudit(supabase, {
+    organizationId: userData.organization_id,
+    userId: user.id,
+    action: 'integration_disconnected',
+    entityType: 'integration',
+    entityId: 'meta',
+    detail: { provider: 'meta' },
+  })
+
   return NextResponse.json({ ok: true })
 }

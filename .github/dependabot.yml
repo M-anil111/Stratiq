@@ -1,0 +1,24 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      # Next.js is pinned to the 14.2.x line (security-patched at 14.2.35).
+      # Ignore major/minor bumps (e.g. the breaking v15/v16 upgrades) and only
+      # allow safe patch updates within the current line.
+      - dependency-name: "next"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+      - dependency-name: "eslint-config-next"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+      # Playwright is pinned to match the preinstalled Chromium build.
+      - dependency-name: "@playwright/test"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"

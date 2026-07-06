@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: userData } = await supabase.from('users').select('organization_id, role').eq('id', user.id).single()
-  if (!['super_admin', 'admin'].includes(userData?.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!userData || !['super_admin', 'admin'].includes(userData.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { name, field_type, required, entity_type } = await request.json()
 
@@ -57,7 +57,10 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     if (error.code === '42P01') {
-      return NextResponse.json({ error: 'custom_field_definitions table does not exist. Run the migration first.' }, { status: 500 })
+      return NextResponse.json({ error: 'The custom fields table has not been set up yet. Please run the database migration.' }, { status: 503 })
+    }
+    if (error.code === '42703') {
+      return NextResponse.json({ error: 'The custom fields table is missing a required column. Please run the latest database migration.' }, { status: 503 })
     }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
@@ -71,7 +74,7 @@ export async function DELETE(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: userData } = await supabase.from('users').select('organization_id, role').eq('id', user.id).single()
-  if (!['super_admin', 'admin'].includes(userData?.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!userData || !['super_admin', 'admin'].includes(userData.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const id = request.nextUrl.searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
@@ -82,7 +85,10 @@ export async function DELETE(request: NextRequest) {
     .eq('id', id)
     .eq('organization_id', userData.organization_id)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01') return NextResponse.json({ ok: true })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json({ ok: true })
 }
 
@@ -92,7 +98,7 @@ export async function PATCH(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: userData } = await supabase.from('users').select('organization_id, role').eq('id', user.id).single()
-  if (!['super_admin', 'admin'].includes(userData?.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!userData || !['super_admin', 'admin'].includes(userData.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id, ...updates } = await request.json()
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
@@ -105,6 +111,11 @@ export async function PATCH(request: NextRequest) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    if (error.code === '42P01' || error.code === '42703') {
+      return NextResponse.json({ error: 'The custom fields table is not fully set up. Please run the latest database migration.' }, { status: 503 })
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json(data)
 }

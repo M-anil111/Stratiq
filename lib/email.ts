@@ -1,10 +1,11 @@
+export { sendEmail } from '@/lib/email/index'
 import { sendEmail } from '@/lib/email/index'
 import { generateFridayReminderEmail } from '@/lib/email/templates/friday-reminder'
 import { generateMissedTargetEmail } from '@/lib/email/templates/missed-target'
 import { generateMonthlyReportEmail } from '@/lib/email/templates/monthly-report'
 import { generateWeeklyTargetEmail } from '@/lib/email/templates/weekly-target'
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.stratiq.app'
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://stratiqnow.com'
 
 export async function sendFridayReminder(
   to: string,

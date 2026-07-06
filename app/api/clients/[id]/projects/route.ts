@@ -29,21 +29,42 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
   const body = await request.json()
 
-  // Create the project
-  const { data: project, error: projectError } = await supabase
-    .from('projects')
-    .insert({
-      client_id: params.id,
-      organization_id: userData.organization_id,
-      domain: body.domain,
-      status: body.status || 'active',
-      industry: body.industry,
-      services: body.services || [],
-      advertising_types: body.advertising_types || [],
-      goals: body.goals || [],
-    })
-    .select()
-    .single()
+  // Build the insert row. Some columns come from later migrations that may not
+  // yet be applied to this DB (name/start_date/end_date/notes from 028, manager
+  // FKs from 007). Rather than hard-failing, retry while stripping any column
+  // PostgREST reports as missing from the schema cache — mirrors the pattern in
+  // app/api/clients/route.ts so project creation always succeeds.
+  const insertRow: Record<string, any> = {
+    client_id: params.id,
+    organization_id: userData.organization_id,
+    domain: body.domain,
+    status: body.status || 'active',
+    industry: body.industry,
+    services: body.services || [],
+    advertising_types: body.advertising_types || [],
+    goals: body.goals || [],
+    name: body.name || null,
+    start_date: body.start_date || null,
+    end_date: body.end_date || null,
+    notes: body.notes || null,
+    sales_manager_id: body.sales_manager_id || null,
+    dm_manager_id: body.dm_manager_id || null,
+  }
+
+  let project: any = null
+  let projectError: any = null
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const res = await supabase.from('projects').insert(insertRow).select().single()
+    project = res.data
+    projectError = res.error
+    if (!projectError) break
+    const missing = projectError.message?.match(/Could not find the '([^']+)' column/)?.[1]
+    if (missing && missing in insertRow) {
+      delete insertRow[missing]
+      continue
+    }
+    break
+  }
 
   if (projectError) return NextResponse.json({ error: projectError.message }, { status: 500 })
 

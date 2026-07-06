@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
+import { VERIFIED_COOKIE, verifyVerifiedCookie } from '@/lib/otp'
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } })
@@ -22,7 +23,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
-  const isPublic = path.startsWith('/login') || path.startsWith('/api/auth') || path.startsWith('/api/cron')
+  const isPublic = path.startsWith('/login') || path.startsWith('/forgot-password') || path.startsWith('/reset-password') || path.startsWith('/request-access') || path.startsWith('/accept-invite') || path.startsWith('/api/team/invite/accept') || path.startsWith('/api/auth') || path.startsWith('/api/cron') || path.startsWith('/approve') || path.startsWith('/api/approve') || path.startsWith('/share') || path.startsWith('/api/share') || path.startsWith('/api/webhooks')
   if (isPublic) return response
 
   if (!user) {
@@ -44,6 +45,13 @@ export async function middleware(request: NextRequest) {
   }
   if (!isClient && isPortal) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // Step-up re-verification: logged-in users must present a valid, unexpired
+  // verification cookie to use the app. /verify and /api/auth* stay reachable
+  // (the latter is already handled by isPublic above).
+  if (path !== '/verify' && !(await verifyVerifiedCookie(request.cookies.get(VERIFIED_COOKIE)?.value))) {
+    return NextResponse.redirect(new URL('/verify', request.url))
   }
 
   return response

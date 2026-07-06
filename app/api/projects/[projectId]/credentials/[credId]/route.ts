@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { encryptIfPresent, decryptIfPresent } from '@/lib/encryption'
+import { encryptIfPresent } from '@/lib/encryption'
 
 export async function PUT(request: NextRequest, { params }: { params: { projectId: string; credId: string } }) {
   const supabase = await createClient()
@@ -30,7 +30,7 @@ export async function PUT(request: NextRequest, { params }: { params: { projectI
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const { encrypted_password, ...rest } = data as any
-  return NextResponse.json({ ...rest, password: decryptIfPresent(encrypted_password) })
+  return NextResponse.json({ ...rest, has_password: !!encrypted_password })
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: { projectId: string; credId: string } }) {

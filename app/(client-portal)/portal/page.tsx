@@ -8,6 +8,16 @@ interface PortalStats {
   active_projects: number
   files_count: number
   unread_messages: number
+  reports_count: number
+}
+
+interface UpsellRecommendation {
+  id: string
+  title: string
+  description: string
+  monthly_price: number
+  priority: 'high' | 'medium' | 'low'
+  category: string
 }
 
 function StatSkeleton() {
@@ -19,34 +29,69 @@ function StatSkeleton() {
   )
 }
 
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
 export default function PortalHomePage() {
   const [stats, setStats] = useState<PortalStats | null>(null)
+  const [statsError, setStatsError] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [upsellVisible, setUpsellVisible] = useState(false)
+  const [topRec, setTopRec] = useState<UpsellRecommendation | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('portal_upsell_dismissed')) {
+      fetch('/api/portal/upsell')
+        .then(r => r.ok ? r.json() : null)
+        .then((data: UpsellRecommendation[] | null) => {
+          if (data && data.length > 0) {
+            setTopRec(data[0])
+            setUpsellVisible(true)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [])
 
   useEffect(() => {
     fetch('/api/portal/stats')
-      .then(r => r.json())
-      .then(data => setStats(data))
-      .catch(() => setStats({ active_projects: 0, files_count: 0, unread_messages: 0 }))
+      .then(r => {
+        if (!r.ok) { setStatsError(true); return null }
+        return r.json()
+      })
+      .then(data => { if (data) setStats(data) })
+      .catch(() => setStatsError(true))
       .finally(() => setLoading(false))
   }, [])
+
+  function dismissUpsell() {
+    localStorage.setItem('portal_upsell_dismissed', '1')
+    setUpsellVisible(false)
+  }
 
   return (
     <div>
       {/* Greeting */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Good morning 👋</h1>
+        <h1 className="text-2xl font-bold text-white">{getGreeting()} 👋</h1>
         <p className="text-slate-400 mt-1">Here&apos;s what&apos;s happening with your projects</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {loading ? (
           <>
             <StatSkeleton />
             <StatSkeleton />
             <StatSkeleton />
+            <StatSkeleton />
           </>
+        ) : statsError ? (
+          <div className="col-span-2 sm:col-span-4 glass-card p-4 text-center text-slate-400 text-sm">Unable to load stats. Please refresh the page.</div>
         ) : (
           <>
             <div className="glass-card p-4 text-center">
@@ -59,25 +104,31 @@ export default function PortalHomePage() {
             </div>
             <div className="glass-card p-4 text-center">
               <p className="text-2xl font-bold text-white">{stats?.unread_messages ?? 0}</p>
-              <p className="text-xs text-slate-400 mt-1">Messages</p>
+              <p className="text-xs text-slate-400 mt-1">Unread Messages</p>
+            </div>
+            <div className="glass-card p-4 text-center">
+              <p className="text-2xl font-bold text-white">{stats?.reports_count ?? 0}</p>
+              <p className="text-xs text-slate-400 mt-1">Reports</p>
             </div>
           </>
         )}
       </div>
 
       {/* Upsell card */}
-      <div className="mb-8 glass-card p-4 border-sky-500/20">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="font-semibold text-white">Grow 3x faster with Google Ads</p>
-            <p className="text-sm text-slate-400 mt-1">Get a free audit and see how paid search can triple your leads.</p>
-            <Link href="#" className="inline-block mt-3 px-4 py-1.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white text-sm rounded-lg hover:from-sky-400 hover:to-sky-500 transition-all">
-              Get Free Audit
-            </Link>
+      {upsellVisible && topRec && (
+        <div className="mb-8 glass-card p-4 border-sky-500/20">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="font-semibold text-white">{topRec.title}</p>
+              <p className="text-sm text-slate-400 mt-1">{topRec.description}</p>
+              <Link href="/portal/upgrade" className="inline-block mt-3 px-4 py-1.5 bg-gradient-to-r from-sky-500 to-sky-600 text-white text-sm rounded-lg hover:from-sky-400 hover:to-sky-500 transition-all">
+                Learn More &amp; Get Started
+              </Link>
+            </div>
+            <button onClick={dismissUpsell} className="text-slate-500 hover:text-slate-300 text-sm ml-4 transition-colors">Dismiss</button>
           </div>
-          <button className="text-slate-500 hover:text-slate-300 text-sm ml-4 transition-colors">Dismiss</button>
         </div>
-      </div>
+      )}
 
       {/* Quick links */}
       <div className="space-y-3">

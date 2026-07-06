@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logAudit } from '@/lib/audit'
 
 export async function GET() {
   const supabase = await createClient()
@@ -13,14 +14,39 @@ export async function GET() {
     .from('organization_settings')
     .select('key, value')
     .eq('organization_id', userData.organization_id)
-    .like('key', 'integration_%')
+    .in('key', [
+      'google_connected', 'qb_connected', 'meta_connected',
+      'google_access_token', 'qb_access_token', 'meta_access_token',
+      'qb_last_synced', 'meta_last_synced', 'google_ads_last_synced', 'google_drive_last_synced',
+      'looker_template_report_id',
+    ])
 
   const settings: Record<string, string> = {}
   for (const row of data || []) {
-    settings[row.key] = row.value
+    // Expose connection flags; strip actual tokens from response
+    if (!row.key.endsWith('_token') && !row.key.endsWith('_expiry')) {
+      settings[row.key] = row.value
+    }
   }
+  // Derive connected flags from token presence when explicit flag missing
+  const hasGoogle = settings.google_connected === 'true' || !!data?.find(r => r.key === 'google_access_token' && r.value)
+  const hasQb = settings.qb_connected === 'true' || !!data?.find(r => r.key === 'qb_access_token' && r.value)
+  const hasMeta = settings.meta_connected === 'true'
+  // Helcim is configured entirely via env (no per-org OAuth tokens stored).
+  const hasHelcim = !!process.env.HELCIM_API_TOKEN
 
-  return NextResponse.json(settings)
+  return NextResponse.json({
+    ...settings,
+    google_connected: hasGoogle ? 'true' : 'false',
+    qb_connected: hasQb ? 'true' : 'false',
+    meta_connected: hasMeta ? 'true' : 'false',
+    helcim_connected: hasHelcim ? 'true' : 'false',
+    qb_last_synced: settings.qb_last_synced || null,
+    meta_last_synced: settings.meta_last_synced || null,
+    google_ads_last_synced: settings.google_ads_last_synced || null,
+    google_drive_last_synced: settings.google_drive_last_synced || null,
+    looker_template_report_id: settings.looker_template_report_id || null,
+  })
 }
 
 export async function PUT(request: NextRequest) {
@@ -29,11 +55,12 @@ export async function PUT(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: userData } = await supabase.from('users').select('organization_id, role').eq('id', user.id).single()
-  if (!['super_admin', 'admin'].includes(userData?.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!userData || !['super_admin', 'admin'].includes(userData.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await request.json() as Record<string, string>
+  const ALLOWED_KEYS = new Set(['looker_template_report_id'])
   const upserts = Object.entries(body)
-    .filter(([key]) => key.startsWith('integration_'))
+    .filter(([key]) => key.startsWith('integration_') || ALLOWED_KEYS.has(key))
     .map(([key, value]) => ({
       organization_id: userData.organization_id,
       key,
@@ -48,5 +75,15 @@ export async function PUT(request: NextRequest) {
     .upsert(upserts, { onConflict: 'organization_id,key' })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logAudit(supabase, {
+    organizationId: userData.organization_id,
+    userId: user.id,
+    action: 'settings_integrations_updated',
+    entityType: 'organization',
+    entityId: userData.organization_id,
+    detail: { keys: upserts.map(u => u.key) },
+  })
+
   return NextResponse.json({ ok: true })
 }

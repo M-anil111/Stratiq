@@ -22,7 +22,7 @@ export async function POST(request: NextRequest, { params }: { params: { project
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { tool_name, profile_id, account_email } = body
+  const { tool_name, profile_id, account_email, access_type, notes, url } = body
 
   if (!tool_name?.trim()) {
     return NextResponse.json({ error: 'tool_name is required' }, { status: 400 })
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest, { params }: { params: { project
 
   const { data, error } = await supabase
     .from('tracking_tools')
-    .insert({ project_id: params.projectId, tool_name, profile_id, account_email })
+    .insert({ project_id: params.projectId, tool_name, profile_id, account_email, access_type: access_type ?? null, notes: notes ?? null, url: url ?? null })
     .select()
     .single()
 

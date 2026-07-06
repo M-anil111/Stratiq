@@ -1,265 +1,384 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Plus, Trash2, Save, FolderOpen, Table2, LineChart as LineIcon, BarChart3, PieChart, Loader2, Printer } from 'lucide-react'
+import { TrendChart, ComparisonBar, BreakdownPie } from '@/components/charts'
+import DateRangeControl from '../_components/DateRangeControl'
+import { useDateRange, RangePreset } from '../_components/useDateRange'
+import { openBrandedPrint, metricTableHtml } from '../_components/printReport'
 
-const ALL_METRICS = ['impressions', 'clicks', 'conversions', 'spend', 'roas', 'ctr'] as const
-type Metric = typeof ALL_METRICS[number]
+// ─── Metric / dimension / visualization vocabulary ───────────────────────────
+type Viz = 'table' | 'line' | 'bar' | 'pie'
+type MetricKey = 'spend' | 'impressions' | 'clicks' | 'conversions' | 'revenue' | 'published' | 'engagement'
+type DimensionKey = 'month' | 'network' | 'client' | 'platform'
 
-const METRIC_LABELS: Record<Metric, string> = {
-  impressions: 'Impressions',
-  clicks: 'Clicks',
-  conversions: 'Conversions',
-  spend: 'Spend ($)',
-  roas: 'ROAS',
-  ctr: 'CTR (%)',
+interface Block {
+  id: string
+  title: string
+  metric: MetricKey
+  dimension: DimensionKey
+  viz: Viz
 }
 
-function fmtVal(metric: Metric, val: number | null | undefined): string {
-  if (val == null) return '—'
-  if (metric === 'spend') return `$${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  if (metric === 'roas') return `${Number(val).toFixed(2)}x`
-  if (metric === 'ctr') return `${Number(val).toFixed(2)}%`
-  return Number(val).toLocaleString()
+const METRICS: { key: MetricKey; label: string; source: 'ads' | 'social'; currency?: boolean }[] = [
+  { key: 'spend', label: 'Ad Spend', source: 'ads', currency: true },
+  { key: 'impressions', label: 'Impressions', source: 'ads' },
+  { key: 'clicks', label: 'Clicks', source: 'ads' },
+  { key: 'conversions', label: 'Conversions', source: 'ads' },
+  { key: 'revenue', label: 'Revenue', source: 'ads', currency: true },
+  { key: 'published', label: 'Posts Published', source: 'social' },
+  { key: 'engagement', label: 'Engagement', source: 'social' },
+]
+const DIMENSIONS: { key: DimensionKey; label: string; source: 'ads' | 'social' }[] = [
+  { key: 'month', label: 'Month', source: 'ads' },
+  { key: 'network', label: 'Network', source: 'ads' },
+  { key: 'client', label: 'Client', source: 'ads' },
+  { key: 'platform', label: 'Platform', source: 'social' },
+]
+const VIZ_OPTIONS: { key: Viz; label: string; icon: any }[] = [
+  { key: 'table', label: 'Table', icon: Table2 },
+  { key: 'line', label: 'Line', icon: LineIcon },
+  { key: 'bar', label: 'Bar', icon: BarChart3 },
+  { key: 'pie', label: 'Pie', icon: PieChart },
+]
+
+const metricMeta = (k: MetricKey) => METRICS.find(m => m.key === k)!
+const labelize = (p: string) => (p ? p.charAt(0).toUpperCase() + p.slice(1) : 'Unknown')
+const fmtMonth = (key: string) => {
+  const [y, m] = String(key).split('-').map(Number)
+  if (!y || !m) return key
+  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })
+}
+const fmtVal = (v: number, currency?: boolean) =>
+  currency ? `$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : Number(v).toLocaleString()
+
+const selectClass = 'bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
+
+interface AdsReport {
+  by_network: Record<string, any>
+  by_client: any[]
+  by_month: any[]
+}
+interface SocialReport {
+  by_platform: { platform: string; published: number; engagement: Record<string, number> }[]
+}
+interface SavedDefinition {
+  id: string
+  name: string
+  description?: string | null
+  blocks: Block[]
+  date_range?: { preset?: RangePreset }
 }
 
-function getDefaultMonths() {
-  const now = new Date()
-  const to = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const from = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`
-  return { from, to }
+let blockSeq = 0
+const newBlock = (): Block => ({
+  id: `b${Date.now()}_${blockSeq++}`,
+  title: 'New block',
+  metric: 'spend',
+  dimension: 'month',
+  viz: 'line',
+})
+
+// Build a { name, value }[] dataset for a block from the fetched reports.
+function buildDataset(block: Block, ads: AdsReport | null, social: SocialReport | null): { name: string; value: number }[] {
+  const { metric, dimension } = block
+  const m = metricMeta(metric)
+  if (dimension === 'platform') {
+    return (social?.by_platform || []).map(p => ({
+      name: labelize(p.platform),
+      value: metric === 'published' ? p.published
+        : metric === 'engagement' ? (p.engagement?.likes || 0) + (p.engagement?.comments_count || 0) + (p.engagement?.shares || 0)
+        : Number(p.engagement?.[metric] || 0),
+    }))
+  }
+  if (m.source === 'social') return [] // social metric needs the platform dimension
+  if (dimension === 'month') {
+    return (ads?.by_month || []).map((r: any) => ({ name: fmtMonth(r.month), value: Number(r[metric] || 0) }))
+  }
+  if (dimension === 'network') {
+    return ['meta', 'google'].map(n => ({ name: labelize(n), value: Number(ads?.by_network?.[n]?.[metric] || 0) }))
+  }
+  if (dimension === 'client') {
+    return (ads?.by_client || [])
+      .map((c: any) => ({ name: `${c.company_name} · ${labelize(c.network)}`, value: Number(c[metric] || 0) }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10)
+  }
+  return []
+}
+
+function BlockPreview({ block, ads, social }: { block: Block; ads: AdsReport | null; social: SocialReport | null }) {
+  const data = useMemo(() => buildDataset(block, ads, social), [block, ads, social])
+  const m = metricMeta(block.metric)
+
+  if (data.length === 0) {
+    return <p className="text-sm text-slate-500 italic py-8 text-center">No data for this metric/dimension combination.</p>
+  }
+  if (block.viz === 'table') {
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
+              <th className="pb-2 font-medium">{DIMENSIONS.find(d => d.key === block.dimension)?.label}</th>
+              <th className="pb-2 font-medium text-right">{m.label}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((r, i) => (
+              <tr key={i} className="border-t border-slate-900/10 dark:border-white/[0.08]">
+                <td className="py-2 text-slate-700 dark:text-slate-300">{r.name}</td>
+                <td className="py-2 text-right text-slate-900 dark:text-white tabular-nums">{fmtVal(r.value, m.currency)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+  if (block.viz === 'line') {
+    return <TrendChart data={data} xKey="name" variant="line" series={[{ key: 'value', label: m.label }]} yTickFormatter={(v) => fmtVal(v, m.currency)} />
+  }
+  if (block.viz === 'bar') {
+    return <ComparisonBar data={data} xKey="name" colorByCategory series={[{ key: 'value', label: m.label }]} yTickFormatter={(v) => fmtVal(v, m.currency)} />
+  }
+  return <BreakdownPie data={data} valueFormatter={(v) => fmtVal(v, m.currency)} />
 }
 
 export default function ReportBuilderPage() {
-  const defaults = getDefaultMonths()
-  const [allClients, setAllClients] = useState<any[]>([])
-  const [clientSearch, setClientSearch] = useState('')
-  const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set())
-  const [from, setFrom] = useState(defaults.from)
-  const [to, setTo] = useState(defaults.to)
-  const [selectedMetrics, setSelectedMetrics] = useState<Set<Metric>>(new Set(ALL_METRICS))
-  const [results, setResults] = useState<any[] | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const range = useDateRange('90d')
+  const [reportName, setReportName] = useState('Untitled report')
+  const [blocks, setBlocks] = useState<Block[]>([newBlock()])
+  const [ads, setAds] = useState<AdsReport | null>(null)
+  const [social, setSocial] = useState<SocialReport | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saved, setSaved] = useState<SavedDefinition[]>([])
+  const [saving, setSaving] = useState(false)
+  const [status, setStatus] = useState('')
+  const [currentId, setCurrentId] = useState<string | null>(null)
 
+  // Fetch data for previews.
   useEffect(() => {
-    fetch('/api/clients').then(r => r.json()).then(d => setAllClients(Array.isArray(d) ? d : (d?.data ?? [])))
-  }, [])
-
-  const filteredClients = allClients.filter(c =>
-    c.company_name?.toLowerCase().includes(clientSearch.toLowerCase())
-  )
-
-  const toggleClient = (id: string) => {
-    setSelectedClients(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
-  const toggleMetric = (m: Metric) => {
-    setSelectedMetrics(prev => {
-      const next = new Set(prev)
-      next.has(m) ? next.delete(m) : next.add(m)
-      return next
-    })
-  }
-
-  const generateReport = async () => {
-    if (selectedClients.size === 0) { setError('Select at least one client.'); return }
-    if (!from || !to) { setError('Select a date range.'); return }
-    if (selectedMetrics.size === 0) { setError('Select at least one metric.'); return }
-    if (from > to) { setError('"From" month must be before or equal to "To" month.'); return }
-    setError('')
     setLoading(true)
-    setResults(null)
-    const params = new URLSearchParams({
-      clients: [...selectedClients].join(','),
-      from,
-      to,
-      metrics: [...selectedMetrics].join(','),
+    const p = new URLSearchParams({ start: range.start, end: range.end })
+    Promise.all([
+      fetch('/api/reports/ads?months=12').then(r => r.json()).then(d => setAds(d?.summary ? d : null)).catch(() => setAds(null)),
+      fetch(`/api/reports/social?${p}`).then(r => r.json()).then(setSocial).catch(() => setSocial(null)),
+    ]).finally(() => setLoading(false))
+  }, [range.start, range.end])
+
+  const loadDefinitions = useCallback(() => {
+    fetch('/api/reports/builder?definitions=1')
+      .then(r => r.json())
+      .then(d => setSaved(Array.isArray(d?.definitions) ? d.definitions : []))
+      .catch(() => setSaved([]))
+  }, [])
+  useEffect(() => { loadDefinitions() }, [loadDefinitions])
+
+  const updateBlock = (id: string, patch: Partial<Block>) =>
+    setBlocks(bs => bs.map(b => (b.id === id ? { ...b, ...patch } : b)))
+  const removeBlock = (id: string) => setBlocks(bs => bs.filter(b => b.id !== id))
+  const addBlock = () => setBlocks(bs => [...bs, newBlock()])
+
+  const saveDefinition = async () => {
+    if (!reportName.trim()) { setStatus('Enter a report name first.'); return }
+    setSaving(true); setStatus('')
+    try {
+      const res = await fetch('/api/reports/builder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          definition: {
+            id: currentId || undefined,
+            name: reportName.trim(),
+            blocks,
+            date_range: { preset: range.preset },
+          },
+        }),
+      })
+      const d = await res.json()
+      if (!res.ok) { setStatus(d.error || 'Failed to save'); return }
+      if (d.definition?.id) setCurrentId(String(d.definition.id))
+      setStatus(`Saved "${reportName.trim()}".`)
+      loadDefinitions()
+      setTimeout(() => setStatus(''), 3000)
+    } catch {
+      setStatus('Network error saving report')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const openDefinition = (def: SavedDefinition) => {
+    setReportName(def.name)
+    setBlocks(Array.isArray(def.blocks) && def.blocks.length ? def.blocks.map(b => ({ ...b })) : [newBlock()])
+    setCurrentId(String(def.id))
+    if (def.date_range?.preset) range.setPreset(def.date_range.preset)
+    setStatus(`Loaded "${def.name}".`)
+    setTimeout(() => setStatus(''), 3000)
+  }
+
+  const deleteDefinition = async (id: string) => {
+    setSaved(s => s.filter(d => String(d.id) !== String(id)))
+    if (currentId === String(id)) setCurrentId(null)
+    await fetch(`/api/reports/builder?definition_id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {})
+  }
+
+  const downloadPdf = () => {
+    openBrandedPrint({
+      title: reportName,
+      periodLabel: range.rangeLabel,
+      sections: blocks.map(b => {
+        const data = buildDataset(b, ads, social)
+        const m = metricMeta(b.metric)
+        return {
+          heading: b.title || m.label,
+          html: metricTableHtml(data.map(r => [r.name, fmtVal(r.value, m.currency)] as [string, string])),
+        }
+      }),
     })
-    const res = await fetch(`/api/reports/builder?${params}`)
-    const data = await res.json()
-    setLoading(false)
-    if (!res.ok) { setError(data.error || 'Failed to generate report'); return }
-    setResults(data)
   }
-
-  const exportCsv = () => {
-    if (!results || results.length === 0) return
-    const channels = ['google_ads', 'meta_ads']
-    const metrics = ALL_METRICS.filter(m => selectedMetrics.has(m))
-    const headers = ['Client', ...channels.flatMap(ch => metrics.map(m => `${ch === 'google_ads' ? 'Google' : 'Meta'} ${METRIC_LABELS[m]}`))]
-    const rows = results.map(row => [
-      row.client_name,
-      ...channels.flatMap(ch => metrics.map(m => {
-        const val = row[ch]?.[m]
-        return val != null ? String(val) : ''
-      }))
-    ])
-    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `report-${from}-to-${to}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const activeMetrics = ALL_METRICS.filter(m => selectedMetrics.has(m))
 
   return (
-    <div className="p-4 lg:p-8 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold text-white mb-6">Report Builder</h1>
-
-      <div className="space-y-6">
-        {/* Step 1 */}
-        <div className="glass-card p-5">
-          <h2 className="text-sm font-semibold text-sky-400 mb-1">Step 1 — Select Clients</h2>
-          <p className="text-xs text-slate-400 mb-3">{selectedClients.size} selected</p>
-          <input
-            type="text"
-            placeholder="Search clients..."
-            value={clientSearch}
-            onChange={e => setClientSearch(e.target.value)}
-            className="input-glass mb-3"
-          />
-          <div className="max-h-48 overflow-y-auto space-y-1">
-            {filteredClients.length === 0 ? (
-              <p className="text-sm text-slate-500 text-center py-4">No clients found</p>
-            ) : filteredClients.map(c => (
-              <label key={c.id} className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-white/[0.05] cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedClients.has(c.id)}
-                  onChange={() => toggleClient(c.id)}
-                  className="rounded border-white/[0.12] text-sky-500 focus:ring-sky-500 bg-white/[0.06]"
-                />
-                <span className="text-sm text-slate-300">{c.company_name}</span>
-              </label>
-            ))}
-          </div>
+    <div className="p-4 lg:p-8">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Custom Report Builder</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-0.5">Assemble metrics, dimensions and visualizations into a saved report</p>
         </div>
+        <div className="flex items-center gap-2">
+          <button onClick={downloadPdf} className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-700 dark:text-slate-300 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] rounded-xl transition-all">
+            <Printer className="h-4 w-4" /> Download PDF
+          </button>
+          <button onClick={saveDefinition} disabled={saving} className="btn-brand inline-flex items-center gap-1.5 text-sm px-4 py-2.5 disabled:opacity-60">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {currentId ? 'Update' : 'Save'} report
+          </button>
+        </div>
+      </div>
 
-        {/* Step 2 */}
-        <div className="glass-card p-5">
-          <h2 className="text-sm font-semibold text-sky-400 mb-4">Step 2 — Select Date Range</h2>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-xs text-slate-400 mb-1">From (YYYY-MM)</label>
-              <input
-                type="month"
-                value={from}
-                onChange={e => setFrom(e.target.value)}
-                className="input-glass"
-              />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: config */}
+        <div className="space-y-4 lg:col-span-1">
+          <div className="glass-card p-5">
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Report name</label>
+            <input value={reportName} onChange={e => setReportName(e.target.value)} className="input-glass w-full" placeholder="e.g. Q3 Client Performance" />
+            {status && <p className="text-xs text-sky-400 mt-2">{status}</p>}
+          </div>
+
+          <DateRangeControl range={range} />
+
+          <div className="glass-card p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <FolderOpen className="h-4 w-4 text-sky-400" />
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Saved reports</h2>
             </div>
-            <div className="flex-1">
-              <label className="block text-xs text-slate-400 mb-1">To (YYYY-MM)</label>
-              <input
-                type="month"
-                value={to}
-                onChange={e => setTo(e.target.value)}
-                className="input-glass"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Step 3 */}
-        <div className="glass-card p-5">
-          <h2 className="text-sm font-semibold text-sky-400 mb-4">Step 3 — Select Metrics</h2>
-          <div className="flex flex-wrap gap-3">
-            {ALL_METRICS.map(m => (
-              <label key={m} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedMetrics.has(m)}
-                  onChange={() => toggleMetric(m)}
-                  className="rounded border-white/[0.12] text-sky-500 focus:ring-sky-500 bg-white/[0.06]"
-                />
-                <span className="text-sm text-slate-300">{METRIC_LABELS[m]}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {error && <p className="text-sm text-red-400">{error}</p>}
-
-        <button
-          onClick={generateReport}
-          disabled={loading}
-          className="btn-brand w-full sm:w-auto px-6 py-2.5 disabled:opacity-60 text-sm font-medium"
-        >
-          {loading ? 'Generating...' : 'Generate Report'}
-        </button>
-
-        {/* Results */}
-        {loading && (
-          <div className="space-y-2">
-            {[0, 1, 2].map(i => <div key={i} className="skeleton h-10 rounded-lg" />)}
-          </div>
-        )}
-
-        {!loading && results !== null && (
-          <div>
-            {results.length === 0 ? (
-              <div className="glass-card p-10 text-center text-slate-400">
-                <p className="font-medium text-slate-300">No data found for the selected filters</p>
-              </div>
+            {saved.length === 0 ? (
+              <p className="text-xs text-slate-500">No saved reports yet.</p>
             ) : (
-              <div className="glass-card overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06]">
-                  <p className="text-sm font-semibold text-slate-300">{results.length} client{results.length !== 1 ? 's' : ''}</p>
-                  <button
-                    onClick={exportCsv}
-                    className="px-4 py-2.5 rounded-xl border border-white/[0.10] text-slate-300 hover:bg-white/[0.06] transition-all text-sm flex items-center gap-2"
-                  >
-                    Export CSV
-                  </button>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-white/[0.05] border-b border-white/[0.06]">
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">Client</th>
-                        {activeMetrics.map(m => (
-                          <th key={`g-${m}`} className="px-3 py-3 text-right text-xs font-semibold text-sky-400 whitespace-nowrap">
-                            Google {METRIC_LABELS[m]}
-                          </th>
-                        ))}
-                        {activeMetrics.map(m => (
-                          <th key={`meta-${m}`} className="px-3 py-3 text-right text-xs font-semibold text-sky-400 whitespace-nowrap">
-                            Meta {METRIC_LABELS[m]}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {results.map((row, i) => (
-                        <tr key={row.client_id} className={i % 2 === 0 ? '' : 'bg-white/[0.02]'}>
-                          <td className="px-4 py-3 font-medium text-white whitespace-nowrap">{row.client_name}</td>
-                          {activeMetrics.map(m => (
-                            <td key={`g-${m}`} className="px-3 py-3 text-right text-slate-300 whitespace-nowrap">
-                              {fmtVal(m, row.google_ads?.[m])}
-                            </td>
-                          ))}
-                          {activeMetrics.map(m => (
-                            <td key={`meta-${m}`} className="px-3 py-3 text-right text-slate-300 whitespace-nowrap">
-                              {fmtVal(m, row.meta_ads?.[m])}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              <div className="space-y-2">
+                {saved.map(def => (
+                  <div key={def.id} className="flex items-center justify-between bg-slate-900/[0.04] dark:bg-white/[0.04] rounded-xl px-3 py-2">
+                    <button onClick={() => openDefinition(def)} className="text-left min-w-0 flex-1">
+                      <p className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate">{def.name}</p>
+                      <p className="text-xs text-slate-500">{(def.blocks?.length || 0)} block{(def.blocks?.length || 0) === 1 ? '' : 's'}</p>
+                    </button>
+                    <button onClick={() => deleteDefinition(String(def.id))} className="text-slate-500 hover:text-red-400 transition-colors p-1">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        )}
+        </div>
+
+        {/* Right: blocks + preview */}
+        <div className="space-y-4 lg:col-span-2">
+          {blocks.map((block, idx) => {
+            const dimOptions = DIMENSIONS.filter(d =>
+              metricMeta(block.metric).source === 'social' ? d.key === 'platform' : d.key !== 'platform',
+            )
+            return (
+              <div key={block.id} className="glass-card p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <input
+                    value={block.title}
+                    onChange={e => updateBlock(block.id, { title: e.target.value })}
+                    className="input-glass flex-1 text-sm font-medium"
+                    placeholder={`Block ${idx + 1}`}
+                  />
+                  {blocks.length > 1 && (
+                    <button onClick={() => removeBlock(block.id)} className="text-slate-500 hover:text-red-400 transition-colors p-2">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                  <div>
+                    <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Metric</label>
+                    <select
+                      value={block.metric}
+                      onChange={e => {
+                        const metric = e.target.value as MetricKey
+                        const src = metricMeta(metric).source
+                        const dimension: DimensionKey = src === 'social' ? 'platform' : (block.dimension === 'platform' ? 'month' : block.dimension)
+                        updateBlock(block.id, { metric, dimension })
+                      }}
+                      className={`${selectClass} w-full`}
+                    >
+                      {METRICS.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Dimension</label>
+                    <select value={block.dimension} onChange={e => updateBlock(block.id, { dimension: e.target.value as DimensionKey })} className={`${selectClass} w-full`}>
+                      {dimOptions.map(d => <option key={d.key} value={d.key}>{d.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Visualization</label>
+                    <div className="flex gap-1">
+                      {VIZ_OPTIONS.map(v => {
+                        const Icon = v.icon
+                        return (
+                          <button
+                            key={v.key}
+                            onClick={() => updateBlock(block.id, { viz: v.key })}
+                            title={v.label}
+                            className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all ${
+                              block.viz === v.key
+                                ? 'bg-sky-500 text-white border-transparent'
+                                : 'border-slate-900/10 dark:border-white/[0.12] text-slate-600 dark:text-slate-400 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06]'
+                            }`}
+                          >
+                            <Icon className="h-4 w-4" />
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-900/10 dark:border-white/[0.08] pt-4">
+                  {loading ? (
+                    <div className="h-40 flex items-center justify-center text-sm text-slate-500">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading…
+                    </div>
+                  ) : (
+                    <BlockPreview block={block} ads={ads} social={social} />
+                  )}
+                </div>
+              </div>
+            )
+          })}
+
+          <button
+            onClick={addBlock}
+            className="w-full glass-card p-4 flex items-center justify-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-dashed border-slate-900/15 dark:border-white/[0.12] transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Add block
+          </button>
+        </div>
       </div>
     </div>
   )

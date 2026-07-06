@@ -20,7 +20,7 @@ function pctChange(a: number | null | undefined, b: number | null | undefined) {
   return Math.round(((a - b) / b) * 1000) / 10
 }
 
-const selectClass = "bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
+const selectClass = "bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 export default function ComparisonReportsPage() {
   const now = new Date()
@@ -38,7 +38,7 @@ export default function ComparisonReportsPage() {
 
   useEffect(() => {
     fetch('/api/clients').then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setClients(data)
+      setClients(data?.clients || (Array.isArray(data) ? data : []))
     })
   }, [])
 
@@ -125,8 +125,8 @@ export default function ComparisonReportsPage() {
   return (
     <div className="p-4 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Comparison Reports</h1>
-        <p className="text-slate-400 text-sm">Compare performance across clients or months</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Comparison Reports</h1>
+        <p className="text-slate-600 dark:text-slate-400 text-sm">Compare performance across clients or months</p>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">
@@ -134,7 +134,7 @@ export default function ComparisonReportsPage() {
           <button key={t.value} onClick={() => setType(t.value as ComparisonType)}
             className={type === t.value
               ? 'bg-sky-500 text-white rounded-full px-4 py-2 text-sm font-medium'
-              : 'bg-white/[0.05] border border-white/[0.08] text-slate-400 hover:text-white rounded-full px-4 py-2 text-sm font-medium transition-colors'
+              : 'bg-slate-900/[0.04] dark:bg-white/[0.05] border border-slate-900/10 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full px-4 py-2 text-sm font-medium transition-colors'
             }>
             {t.label}
           </button>
@@ -146,14 +146,14 @@ export default function ComparisonReportsPage() {
         {type === 'month-over-month' && (
           <>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Client</label>
+              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Client</label>
               <select value={clientA} onChange={e => setClientA(e.target.value)} className={`${selectClass} min-w-[160px]`}>
                 <option value="">Select client…</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Month A</label>
+              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Month A</label>
               <div className="flex gap-1">
                 <select value={monthA} onChange={e => setMonthA(Number(e.target.value))} className={selectClass}>
                   {MONTHS.map((m, i) => <option key={m} value={i}>{m.slice(0,3)}</option>)}
@@ -164,7 +164,7 @@ export default function ComparisonReportsPage() {
               </div>
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">vs Month B</label>
+              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">vs Month B</label>
               <div className="flex gap-1">
                 <select value={monthB} onChange={e => setMonthB(Number(e.target.value))} className={selectClass}>
                   {MONTHS.map((m, i) => <option key={m} value={i}>{m.slice(0,3)}</option>)}
@@ -180,21 +180,21 @@ export default function ComparisonReportsPage() {
         {type === 'client-vs-client' && (
           <>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Client A</label>
+              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Client A</label>
               <select value={clientA} onChange={e => setClientA(e.target.value)} className={`${selectClass} min-w-[160px]`}>
                 <option value="">Select client…</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">vs Client B</label>
+              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">vs Client B</label>
               <select value={clientB} onChange={e => setClientB(e.target.value)} className={`${selectClass} min-w-[160px]`}>
                 <option value="">Select client…</option>
                 {clients.filter(c => c.id !== clientA).map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Month</label>
+              <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Month</label>
               <div className="flex gap-1">
                 <select value={monthA} onChange={e => setMonthA(Number(e.target.value))} className={selectClass}>
                   {MONTHS.map((m, i) => <option key={m} value={i}>{m.slice(0,3)}</option>)}
@@ -209,12 +209,12 @@ export default function ComparisonReportsPage() {
       </div>
 
       {loading && (
-        <div className="text-center py-8 text-slate-400 text-sm">Loading comparison data…</div>
+        <div className="text-center py-8 text-slate-600 dark:text-slate-400 text-sm">Loading comparison data…</div>
       )}
 
       {!loading && kpis.length > 0 && (
         <>
-          <div className="flex gap-4 mb-4 text-sm text-slate-300">
+          <div className="flex gap-4 mb-4 text-sm text-slate-700 dark:text-slate-300">
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-sky-500 inline-block" />{labelA}</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-slate-500 inline-block" />{labelB}</span>
           </div>
@@ -225,11 +225,11 @@ export default function ComparisonReportsPage() {
                 <div className="flex justify-between items-end">
                   <div>
                     <p className="text-xs text-slate-500 mb-0.5">{labelA}</p>
-                    <p className="text-lg font-bold text-white">{kpi.a}</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white">{kpi.a}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-slate-500 mb-0.5">{labelB}</p>
-                    <p className="text-sm text-slate-400">{kpi.b}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">{kpi.b}</p>
                   </div>
                 </div>
                 {kpi.change !== 0 && (
@@ -245,15 +245,15 @@ export default function ComparisonReportsPage() {
       )}
 
       {!loading && kpis.length === 0 && (clientA || clientB) && (
-        <div className="glass-card p-6 text-center text-slate-400">
-          <p className="font-medium text-slate-300">No report data found for the selected period</p>
+        <div className="glass-card p-6 text-center text-slate-600 dark:text-slate-400">
+          <p className="font-medium text-slate-700 dark:text-slate-300">No report data found for the selected period</p>
           <p className="text-sm mt-1">Add marketing report data via the Marketing Reports page</p>
         </div>
       )}
 
       {!loading && !clientA && !clientB && (
-        <div className="glass-card p-6 text-center text-slate-400">
-          <p className="font-medium text-slate-300">Select a client to compare performance</p>
+        <div className="glass-card p-6 text-center text-slate-600 dark:text-slate-400">
+          <p className="font-medium text-slate-700 dark:text-slate-300">Select a client to compare performance</p>
         </div>
       )}
     </div>

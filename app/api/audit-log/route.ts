@@ -15,6 +15,9 @@ export async function GET(request: NextRequest) {
   const search = url.searchParams.get('search') || ''
   const from = url.searchParams.get('from') || ''
   const to = url.searchParams.get('to') || ''
+  const action = url.searchParams.get('action') || ''
+  const resourceType = url.searchParams.get('resource_type') || ''
+  const userId = url.searchParams.get('user_id') || ''
 
   let query = supabase
     .from('audit_log')
@@ -26,6 +29,9 @@ export async function GET(request: NextRequest) {
   if (search) {
     query = query.or(`action.ilike.%${search}%,users.email.ilike.%${search}%`)
   }
+  if (action) query = query.eq('action', action)
+  if (resourceType) query = query.eq('resource_type', resourceType)
+  if (userId) query = query.eq('user_id', userId)
   if (from) query = query.gte('created_at', from)
   if (to) query = query.lte('created_at', to + 'T23:59:59Z')
 
