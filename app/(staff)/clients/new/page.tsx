@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { InfoTooltip } from '@/components/ui/tooltip'
 import ProofHubProjectPicker from '@/components/ProofHubProjectPicker'
+import CustomFieldsSection from '@/components/CustomFieldsSection'
 
 const INDUSTRIES = [
   'Restaurant / Food & Beverage', 'Retail / E-commerce', 'Healthcare / Medical',
@@ -499,6 +500,7 @@ export default function NewClientPage() {
   const formRef = useRef<HTMLFormElement>(null)
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<FormData>(defaultForm)
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({})
   const [packages, setPackages] = useState<ServicePackage[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -626,6 +628,7 @@ export default function NewClientPage() {
           support_type: form.support_type || null,
           display_name: form.display_name || null,
           related_client_id: form.parent_client_id || null,
+          custom_field_values: customFieldValues,
         }),
       })
       if (res.ok) {
@@ -1238,6 +1241,7 @@ export default function NewClientPage() {
             defaultName={form.company_name}
           />
         </div>
+        <CustomFieldsSection entityType="client" values={customFieldValues} onChange={setCustomFieldValues} />
         </>
       )}
 

@@ -125,6 +125,7 @@ export async function POST(request: NextRequest) {
     logo_url: body.logo_url || null,
     domain_name: autoDomainName,
     proofhub_project_id: body.proofhub_project_id ? String(body.proofhub_project_id) : null,
+    custom_field_values: body.custom_field_values || {},
   }
 
   let data: any = null
