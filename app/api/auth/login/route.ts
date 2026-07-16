@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { verifyTurnstile } from '@/lib/turnstile'
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData()
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const turnstileToken = formData.get('turnstileToken') as string | null
 
   if (!email || !password) {
     return NextResponse.redirect(new URL('/login?error=missing_fields', req.url), 303)
+  }
+
+  const humanVerified = await verifyTurnstile(turnstileToken, req.headers.get('x-forwarded-for') || undefined)
+  if (!humanVerified) {
+    return NextResponse.redirect(new URL('/login?error=verification_failed', req.url), 303)
   }
 
   const supabase = await createClient()

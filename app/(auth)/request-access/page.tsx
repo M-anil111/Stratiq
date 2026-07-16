@@ -2,12 +2,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Sparkles, ArrowLeft, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import Turnstile from '@/components/Turnstile'
 
 export default function RequestAccessPage() {
   const [form, setForm] = useState({ name: '', email: '', role: '', message: '' })
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState('')
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }))
@@ -20,7 +22,7 @@ export default function RequestAccessPage() {
       const res = await fetch('/api/auth/request-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, turnstileToken }),
       })
       if (res.ok) setSent(true)
       else setError('Failed to send request. Please email your admin directly.')
@@ -100,7 +102,10 @@ export default function RequestAccessPage() {
                   <textarea className="input-glass resize-none h-20" placeholder="Anything you'd like to add…"
                     value={form.message} onChange={set('message')} />
                 </div>
-                <button type="submit" disabled={loading}
+                <Turnstile onVerify={setTurnstileToken} />
+
+                <button type="submit"
+                  disabled={loading || (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)}
                   className="btn-brand w-full py-3 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-60">
                   {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                   {loading ? 'Sending…' : 'Send request'}
