@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ChevronLeft, Loader2, CheckCircle, Building2, AlertCircle } from 'lucide-react'
 import AddButton from '@/components/ui/AddButton'
 import ProofHubProjectPicker from '@/components/ProofHubProjectPicker'
+import CustomFieldsSection from '@/components/CustomFieldsSection'
 
 const SERVICES = [
   'SEO (Local)', 'SEO (National)', 'SEO (E-commerce)', 'Content Marketing',
@@ -67,6 +68,7 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null)
   const [errors, setErrors] = useState<{ name?: string; domain?: string }>({})
   const [success, setSuccess] = useState<{ id: string; name: string } | null>(null)
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({})
 
   const [form, setForm] = useState({
     name: '',
@@ -136,6 +138,7 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
           start_date: form.start_date || null,
           end_date: form.end_date || null,
           proofhub_project_id: form.proofhub_project_id || null,
+          custom_field_values: customFieldValues,
         }),
       })
       if (res.ok) {
@@ -298,6 +301,8 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
             defaultName={form.name}
           />
         </div>
+
+        <CustomFieldsSection entityType="project" values={customFieldValues} onChange={setCustomFieldValues} />
 
         {error && (
           <div className="flex items-center gap-2 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">
