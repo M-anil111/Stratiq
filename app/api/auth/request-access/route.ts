@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email'
+import { verifyTurnstile } from '@/lib/turnstile'
 
 export async function POST(req: NextRequest) {
-  const { name, email, role, message } = await req.json()
+  const { name, email, role, message, turnstileToken } = await req.json()
   if (!name || !email) return NextResponse.json({ error: 'Name and email required' }, { status: 400 })
+
+  const humanVerified = await verifyTurnstile(turnstileToken, req.headers.get('x-forwarded-for') || undefined)
+  if (!humanVerified) return NextResponse.json({ error: 'Verification failed. Please try again.' }, { status: 400 })
 
   try {
     await sendEmail({

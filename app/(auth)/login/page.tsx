@@ -3,6 +3,7 @@ import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Sparkles, ArrowRight, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
+import Turnstile from '@/components/Turnstile'
 
 const features = [
   'Manage all clients and projects in one place',
@@ -31,10 +32,12 @@ function LoginForm() {
   const [error, setError] = useState(
     searchParams.get('error') === 'invalid_credentials' ? 'Invalid email or password.' :
     searchParams.get('error') === 'missing_fields' ? 'Please enter your email and password.' :
-    searchParams.get('error') === 'google_failed' ? 'Google sign-in failed. Please try again.' : ''
+    searchParams.get('error') === 'google_failed' ? 'Google sign-in failed. Please try again.' :
+    searchParams.get('error') === 'verification_failed' ? 'Verification failed. Please try again.' : ''
   )
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,6 +47,7 @@ function LoginForm() {
       const form = new FormData()
       form.append('email', email)
       form.append('password', password)
+      form.append('turnstileToken', turnstileToken)
       const res = await fetch('/api/auth/login', { method: 'POST', body: form, redirect: 'manual' })
       if (res.type === 'opaqueredirect' || res.status === 303 || res.ok) {
         router.push('/dashboard')
@@ -113,7 +117,10 @@ function LoginForm() {
           </div>
         </div>
 
-        <button type="submit" disabled={loading}
+        <Turnstile onVerify={setTurnstileToken} />
+
+        <button type="submit"
+          disabled={loading || (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !turnstileToken)}
           className="btn-brand w-full py-3 rounded-xl text-sm mt-2 flex items-center justify-center gap-2 group disabled:opacity-60">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
           {loading ? 'Signing in…' : 'Sign in'}
