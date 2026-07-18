@@ -3,6 +3,7 @@ import Script from 'next/script'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme/theme-provider'
+import PageCurtain from '@/components/PageCurtain'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={inter.className}>
+        <PageCurtain />
         <ThemeProvider>{children}</ThemeProvider>
         {process.env.NEXT_PUBLIC_CF_BEACON_TOKEN && (
           <Script
