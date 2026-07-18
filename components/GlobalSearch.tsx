@@ -3,12 +3,12 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Search, Users, FolderKanban, FileText, Contact, Target,
-  MessageSquare, Eye, Printer, ChevronDown,
+  MessageSquare, Eye, Printer, ChevronDown, ListChecks,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface SearchResult {
-  type: 'client' | 'contact' | 'project' | 'invoice' | 'lead'
+  type: 'client' | 'contact' | 'project' | 'invoice' | 'lead' | 'task'
   id: string
   title: string
   subtitle?: string
@@ -16,7 +16,7 @@ interface SearchResult {
 }
 
 // Category keys as used by the API's ?types= param
-const CATEGORIES = ['clients', 'contacts', 'projects', 'invoices', 'leads'] as const
+const CATEGORIES = ['clients', 'contacts', 'projects', 'invoices', 'leads', 'tasks'] as const
 type Category = (typeof CATEGORIES)[number]
 
 // result.type (singular) -> category key (plural)
@@ -26,6 +26,7 @@ const TYPE_TO_CATEGORY: Record<SearchResult['type'], Category> = {
   project: 'projects',
   invoice: 'invoices',
   lead: 'leads',
+  task: 'tasks',
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -34,6 +35,7 @@ const TYPE_LABELS: Record<string, string> = {
   project: 'Projects',
   invoice: 'Invoices',
   lead: 'Leads',
+  task: 'Tasks',
 }
 
 const CHIP_LABELS: Record<Category, string> = {
@@ -42,6 +44,7 @@ const CHIP_LABELS: Record<Category, string> = {
   projects: 'Projects',
   invoices: 'Invoices',
   leads: 'Leads',
+  tasks: 'Tasks',
 }
 
 const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
@@ -50,9 +53,10 @@ const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string; style
   project: FolderKanban,
   invoice: FileText,
   lead: Target,
+  task: ListChecks,
 }
 
-const GROUP_ORDER: SearchResult['type'][] = ['client', 'contact', 'project', 'invoice', 'lead']
+const GROUP_ORDER: SearchResult['type'][] = ['client', 'contact', 'project', 'invoice', 'lead', 'task']
 
 const FILTERS_KEY = 'search_recent_filters'
 const CLICKS_KEY = 'search_click_history'

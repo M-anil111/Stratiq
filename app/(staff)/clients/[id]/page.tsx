@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import MergeModal from '@/components/MergeModal'
+import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import AnalyticsTab from './AnalyticsTab'
 import SearchConsoleTab from './SearchConsoleTab'
 
@@ -815,6 +816,13 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
               <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{client.about_company}</p>
             </div>
           )}
+
+          <CustomFieldsEditor
+            entityType="client"
+            patchUrl={`/api/clients/${params.id}`}
+            initialValues={client.custom_field_values}
+            onSaved={(values) => setClient((c: any) => ({ ...c, custom_field_values: values }))}
+          />
 
           {/* Key Stats & Quick Actions */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
