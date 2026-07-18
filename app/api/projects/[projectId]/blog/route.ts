@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, { params }: { params: { projectI
     .from('blog_submissions')
     .select('*')
     .eq('project_id', params.projectId)
-    .eq('organization_id', userData?.organization_id)
+    .eq('organization_id', userData?.organization_id || '')
     .order('submission_date', { ascending: false })
 
   if (error) {
@@ -33,22 +33,34 @@ export async function POST(request: NextRequest, { params }: { params: { project
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
 
   const body = await request.json()
-  const { data, error } = await supabase
-    .from('blog_submissions')
-    .insert({
-      project_id: params.projectId,
-      organization_id: userData.organization_id,
-      title: body.title,
-      live_url: body.live_url || null,
-      word_count: body.word_count ?? null,
-      status: body.status || 'draft',
-      submission_date: body.submission_date || null,
-      author: body.author || null,
-      comment: body.comment || null,
-      created_by: user.id,
-    })
-    .select()
-    .single()
+  const insertRow: Record<string, any> = {
+    project_id: params.projectId,
+    organization_id: userData.organization_id,
+    title: body.title,
+    live_url: body.live_url || null,
+    word_count: body.word_count ?? null,
+    status: body.status || 'draft',
+    submission_date: body.submission_date || null,
+    author: body.author || null,
+    comment: body.comment || null,
+    client_report: body.client_report ?? true,
+    created_by: user.id,
+  }
+
+  let data: any = null
+  let error: any = null
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const res = await supabase.from('blog_submissions').insert(insertRow).select().single()
+    data = res.data
+    error = res.error
+    if (!error) break
+    const missing = error.message?.match(/Could not find the '([^']+)' column/)?.[1]
+    if (missing && missing in insertRow) {
+      delete insertRow[missing]
+      continue
+    }
+    break
+  }
 
   if (error) {
     if (error.code === '42P01') return NextResponse.json({ error: 'Table not ready' }, { status: 500 })
@@ -68,14 +80,28 @@ export async function PATCH(request: NextRequest, { params }: { params: { projec
   const { id, ...fields } = body
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-  const { data, error } = await supabase
-    .from('blog_submissions')
-    .update({ ...fields, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('project_id', params.projectId)
-    .eq('organization_id', userData?.organization_id)
-    .select()
-    .single()
+  const updateRow: Record<string, any> = { ...fields, updated_at: new Date().toISOString() }
+  let data: any = null
+  let error: any = null
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const res = await supabase
+      .from('blog_submissions')
+      .update(updateRow)
+      .eq('id', id)
+      .eq('project_id', params.projectId)
+      .eq('organization_id', userData?.organization_id || '')
+      .select()
+      .single()
+    data = res.data
+    error = res.error
+    if (!error) break
+    const missing = error.message?.match(/Could not find the '([^']+)' column/)?.[1]
+    if (missing && missing in updateRow) {
+      delete updateRow[missing]
+      continue
+    }
+    break
+  }
 
   if (error) {
     if (error.code === '42P01') return NextResponse.json({ error: 'Table not ready' }, { status: 500 })

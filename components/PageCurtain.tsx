@@ -32,8 +32,8 @@ export default function PageCurtain() {
   return (
     <div
       aria-hidden="true"
-      className={`fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none transition-transform duration-[580ms] ease-[cubic-bezier(.65,0,.35,1)] ${
-        phase === 'revealing' ? '-translate-y-full' : 'translate-y-0'
+      className={`fixed inset-0 z-[9999] flex items-center justify-center transition-transform duration-[580ms] ease-[cubic-bezier(.65,0,.35,1)] ${
+        phase === 'revealing' ? '-translate-y-full pointer-events-none' : 'translate-y-0 pointer-events-auto'
       }`}
       style={{ background: 'linear-gradient(160deg, #0a1628 0%, #060a12 100%)' }}
     >

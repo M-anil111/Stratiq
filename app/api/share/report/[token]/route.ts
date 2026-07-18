@@ -80,11 +80,13 @@ export async function GET(_request: NextRequest, { params }: { params: { token: 
       supabase.from('offpage_submissions')
         .select('id', { count: 'exact', head: true })
         .in('project_id', projectIds)
+        .eq('client_report', true)
         .gte('created_at', periodStart)
         .lt('created_at', periodEnd),
       supabase.from('blog_submissions')
         .select('id', { count: 'exact', head: true })
         .in('project_id', projectIds)
+        .eq('client_report', true)
         .gte('created_at', periodStart)
         .lt('created_at', periodEnd),
       supabase.from('onpage_details')
