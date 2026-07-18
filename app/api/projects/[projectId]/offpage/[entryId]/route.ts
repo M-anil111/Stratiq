@@ -33,7 +33,7 @@ export async function PUT(request: NextRequest, { params }: { params: { projectI
       .update(updateRow)
       .eq('id', params.entryId)
       .eq('project_id', params.projectId)
-      .eq('organization_id', userData?.organization_id)
+      .eq('organization_id', userData?.organization_id || '')
       .select()
       .single()
     data = res.data
@@ -66,7 +66,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { proje
     .delete()
     .eq('id', params.entryId)
     .eq('project_id', params.projectId)
-    .eq('organization_id', userData?.organization_id)
+    .eq('organization_id', userData?.organization_id || '')
 
   if (error) {
     if (error.code === '42P01') return NextResponse.json({ error: 'Table not ready' }, { status: 500 })

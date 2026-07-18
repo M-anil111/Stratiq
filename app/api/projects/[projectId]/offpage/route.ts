@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, { params }: { params: { projectI
     .from('offpage_submissions')
     .select('*')
     .eq('project_id', params.projectId)
-    .eq('organization_id', userData?.organization_id)
+    .eq('organization_id', userData?.organization_id || '')
     .order('submission_date', { ascending: false })
 
   if (error) {
@@ -93,7 +93,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { projec
       .update(updateRow)
       .eq('id', id)
       .eq('project_id', params.projectId)
-      .eq('organization_id', userData?.organization_id)
+      .eq('organization_id', userData?.organization_id || '')
       .select()
       .single()
     data = res.data

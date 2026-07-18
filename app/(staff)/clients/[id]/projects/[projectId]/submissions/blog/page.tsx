@@ -155,6 +155,13 @@ export default function BlogPage({ params }: { params: { id: string; projectId: 
                         {entry.status || 'draft'}
                       </span>
                     </td>
+                    <td className="px-4 py-3">
+                      {entry.client_report !== false ? (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-sky-500/15 text-sky-400 border border-sky-500/25">Client Report</span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium text-slate-500">Internal only</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{entry.submission_date || '—'}</td>
                     <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{entry.author || '—'}</td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400 max-w-[120px] truncate">{entry.comment || '—'}</td>
