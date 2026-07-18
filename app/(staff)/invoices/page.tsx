@@ -349,7 +349,7 @@ export default function InvoicesPage() {
         ].map(t => (
           <div key={t.label} className="glass-card p-4">
             <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">{t.label}</p>
-            <p className={`text-xl font-bold ${t.color}`}>{t.value}</p>
+            <p className={`text-xl font-bold tabular-nums ${t.color}`}>{t.value}</p>
           </div>
         ))}
       </div>

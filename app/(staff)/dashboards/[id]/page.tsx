@@ -108,7 +108,7 @@ function StatsTileWidget({ config }: { config: Record<string, any> }) {
         <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">{meta.label}</p>
         {stats === null
           ? <div className="skeleton h-8 w-20" />
-          : <p className="text-3xl font-bold text-white">{meta.format === 'currency' ? fmtCurrency(raw || 0) : String(raw ?? 0)}</p>}
+          : <p className="text-3xl font-bold text-white tabular-nums">{meta.format === 'currency' ? fmtCurrency(raw || 0) : String(raw ?? 0)}</p>}
       </div>
     </div>
   )

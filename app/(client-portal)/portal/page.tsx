@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { FolderOpen, Files, MessageSquare, ArrowRight, TrendingUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import ErrorState from '@/components/ui/ErrorState'
 
 interface PortalStats {
   active_projects: number
@@ -91,23 +92,30 @@ export default function PortalHomePage() {
             <StatSkeleton />
           </>
         ) : statsError ? (
-          <div className="col-span-2 sm:col-span-4 glass-card p-4 text-center text-slate-600 dark:text-slate-400 text-sm">Unable to load stats. Please refresh the page.</div>
+          <div className="col-span-2 sm:col-span-4 glass-card">
+            <ErrorState
+              title="Unable to load stats"
+              description="Please refresh the page to try again."
+              size="sm"
+              action={{ label: 'Refresh', onClick: () => window.location.reload() }}
+            />
+          </div>
         ) : (
           <>
             <div className="glass-card p-4 text-center">
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats?.active_projects ?? 0}</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{stats?.active_projects ?? 0}</p>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Active Projects</p>
             </div>
             <div className="glass-card p-4 text-center">
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats?.files_count ?? 0}</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{stats?.files_count ?? 0}</p>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Files</p>
             </div>
             <div className="glass-card p-4 text-center">
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats?.unread_messages ?? 0}</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{stats?.unread_messages ?? 0}</p>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Unread Messages</p>
             </div>
             <div className="glass-card p-4 text-center">
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats?.reports_count ?? 0}</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{stats?.reports_count ?? 0}</p>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Reports</p>
             </div>
           </>

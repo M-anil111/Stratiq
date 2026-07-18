@@ -5,6 +5,7 @@ import { TrendChart, ComparisonBar, BreakdownPie } from '@/components/charts'
 import DateRangeControl from '../_components/DateRangeControl'
 import { useDateRange, RangePreset } from '../_components/useDateRange'
 import { openBrandedPrint, metricTableHtml } from '../_components/printReport'
+import EmptyState from '@/components/ui/EmptyState'
 
 // ─── Metric / dimension / visualization vocabulary ───────────────────────────
 type Viz = 'table' | 'line' | 'bar' | 'pie'
@@ -111,7 +112,7 @@ function BlockPreview({ block, ads, social }: { block: Block; ads: AdsReport | n
   const m = metricMeta(block.metric)
 
   if (data.length === 0) {
-    return <p className="text-sm text-slate-500 italic py-8 text-center">No data for this metric/dimension combination.</p>
+    return <EmptyState icon={BarChart3} title="No data for this metric/dimension combination" size="sm" />
   }
   if (block.viz === 'table') {
     return (

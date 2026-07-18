@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { Download, TrendingUp, MousePointer, DollarSign, BarChart2, Percent, Users, RefreshCw, Loader2, Printer } from 'lucide-react'
 import { ComparisonBar, colorAt } from '@/components/charts'
 import { openBrandedPrint, metricTableHtml } from '../_components/printReport'
+import EmptyState from '@/components/ui/EmptyState'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const YEARS = [2026, 2025, 2024]
@@ -188,8 +189,12 @@ export default function MetaAdsReportPage() {
           </p>
 
           {!report && (
-            <div className="glass-card p-8 text-center text-slate-500 text-sm mb-4">
-              No data for this period. Hit "Sync Now" to pull data from Meta Ads.
+            <div className="glass-card mb-4">
+              <EmptyState
+                icon={RefreshCw}
+                title="No data for this period"
+                description='Hit "Sync Now" to pull data from Meta Ads.'
+              />
             </div>
           )}
 
@@ -202,7 +207,7 @@ export default function MetaAdsReportPage() {
                     <Icon className={`h-4 w-4 ${kpi.color}`} />
                   </div>
                   <div>
-                    <p className="text-xl font-bold text-slate-900 dark:text-white">{kpi.value}</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white tabular-nums">{kpi.value}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{kpi.label}</p>
                   </div>
                 </div>
@@ -292,8 +297,8 @@ export default function MetaAdsReportPage() {
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={2} className="px-5 py-10 text-center text-slate-500">
-                        No data. Sync to load.
+                      <td colSpan={2} className="px-0 py-2">
+                        <EmptyState icon={RefreshCw} title="No data" description="Sync to load account-level data." size="sm" />
                       </td>
                     </tr>
                   )}

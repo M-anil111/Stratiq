@@ -276,7 +276,7 @@ export default function MarketingReportsPage() {
                     { label: 'OnPage URLs', value: report?.seo_onpage_count ?? '—', sub: 'Optimized' },
                   ].map(stat => (
                     <div key={stat.label} className="glass-card p-4 text-center">
-                      <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
+                      <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{stat.value}</p>
                       <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{stat.label}</p>
                       <p className="text-xs text-slate-500">{stat.sub}</p>
                     </div>

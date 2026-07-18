@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { Loader2, Search, ExternalLink, ArrowUp, ArrowDown } from 'lucide-react'
+import EmptyState from '@/components/ui/EmptyState'
 
 const PRESETS = ['Last 7 days', 'Last 30 days', 'Last month', 'Custom'] as const
 type Preset = typeof PRESETS[number]
@@ -182,7 +183,7 @@ export default function SearchConsoleTab({ clientId }: { clientId: string }) {
       <div className="glass-card p-5">
         <h3 className="font-semibold text-slate-900 dark:text-white text-sm mb-4">Clicks over time</h3>
         {(!data?.timeseries || data.timeseries.length === 0) ? (
-          <p className="text-sm text-slate-500 py-8 text-center">No data for this range</p>
+          <EmptyState icon={Search} title="No data for this range" description="Try a wider date range or check back once Search Console data syncs." size="sm" />
         ) : (
           <div className="flex items-end gap-0.5 h-40">
             {data.timeseries.map((d: any) => (

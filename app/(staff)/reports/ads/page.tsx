@@ -379,7 +379,7 @@ export default function AdsAnalysisPage() {
                     <Icon className={`h-4 w-4 ${tile.color}`} />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-slate-900 dark:text-white truncate" title={tile.value}>{tile.value}</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white truncate tabular-nums" title={tile.value}>{tile.value}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{tile.label}</p>
                   </div>
                 </div>
@@ -452,7 +452,7 @@ export default function AdsAnalysisPage() {
                     <span className="text-slate-900 dark:text-white font-semibold truncate">{cpcCallouts.highest.company_name}</span>
                     <NetworkBadge network={cpcCallouts.highest.network} />
                   </div>
-                  <span className="text-lg font-bold text-slate-900 dark:text-white whitespace-nowrap">{fmtCurrency(cpcCallouts.highest.cost_per_conversion)}</span>
+                  <span className="text-lg font-bold text-slate-900 dark:text-white whitespace-nowrap tabular-nums">{fmtCurrency(cpcCallouts.highest.cost_per_conversion)}</span>
                 </div>
                 <p className="text-xs text-slate-500 mt-1.5">{fmtNum(cpcCallouts.highest.conversions)} conversions on {fmtCurrency(cpcCallouts.highest.spend)} spend</p>
               </div>
@@ -463,7 +463,7 @@ export default function AdsAnalysisPage() {
                     <span className="text-slate-900 dark:text-white font-semibold truncate">{cpcCallouts.lowest.company_name}</span>
                     <NetworkBadge network={cpcCallouts.lowest.network} />
                   </div>
-                  <span className="text-lg font-bold text-slate-900 dark:text-white whitespace-nowrap">{fmtCurrency(cpcCallouts.lowest.cost_per_conversion)}</span>
+                  <span className="text-lg font-bold text-slate-900 dark:text-white whitespace-nowrap tabular-nums">{fmtCurrency(cpcCallouts.lowest.cost_per_conversion)}</span>
                 </div>
                 <p className="text-xs text-slate-500 mt-1.5">{fmtNum(cpcCallouts.lowest.conversions)} conversions on {fmtCurrency(cpcCallouts.lowest.spend)} spend</p>
               </div>

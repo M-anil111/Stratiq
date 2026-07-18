@@ -30,7 +30,7 @@ function KpiCard({ label, value, icon: Icon, color }: { label: string; value: st
       <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center mb-3`}>
         <Icon className="h-4 w-4" style={{ color: 'inherit' }} />
       </div>
-      <p className="text-lg font-bold text-slate-900 dark:text-white">{value}</p>
+      <p className="text-lg font-bold text-slate-900 dark:text-white tabular-nums">{value}</p>
       <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{label}</p>
     </div>
   )

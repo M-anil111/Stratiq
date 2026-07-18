@@ -225,7 +225,7 @@ export default function ComparisonReportsPage() {
                 <div className="flex justify-between items-end">
                   <div>
                     <p className="text-xs text-slate-500 mb-0.5">{labelA}</p>
-                    <p className="text-lg font-bold text-slate-900 dark:text-white">{kpi.a}</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white tabular-nums">{kpi.a}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-slate-500 mb-0.5">{labelB}</p>

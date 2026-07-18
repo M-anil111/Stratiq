@@ -312,7 +312,7 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">{card.label}</p>
                 {card.value != null
-                  ? <p className="text-2xl font-bold text-slate-900 dark:text-white">{card.value}</p>
+                  ? <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{card.value}</p>
                   : <div className="skeleton h-8 w-16 mt-1" />
                 }
               </div>
@@ -347,7 +347,7 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">{card.label}</p>
                 {card.value != null
-                  ? <p className="text-2xl font-bold text-slate-900 dark:text-white">{card.value}</p>
+                  ? <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{card.value}</p>
                   : <div className="skeleton h-8 w-16 mt-1" />
                 }
               </div>
