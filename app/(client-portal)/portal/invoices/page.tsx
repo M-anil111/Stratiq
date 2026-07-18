@@ -80,19 +80,19 @@ export default function PortalInvoicesPage() {
 
   if (loading) return (
     <div className="p-4 lg:p-8 space-y-4">
-      {[1, 2, 3].map(i => <div key={i} className="h-28 bg-white/[0.04] rounded-xl animate-pulse" />)}
+      {[1, 2, 3].map(i => <div key={i} className="h-28 bg-slate-900/[0.04] dark:bg-white/[0.04] rounded-xl animate-pulse" />)}
     </div>
   )
 
   return (
     <div className="p-4 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Invoices</h1>
-        <p className="text-sm text-slate-400 mt-1">View and pay your invoices</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Invoices</h1>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">View and pay your invoices</p>
       </div>
 
       {invoices.length === 0 ? (
-        <div className="glass-card p-12 text-center text-slate-400">
+        <div className="glass-card p-12 text-center text-slate-600 dark:text-slate-400">
           <FileText className="h-12 w-12 mx-auto mb-4 opacity-30" />
           <p className="font-medium">No invoices yet</p>
         </div>
@@ -110,14 +110,14 @@ export default function PortalInvoicesPage() {
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="font-semibold text-white text-lg leading-tight">
+                        <h2 className="font-semibold text-slate-900 dark:text-white text-lg leading-tight">
                           {inv.invoice_number}
                         </h2>
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${statusStyles[inv.status] ?? 'bg-slate-500/20 text-slate-400 border-slate-500/30'}`}>
                           {statusLabels[inv.status] ?? inv.status}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
+                      <div className="flex items-center gap-1 mt-1 text-xs text-slate-600 dark:text-slate-500">
                         <Calendar className="h-3 w-3" />
                         <span>Due {formatDate(inv.due_date)}</span>
                       </div>
@@ -125,7 +125,7 @@ export default function PortalInvoicesPage() {
                   </div>
 
                   <div className="flex flex-col items-end gap-2">
-                    <span className="text-xl font-bold text-white">
+                    <span className="text-xl font-bold text-slate-900 dark:text-white">
                       {formatMoney(inv.total, inv.currency)}
                     </span>
 

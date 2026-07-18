@@ -7,18 +7,41 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/leads', label: 'Leads', icon: Magnet },
-  { href: '/clients', label: 'Clients', icon: Users },
-  { href: '/contacts', label: 'Contacts', icon: BookUser },
-  { href: '/projects', label: 'Projects', icon: FolderKanban },
-  { href: '/tasks', label: 'Tasks', icon: ListChecks },
-  { href: '/reports', label: 'Reports', icon: BarChart3 },
-  { href: '/social', label: 'Social', icon: Share2 },
-  { href: '/invoices', label: 'Invoices', icon: FileText },
-  { href: '/targets', label: 'Targets', icon: Target },
-  { href: '/settings', label: 'Settings', icon: Settings },
+// Grouped so the sidebar reads as sections, not one flat list of 11 icons:
+// overview -> pipeline (winning business) -> delivery (doing the work) ->
+// marketing ops -> finance -> settings.
+const navGroups = [
+  {
+    items: [{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }],
+  },
+  {
+    items: [
+      { href: '/leads', label: 'Leads', icon: Magnet },
+      { href: '/clients', label: 'Clients', icon: Users },
+      { href: '/contacts', label: 'Contacts', icon: BookUser },
+    ],
+  },
+  {
+    items: [
+      { href: '/projects', label: 'Projects', icon: FolderKanban },
+      { href: '/tasks', label: 'Tasks', icon: ListChecks },
+    ],
+  },
+  {
+    items: [
+      { href: '/reports', label: 'Reports', icon: BarChart3 },
+      { href: '/social', label: 'Social', icon: Share2 },
+    ],
+  },
+  {
+    items: [
+      { href: '/invoices', label: 'Invoices', icon: FileText },
+      { href: '/targets', label: 'Targets', icon: Target },
+    ],
+  },
+  {
+    items: [{ href: '/settings', label: 'Settings', icon: Settings }],
+  },
 ]
 
 export function Sidebar() {
@@ -35,33 +58,38 @@ export function Sidebar() {
 
       <div className="divider-glass mx-3" />
 
-      {/* Nav items */}
+      {/* Nav items, grouped with subtle dividers between sections */}
       <nav className="flex-1 py-4 px-2 overflow-y-auto flex flex-col gap-1">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={item.label}
-              className={cn(
-                'flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl text-[10px] font-medium transition-all duration-200 relative group',
-                isActive
-                  ? 'nav-active text-slate-900 dark:text-white'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.05] dark:hover:bg-white/[0.06]'
-              )}
-            >
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-gradient-to-b from-sky-400 to-blue-500 rounded-r-full" style={{ boxShadow: '0 0 8px rgba(14,165,233,0.8)' }} />
-              )}
-              <item.icon
-                className={cn('transition-all duration-200', isActive ? 'text-sky-500 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300')}
-                style={{ width: '1.25rem', height: '1.25rem' }}
-              />
-              <span className="leading-none text-center">{item.label}</span>
-            </Link>
-          )
-        })}
+        {navGroups.map((group, i) => (
+          <div key={i} className="flex flex-col gap-1">
+            {i > 0 && <div className="divider-glass mx-1 my-1.5" />}
+            {group.items.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  title={item.label}
+                  className={cn(
+                    'flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl text-[10px] font-medium transition-all duration-200 relative group',
+                    isActive
+                      ? 'nav-active text-slate-900 dark:text-white'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.05] dark:hover:bg-white/[0.06]'
+                  )}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-gradient-to-b from-sky-400 to-blue-500 rounded-r-full" style={{ boxShadow: '0 0 8px rgba(14,165,233,0.8)' }} />
+                  )}
+                  <item.icon
+                    className={cn('transition-all duration-200', isActive ? 'text-sky-500 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300')}
+                    style={{ width: '1.25rem', height: '1.25rem' }}
+                  />
+                  <span className="leading-none text-center">{item.label}</span>
+                </Link>
+              )
+            })}
+          </div>
+        ))}
       </nav>
     </aside>
   )

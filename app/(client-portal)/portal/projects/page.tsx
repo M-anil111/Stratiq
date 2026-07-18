@@ -60,12 +60,12 @@ function StatCard({ label, value, icon: Icon, color }: {
   color: string
 }) {
   return (
-    <div className="bg-white/[0.04] rounded-xl p-4 flex flex-col gap-1.5">
+    <div className="bg-slate-900/[0.04] dark:bg-white/[0.04] rounded-xl p-4 flex flex-col gap-1.5">
       <div className={`flex items-center gap-1.5 text-xs font-medium ${color}`}>
         <Icon className="h-3.5 w-3.5" />
         <span>{label}</span>
       </div>
-      <span className="text-2xl font-bold text-white">{value}</span>
+      <span className="text-2xl font-bold text-slate-900 dark:text-white">{value}</span>
     </div>
   )
 }
@@ -90,19 +90,19 @@ export default function PortalProjectsPage() {
 
   if (loading) return (
     <div className="p-4 lg:p-8 space-y-4">
-      {[1, 2].map(i => <div key={i} className="h-64 bg-white/[0.04] rounded-xl animate-pulse" />)}
+      {[1, 2].map(i => <div key={i} className="h-64 bg-slate-900/[0.04] dark:bg-white/[0.04] rounded-xl animate-pulse" />)}
     </div>
   )
 
   return (
     <div className="p-4 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Your Projects</h1>
-        <p className="text-sm text-slate-400 mt-1">Monthly activity for {getCurrentMonthLabel()}</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Your Projects</h1>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Monthly activity for {getCurrentMonthLabel()}</p>
       </div>
 
       {projects.length === 0 ? (
-        <div className="glass-card p-12 text-center text-slate-400">
+        <div className="glass-card p-12 text-center text-slate-600 dark:text-slate-400">
           <Globe className="h-12 w-12 mx-auto mb-4 opacity-30" />
           <p className="font-medium">No projects yet</p>
         </div>
@@ -117,18 +117,18 @@ export default function PortalProjectsPage() {
             return (
               <div key={project.id} className="glass-card overflow-hidden">
                 {/* Header */}
-                <div className="p-5 border-b border-white/[0.06]">
+                <div className="p-5 border-b border-slate-900/10 dark:border-white/[0.06]">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
                         <Globe className="h-5 w-5 text-sky-400" />
                       </div>
                       <div className="min-w-0">
-                        <h2 className="font-semibold text-white text-lg leading-tight truncate">
+                        <h2 className="font-semibold text-slate-900 dark:text-white text-lg leading-tight truncate">
                           {project.domain}
                         </h2>
                         {project.created_at && (
-                          <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-500">
+                          <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-600 dark:text-slate-500">
                             <Calendar className="h-3 w-3" />
                             <span>Since {formatDate(project.created_at)}</span>
                           </div>
@@ -159,7 +159,7 @@ export default function PortalProjectsPage() {
 
                 {/* Monthly Stats */}
                 <div className="p-5">
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-500 uppercase tracking-wider mb-3">
                     This Month&apos;s Activity
                   </p>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

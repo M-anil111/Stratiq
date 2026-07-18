@@ -73,35 +73,35 @@ function LoginForm() {
         type="button"
         onClick={handleGoogle}
         disabled={googleLoading}
-        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-white/[0.12] bg-white/[0.04] hover:bg-white/[0.08] text-white text-sm font-medium transition-all disabled:opacity-60 mb-5"
+        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-900/10 dark:border-white/[0.12] bg-slate-900/[0.04] dark:bg-white/[0.04] hover:bg-slate-900/[0.08] dark:hover:bg-white/[0.08] text-slate-900 dark:text-white text-sm font-medium transition-all disabled:opacity-60 mb-5"
       >
         {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />}
         Continue with Google
       </button>
 
       <div className="flex items-center gap-3 mb-5">
-        <div className="flex-1 h-px bg-white/[0.08]" />
-        <span className="text-xs text-slate-500">or sign in with email</span>
-        <div className="flex-1 h-px bg-white/[0.08]" />
+        <div className="flex-1 h-px bg-slate-900/[0.04] dark:bg-white/[0.08]" />
+        <span className="text-xs text-slate-500 dark:text-slate-400">or sign in with email</span>
+        <div className="flex-1 h-px bg-slate-900/[0.04] dark:bg-white/[0.08]" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="flex items-center gap-2 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">
+          <div className="flex items-center gap-2 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-600 dark:text-red-400">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
           </div>
         )}
 
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Email address</label>
+          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wider">Email address</label>
           <input type="email" autoComplete="email" required className="input-glass"
             placeholder="you@agency.com" value={email} onChange={e => setEmail(e.target.value)} />
         </div>
 
         <div>
           <div className="flex justify-between mb-2">
-            <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider">Password</label>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">Password</label>
             <Link href="/forgot-password" className="text-xs text-sky-400 hover:text-sky-300 transition-colors">
               Forgot password?
             </Link>
@@ -111,7 +111,7 @@ function LoginForm() {
               className="input-glass pr-10" placeholder="••••••••"
               value={password} onChange={e => setPassword(e.target.value)} />
             <button type="button" onClick={() => setShowPw(p => !p)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
               {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
@@ -146,11 +146,11 @@ export default function LoginPage() {
             </div>
             <span className="text-2xl font-bold text-gradient">Stratiq</span>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
+          <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4 leading-tight">
             Marketing ops,<br />
             <span className="text-gradient-brand">beautifully managed.</span>
           </h1>
-          <p className="text-slate-400 text-lg mb-12 leading-relaxed">
+          <p className="text-slate-600 dark:text-slate-400 text-lg mb-12 leading-relaxed">
             The digital marketing agency platform built for Mindshare Consulting.
           </p>
           <div className="space-y-4">
@@ -159,7 +159,7 @@ export default function LoginPage() {
                 <div className="w-5 h-5 rounded-full bg-sky-500/20 border border-sky-500/40 flex items-center justify-center shrink-0">
                   <CheckCircle2 className="h-3 w-3 text-sky-400" />
                 </div>
-                <span className="text-slate-300 text-sm">{f}</span>
+                <span className="text-slate-700 dark:text-slate-300 text-sm">{f}</span>
               </div>
             ))}
           </div>
@@ -167,7 +167,7 @@ export default function LoginPage() {
             {[{ value: '100%', label: 'Encrypted' }, { value: 'Live', label: 'API Sync' }, { value: 'Multi', label: 'Tenant' }].map(stat => (
               <div key={stat.label} className="glass-card p-4 text-center">
                 <p className="text-xl font-bold text-gradient-brand">{stat.value}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{stat.label}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -185,15 +185,15 @@ export default function LoginPage() {
           </div>
 
           <div className="glass rounded-3xl p-8">
-            <h2 className="text-2xl font-bold text-white mb-1">Welcome back</h2>
-            <p className="text-slate-400 text-sm mb-8">Sign in to your agency dashboard</p>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">Welcome back</h2>
+            <p className="text-slate-600 dark:text-slate-400 text-sm mb-8">Sign in to your agency dashboard</p>
 
             <Suspense fallback={null}>
               <LoginForm />
             </Suspense>
 
-            <div className="mt-8 pt-6 border-t border-white/[0.06] text-center">
-              <p className="text-slate-500 text-sm">
+            <div className="mt-8 pt-6 border-t border-slate-900/10 dark:border-white/[0.06] text-center">
+              <p className="text-slate-500 dark:text-slate-500 text-sm">
                 New to Stratiq?{' '}
                 <Link href="/request-access" className="text-sky-400 hover:text-sky-300 font-medium transition-colors">
                   Request access
@@ -202,7 +202,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <p className="text-center text-xs text-slate-600 mt-6">
+          <p className="text-center text-xs text-slate-500 dark:text-slate-600 mt-6">
             Protected by AES-256-GCM encryption · Multi-tenant isolated
           </p>
         </div>

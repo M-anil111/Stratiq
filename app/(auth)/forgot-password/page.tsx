@@ -51,9 +51,9 @@ export default function ForgotPasswordPage() {
               <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="h-7 w-7 text-emerald-400" />
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">Check your email</h2>
-              <p className="text-slate-400 text-sm mb-6">
-                We sent a password reset link to <span className="text-white font-medium">{email}</span>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Check your email</h2>
+              <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">
+                We sent a password reset link to <span className="text-slate-900 dark:text-white font-medium">{email}</span>
               </p>
               <Link href="/login" className="text-sky-400 hover:text-sky-300 text-sm font-medium transition-colors">
                 Back to sign in
@@ -61,11 +61,11 @@ export default function ForgotPasswordPage() {
             </div>
           ) : (
             <>
-              <h2 className="text-2xl font-bold text-white mb-1">Forgot password?</h2>
-              <p className="text-slate-400 text-sm mb-8">Enter your email and we'll send you a reset link.</p>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">Forgot password?</h2>
+              <p className="text-slate-600 dark:text-slate-400 text-sm mb-8">Enter your email and we'll send you a reset link.</p>
 
               {error && (
-                <div className="flex items-center gap-2 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400 mb-4">
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-600 dark:text-red-400 mb-4">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   {error}
                 </div>
@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Email address</label>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wider">Email address</label>
                   <input
                     type="email"
                     required
@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
               </form>
 
               <div className="mt-6 text-center">
-                <Link href="/login" className="flex items-center justify-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors">
+                <Link href="/login" className="flex items-center justify-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                   <ArrowLeft className="h-3.5 w-3.5" /> Back to sign in
                 </Link>
               </div>

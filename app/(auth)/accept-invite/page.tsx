@@ -85,7 +85,7 @@ function AcceptInviteInner() {
 
         <div className="glass rounded-3xl p-8">
           {state === 'loading' && (
-            <div className="flex flex-col items-center py-8 text-slate-400">
+            <div className="flex flex-col items-center py-8 text-slate-600 dark:text-slate-400">
               <Loader2 className="h-7 w-7 animate-spin mb-3" />
               <p className="text-sm">Checking your invitation…</p>
             </div>
@@ -96,8 +96,8 @@ function AcceptInviteInner() {
               <div className="w-14 h-14 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center mx-auto mb-5">
                 <AlertCircle className="h-7 w-7 text-red-400" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Invitation unavailable</h2>
-              <p className="text-slate-400 text-sm mb-6">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Invitation unavailable</h2>
+              <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">
                 This invitation link is invalid, has expired, or has already been used. Please ask your administrator to send a new one.
               </p>
               <Link href="/login" className="text-sky-400 hover:text-sky-300 text-sm">Go to login</Link>
@@ -109,8 +109,8 @@ function AcceptInviteInner() {
               <div className="w-14 h-14 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto mb-5">
                 <AlertCircle className="h-7 w-7 text-amber-400" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Not quite ready</h2>
-              <p className="text-slate-400 text-sm mb-6">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Not quite ready</h2>
+              <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">
                 This workspace isn&apos;t fully set up yet, so invitations can&apos;t be accepted right now. Please contact your administrator and try again shortly.
               </p>
               <Link href="/login" className="text-sky-400 hover:text-sky-300 text-sm">Go to login</Link>
@@ -122,8 +122,8 @@ function AcceptInviteInner() {
               <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mx-auto mb-5">
                 <CheckCircle2 className="h-7 w-7 text-emerald-400" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">You&apos;re all set!</h2>
-              <p className="text-slate-400 text-sm mb-6">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">You&apos;re all set!</h2>
+              <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">
                 Your account has been created. Redirecting you to sign in…
               </p>
               <Link href="/login" className="text-sky-400 hover:text-sky-300 text-sm">Go to login now</Link>
@@ -135,17 +135,17 @@ function AcceptInviteInner() {
               <div className="w-14 h-14 rounded-full bg-sky-500/15 border border-sky-500/30 flex items-center justify-center mx-auto mb-5">
                 <UserPlus className="h-7 w-7 text-sky-400" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-1 text-center">Accept your invitation</h2>
-              <p className="text-slate-400 text-sm mb-2 text-center">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1 text-center">Accept your invitation</h2>
+              <p className="text-slate-600 dark:text-slate-400 text-sm mb-2 text-center">
                 Set a password to finish creating your {invite.account_type === 'client' ? 'client' : 'team'} account.
               </p>
-              <p className="text-slate-300 text-sm mb-6 text-center">
+              <p className="text-slate-700 dark:text-slate-300 text-sm mb-6 text-center">
                 <span className="font-medium">{invite.email}</span>
-                <span className="text-slate-500"> · {roleLabel(invite.role)}</span>
+                <span className="text-slate-500 dark:text-slate-500"> · {roleLabel(invite.role)}</span>
               </p>
 
               {error && (
-                <div className="flex items-center gap-2 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400 mb-4">
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-600 dark:text-red-400 mb-4">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   {error}
                 </div>
@@ -153,7 +153,7 @@ function AcceptInviteInner() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm text-slate-300 mb-1.5">Full name</label>
+                  <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1.5">Full name</label>
                   <input
                     type="text"
                     value={fullName}
@@ -164,7 +164,7 @@ function AcceptInviteInner() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-300 mb-1.5">Password</label>
+                  <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1.5">Password</label>
                   <input
                     type="password"
                     value={password}
@@ -176,7 +176,7 @@ function AcceptInviteInner() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-300 mb-1.5">Confirm password</label>
+                  <label className="block text-sm text-slate-700 dark:text-slate-300 mb-1.5">Confirm password</label>
                   <input
                     type="password"
                     value={confirm}
@@ -195,7 +195,7 @@ function AcceptInviteInner() {
                 </button>
               </form>
 
-              <p className="text-center text-sm text-slate-400 mt-6">
+              <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-6">
                 Already have an account? <Link href="/login" className="text-sky-400 hover:text-sky-300">Sign in</Link>
               </p>
             </>

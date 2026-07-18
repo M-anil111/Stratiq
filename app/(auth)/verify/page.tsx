@@ -122,19 +122,19 @@ export default function VerifyPage() {
             <ShieldCheck className="h-7 w-7 text-sky-400" />
           </div>
 
-          <h2 className="text-2xl font-bold text-white mb-1 text-center">Enter the code to verify your identity.</h2>
-          <p className="text-slate-400 text-sm mb-6 text-center">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1 text-center">Enter the code to verify your identity.</h2>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-6 text-center">
             We&apos;ve sent a code to {maskedEmail || 'your email'}.
           </p>
 
           <p className="text-center text-sm mb-6">
-            <button type="button" onClick={handleReturnToLogin} className="text-slate-400 hover:text-slate-200">
+            <button type="button" onClick={handleReturnToLogin} className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200">
               Not the right email? <span className="text-sky-400">Return to login</span>
             </button>
           </p>
 
           {error && (
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400 mb-4">
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-600 dark:text-red-400 mb-4">
               <AlertCircle className="h-4 w-4 shrink-0" />
               {error}
             </div>
@@ -158,7 +158,7 @@ export default function VerifyPage() {
               ))}
             </div>
 
-            <p className="text-center text-xs text-slate-500">
+            <p className="text-center text-xs text-slate-500 dark:text-slate-500">
               Need assistance with reactivating your account?{' '}
               <a href={`mailto:${SUPPORT_EMAIL}`} className="text-sky-400 hover:text-sky-300">Contact us</a>
             </p>
@@ -169,10 +169,10 @@ export default function VerifyPage() {
               {loading ? 'Verifying…' : 'Login'}
             </button>
 
-            <p className="text-center text-sm text-slate-400">
+            <p className="text-center text-sm text-slate-600 dark:text-slate-400">
               Didn&apos;t receive a code?{' '}
               <button type="button" onClick={handleResend} disabled={cooldown > 0}
-                className="text-sky-400 hover:text-sky-300 disabled:text-slate-500 disabled:cursor-not-allowed">
+                className="text-sky-400 hover:text-sky-300 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed">
                 {cooldown > 0 ? `Resend code (${cooldown}s)` : 'Resend code'}
               </button>
             </p>

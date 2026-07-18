@@ -43,8 +43,8 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl glass-card border border-emerald-500/30 shadow-lg animate-float-up">
       <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
-      <p className="text-sm text-white font-medium">{message}</p>
-      <button onClick={onClose} className="ml-2 text-slate-400 hover:text-white transition-colors text-lg leading-none">&times;</button>
+      <p className="text-sm text-slate-900 dark:text-white font-medium">{message}</p>
+      <button onClick={onClose} className="ml-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors text-lg leading-none">&times;</button>
     </div>
   )
 }
@@ -52,11 +52,11 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
 function ServiceCardSkeleton() {
   return (
     <div className="glass-card p-6 flex flex-col animate-pulse">
-      <div className="w-11 h-11 rounded-xl bg-white/10 mb-4" />
-      <div className="h-4 bg-white/10 rounded w-3/4 mb-3" />
-      <div className="h-3 bg-white/10 rounded w-full mb-2" />
-      <div className="h-3 bg-white/10 rounded w-5/6 mb-4 flex-1" />
-      <div className="h-8 bg-white/10 rounded w-full mt-auto" />
+      <div className="w-11 h-11 rounded-xl bg-slate-900/10 dark:bg-white/10 mb-4" />
+      <div className="h-4 bg-slate-900/10 dark:bg-white/10 rounded w-3/4 mb-3" />
+      <div className="h-3 bg-slate-900/10 dark:bg-white/10 rounded w-full mb-2" />
+      <div className="h-3 bg-slate-900/10 dark:bg-white/10 rounded w-5/6 mb-4 flex-1" />
+      <div className="h-8 bg-slate-900/10 dark:bg-white/10 rounded w-full mt-auto" />
     </div>
   )
 }
@@ -108,14 +108,14 @@ export default function PortalUpgradePage() {
             Grow Your Business
           </span>
         </h1>
-        <p className="text-slate-400 max-w-lg mx-auto">
+        <p className="text-slate-600 dark:text-slate-400 max-w-lg mx-auto">
           Personalised recommendations based on your current services. Select anything that interests you and our team will reach out within 24 hours.
         </p>
       </div>
 
       {/* Service cards */}
       {error ? (
-        <div className="glass-card p-8 text-center text-slate-400 mb-10">
+        <div className="glass-card p-8 text-center text-slate-600 dark:text-slate-400 mb-10">
           Unable to load recommendations. Please refresh the page.
         </div>
       ) : (
@@ -140,11 +140,11 @@ export default function PortalUpgradePage() {
                       <Icon className={`h-5 w-5 ${colors.iconColor}`} />
                     </div>
 
-                    <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">{rec.category}</p>
-                    <h2 className="text-lg font-semibold text-white mb-2">{rec.title}</h2>
-                    <p className="text-sm text-slate-400 flex-1 mb-4">{rec.description}</p>
-                    <p className="text-xs text-slate-500 mb-4">
-                      Starting from <span className="text-white font-semibold">${rec.monthly_price.toLocaleString()}</span>/month
+                    <p className="text-xs text-slate-600 dark:text-slate-500 uppercase tracking-wider mb-1">{rec.category}</p>
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{rec.title}</h2>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 flex-1 mb-4">{rec.description}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-500 mb-4">
+                      Starting from <span className="text-slate-900 dark:text-white font-semibold">${rec.monthly_price.toLocaleString()}</span>/month
                     </p>
 
                     {isConfirmed ? (
@@ -170,11 +170,11 @@ export default function PortalUpgradePage() {
 
       {/* CTA section */}
       <div className="glass-card p-8 text-center bg-gradient-to-br from-sky-500/10 via-transparent to-violet-500/10">
-        <div className="w-12 h-12 rounded-full bg-white/[0.06] flex items-center justify-center mx-auto mb-4">
+        <div className="w-12 h-12 rounded-full bg-slate-900/[0.06] dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-4">
           <Phone className="h-5 w-5 text-sky-400" />
         </div>
-        <h2 className="text-xl font-bold text-white mb-2">Book a Free Strategy Call</h2>
-        <p className="text-slate-400 text-sm mb-6 max-w-md mx-auto">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Book a Free Strategy Call</h2>
+        <p className="text-slate-600 dark:text-slate-400 text-sm mb-6 max-w-md mx-auto">
           Not sure where to start? Talk to one of our specialists — we&apos;ll map out the highest-impact opportunities for your business at no cost.
         </p>
         {confirmed.has('strategy_call') ? (
