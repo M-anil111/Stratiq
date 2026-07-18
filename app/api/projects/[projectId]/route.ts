@@ -57,7 +57,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { projec
 
   // Only include fields that were actually provided so we never clobber columns.
   const candidate: Record<string, any> = { updated_at: new Date().toISOString() }
-  for (const key of ['name', 'domain', 'status', 'industry', 'services', 'start_date', 'end_date', 'notes', 'advertising_types', 'goals', 'custom_field_values', 'resource_assignments'] as const) {
+  for (const key of ['name', 'domain', 'status', 'project_type', 'industry', 'services', 'start_date', 'end_date', 'notes', 'advertising_types', 'goals', 'custom_field_values', 'resource_assignments'] as const) {
     if (key in body) candidate[key] = body[key]
   }
 

@@ -40,6 +40,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     organization_id: userData.organization_id,
     domain: body.domain,
     status: body.status || 'active',
+    project_type: body.project_type || 'marketing',
     industry: body.industry,
     services: body.services || [],
     advertising_types: body.advertising_types || [],

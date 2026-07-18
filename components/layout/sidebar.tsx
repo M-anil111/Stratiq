@@ -16,7 +16,7 @@ const navGroups = [
   },
   {
     items: [
-      { href: '/leads', label: 'Leads', icon: Magnet },
+      { href: '/deals', label: 'Deals', icon: Magnet },
       { href: '/clients', label: 'Clients', icon: Users },
       { href: '/contacts', label: 'Contacts', icon: BookUser },
     ],

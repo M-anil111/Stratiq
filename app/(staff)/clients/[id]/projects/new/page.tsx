@@ -19,6 +19,43 @@ const SERVICES = [
 
 const DEFAULT_STATUS_OPTIONS = ['active', 'on_hold', 'completed', 'cancelled', 'prospect', 'in_onboarding']
 
+const PROJECT_TYPES = [
+  { key: 'marketing', label: 'Marketing', hint: 'SEO, PPC, social, content, ads' },
+  { key: 'website', label: 'Website', hint: 'Design & development' },
+  { key: 'mobile_app', label: 'Mobile App', hint: 'iOS / Android build' },
+  { key: 'hosting', label: 'Hosting', hint: 'Servers, domains, uptime' },
+  { key: 'other', label: 'Other', hint: 'Anything else' },
+] as const
+
+// Which resource-assignment slots make sense per project type. Stored as
+// free-form jsonb (resource_assignments), so switching type just changes
+// which keys the form shows/writes — no schema change needed per type.
+const RESOURCE_FIELDS: Record<string, { key: string; label: string }[]> = {
+  marketing: [
+    { key: 'seo', label: 'SEO Resource' },
+    { key: 'ppc', label: 'PPC Resource' },
+    { key: 'content', label: 'Content Resource' },
+    { key: 'video', label: 'Video Resource' },
+    { key: 'social_media', label: 'Social Media Resource' },
+  ],
+  website: [
+    { key: 'developer', label: 'Developer' },
+    { key: 'designer', label: 'Designer' },
+    { key: 'project_manager', label: 'Project Manager' },
+  ],
+  mobile_app: [
+    { key: 'developer', label: 'Developer' },
+    { key: 'designer', label: 'Designer' },
+    { key: 'qa', label: 'QA Resource' },
+  ],
+  hosting: [
+    { key: 'support', label: 'Support Resource' },
+  ],
+  other: [
+    { key: 'assigned_to', label: 'Assigned To' },
+  ],
+}
+
 const selectGlass = "w-full bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
 // Strip protocol / path / www so the NOT NULL domain column gets a clean value.
@@ -91,6 +128,7 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
 
   const [form, setForm] = useState({
     name: '',
+    project_type: 'marketing' as string,
     domain: '',
     status: 'active',
     industry: '',
@@ -102,13 +140,23 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
     notes: '',
     proofhub_project_id: '' as string,
   })
-  const [resourceAssignments, setResourceAssignments] = useState({
-    seo: [] as string[],
-    ppc: [] as string[],
-    content: [] as string[],
-    video: [] as string[],
-    social_media: [] as string[],
+  const [resourceAssignments, setResourceAssignments] = useState<Record<string, string[]>>(() => {
+    const init: Record<string, string[]> = {}
+    for (const field of RESOURCE_FIELDS.marketing) init[field.key] = []
+    return init
   })
+
+  // Reset resource-assignment slots to match whichever set the current
+  // project type uses, without discarding people already picked for a slot
+  // that's still relevant after the switch.
+  const setProjectType = (type: string) => {
+    setForm(f => ({ ...f, project_type: type }))
+    setResourceAssignments(prev => {
+      const next: Record<string, string[]> = {}
+      for (const field of RESOURCE_FIELDS[type] || []) next[field.key] = prev[field.key] || []
+      return next
+    })
+  }
 
   // Load the linked client + team so we can prominently show and prefill from them.
   useEffect(() => {
@@ -241,6 +289,27 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Project type — determines which fields/resources show below */}
+        <div className="glass-card p-6 animate-float-up">
+          <div className="mb-5 pb-4 border-b border-slate-900/10 dark:border-white/[0.08]">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">What kind of project is this?</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">One place to add any engagement for {company} — marketing, a website, an app, hosting, or anything else.</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {PROJECT_TYPES.map(t => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setProjectType(t.key)}
+                className={`text-left rounded-xl border p-3 transition-colors ${form.project_type === t.key ? 'bg-sky-500/10 border-sky-500/60 ring-1 ring-sky-500/40' : 'bg-slate-900/[0.03] dark:bg-white/[0.04] border-slate-900/10 dark:border-white/[0.1] hover:border-sky-400/50'}`}
+              >
+                <p className={`text-sm font-semibold ${form.project_type === t.key ? 'text-sky-600 dark:text-sky-300' : 'text-slate-900 dark:text-white'}`}>{t.label}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t.hint}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* The essentials */}
         <div className="glass-card p-6 animate-float-up animate-delay-100">
           <div className="mb-6 pb-4 border-b border-slate-900/10 dark:border-white/[0.08]">
@@ -254,7 +323,9 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
               {errors.name && <p className="text-xs text-red-400 mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{errors.name}</p>}
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Domain <span className="text-red-400">*</span></label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                {form.project_type === 'mobile_app' ? 'App / Store Listing URL' : form.project_type === 'hosting' ? 'Server / Domain' : 'Domain'} <span className="text-red-400">*</span>
+              </label>
               <input className="input-glass" value={form.domain} onChange={setField('domain')} placeholder="example.com" />
               {errors.domain && <p className="text-xs text-red-400 mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" />{errors.domain}</p>}
             </div>
@@ -273,10 +344,12 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
                 placeholder="Select or type an industry…"
               />
             </div>
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Services</label>
-              <MultiSelect options={SERVICES} value={form.services} onChange={v => setForm(f => ({ ...f, services: v }))} />
-            </div>
+            {form.project_type === 'marketing' && (
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Services</label>
+                <MultiSelect options={SERVICES} value={form.services} onChange={v => setForm(f => ({ ...f, services: v }))} />
+              </div>
+            )}
           </div>
         </div>
 
@@ -323,26 +396,16 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Optional — assign one or more team members per deliverable type.</p>
           </div>
           <div className="space-y-5">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">SEO Resource</label>
-              <MultiSelectPeople options={users} value={resourceAssignments.seo} onChange={v => setResourceAssignments(r => ({ ...r, seo: v }))} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">PPC Resource</label>
-              <MultiSelectPeople options={users} value={resourceAssignments.ppc} onChange={v => setResourceAssignments(r => ({ ...r, ppc: v }))} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Content Resource</label>
-              <MultiSelectPeople options={users} value={resourceAssignments.content} onChange={v => setResourceAssignments(r => ({ ...r, content: v }))} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Video Resource</label>
-              <MultiSelectPeople options={users} value={resourceAssignments.video} onChange={v => setResourceAssignments(r => ({ ...r, video: v }))} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Social Media Resource</label>
-              <MultiSelectPeople options={users} value={resourceAssignments.social_media} onChange={v => setResourceAssignments(r => ({ ...r, social_media: v }))} />
-            </div>
+            {(RESOURCE_FIELDS[form.project_type] || []).map(field => (
+              <div key={field.key}>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">{field.label}</label>
+                <MultiSelectPeople
+                  options={users}
+                  value={resourceAssignments[field.key] || []}
+                  onChange={v => setResourceAssignments(r => ({ ...r, [field.key]: v }))}
+                />
+              </div>
+            ))}
           </div>
         </div>
 
