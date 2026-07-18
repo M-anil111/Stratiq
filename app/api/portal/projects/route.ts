@@ -44,12 +44,14 @@ export async function GET() {
           .from('blog_submissions')
           .select('id', { count: 'exact', head: true })
           .eq('project_id', project.id)
+          .eq('client_report', true)
           .gte('created_at', periodStart)
           .lt('created_at', periodEnd),
         supabase
           .from('offpage_submissions')
           .select('id', { count: 'exact', head: true })
           .eq('project_id', project.id)
+          .eq('client_report', true)
           .gte('created_at', periodStart)
           .lt('created_at', periodEnd),
         supabase

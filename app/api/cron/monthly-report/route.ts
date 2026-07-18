@@ -118,9 +118,9 @@ export async function GET(request: NextRequest) {
             if (projectIds.length > 0) {
               const [offpageRes, blogRes, onpageRes] = await Promise.all([
                 supabase.from('offpage_submissions').select('id', { count: 'exact', head: true })
-                  .in('project_id', projectIds).gte('created_at', periodStart).lt('created_at', periodEnd),
+                  .in('project_id', projectIds).eq('client_report', true).gte('created_at', periodStart).lt('created_at', periodEnd),
                 supabase.from('blog_submissions').select('id', { count: 'exact', head: true })
-                  .in('project_id', projectIds).gte('created_at', periodStart).lt('created_at', periodEnd),
+                  .in('project_id', projectIds).eq('client_report', true).gte('created_at', periodStart).lt('created_at', periodEnd),
                 supabase.from('onpage_details').select('id', { count: 'exact', head: true })
                   .in('project_id', projectIds).gte('created_at', periodStart).lt('created_at', periodEnd),
               ])

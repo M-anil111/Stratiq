@@ -33,25 +33,38 @@ export async function POST(request: NextRequest, { params }: { params: { project
   if (!userData?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
 
   const body = await request.json()
-  const { data, error } = await supabase
-    .from('offpage_submissions')
-    .insert({
-      project_id: params.projectId,
-      organization_id: userData.organization_id,
-      submission_date: body.submission_date,
-      website_url: body.website_url,
-      directory_site_id: body.directory_site_id || null,
-      directory_name: body.directory_name || null,
-      type: body.type || 'directory_submission',
-      status: body.status || 'pending',
-      live_url: body.live_url || null,
-      email: body.email || null,
-      username: body.username || null,
-      comment: body.comment || null,
-      created_by: user.id,
-    })
-    .select()
-    .single()
+  const insertRow: Record<string, any> = {
+    project_id: params.projectId,
+    organization_id: userData.organization_id,
+    submission_date: body.submission_date,
+    website_url: body.website_url,
+    directory_site_id: body.directory_site_id || null,
+    directory_name: body.directory_name || null,
+    type: body.type || 'directory_submission',
+    status: body.status || 'pending',
+    live_url: body.live_url || null,
+    email: body.email || null,
+    username: body.username || null,
+    comment: body.comment || null,
+    client_report: body.client_report ?? true,
+    created_by: user.id,
+  }
+
+  let data: any = null
+  let error: any = null
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const res = await supabase.from('offpage_submissions').insert(insertRow).select().single()
+    data = res.data
+    error = res.error
+    if (!error) break
+    // PostgREST reports missing columns as: Could not find the 'X' column of 'offpage_submissions' in the schema cache
+    const missing = error.message?.match(/Could not find the '([^']+)' column/)?.[1]
+    if (missing && missing in insertRow) {
+      delete insertRow[missing]
+      continue
+    }
+    break
+  }
 
   if (error) {
     if (error.code === '42P01') return NextResponse.json({ error: 'Table not ready' }, { status: 500 })
@@ -71,14 +84,28 @@ export async function PATCH(request: NextRequest, { params }: { params: { projec
   const { id, ...fields } = body
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-  const { data, error } = await supabase
-    .from('offpage_submissions')
-    .update({ ...fields, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('project_id', params.projectId)
-    .eq('organization_id', userData?.organization_id)
-    .select()
-    .single()
+  const updateRow: Record<string, any> = { ...fields, updated_at: new Date().toISOString() }
+  let data: any = null
+  let error: any = null
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const res = await supabase
+      .from('offpage_submissions')
+      .update(updateRow)
+      .eq('id', id)
+      .eq('project_id', params.projectId)
+      .eq('organization_id', userData?.organization_id)
+      .select()
+      .single()
+    data = res.data
+    error = res.error
+    if (!error) break
+    const missing = error.message?.match(/Could not find the '([^']+)' column/)?.[1]
+    if (missing && missing in updateRow) {
+      delete updateRow[missing]
+      continue
+    }
+    break
+  }
 
   if (error) {
     if (error.code === '42P01') return NextResponse.json({ error: 'Table not ready' }, { status: 500 })

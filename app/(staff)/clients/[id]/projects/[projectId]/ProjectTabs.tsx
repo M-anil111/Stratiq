@@ -5,7 +5,16 @@ import CredentialsTab from './CredentialsTab'
 import TrackingToolsTab from './TrackingToolsTab'
 import SocialAccountsTab from './SocialAccountsTab'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
-import { Loader2, Calendar, Tag, Globe } from 'lucide-react'
+import ResourceAssignmentsEditor from '@/components/ResourceAssignmentsEditor'
+import { Loader2, Calendar, Tag, Globe, Users } from 'lucide-react'
+
+const RESOURCE_LABELS: { key: string; label: string }[] = [
+  { key: 'seo', label: 'SEO' },
+  { key: 'ppc', label: 'PPC' },
+  { key: 'content', label: 'Content' },
+  { key: 'video', label: 'Video' },
+  { key: 'social_media', label: 'Social Media' },
+]
 
 const TABS = ['Project Info', 'Submission Details', 'Reporting', 'Files', 'Credentials', 'Tracking Tools', 'Social Accounts']
 
@@ -20,6 +29,7 @@ function ProjectInfoTab({ projectId }: { projectId: string }) {
   const [project, setProject] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [users, setUsers] = useState<{ id: string; full_name: string }[]>([])
 
   useEffect(() => {
     fetch(`/api/projects/${projectId}`)
@@ -31,6 +41,13 @@ function ProjectInfoTab({ projectId }: { projectId: string }) {
       .catch(() => setError('Failed to load project'))
       .finally(() => setLoading(false))
   }, [projectId])
+
+  useEffect(() => {
+    fetch('/api/users')
+      .then(r => (r.ok ? r.json() : []))
+      .then(u => { if (Array.isArray(u)) setUsers(u) })
+      .catch(() => {})
+  }, [])
 
   if (loading) {
     return (
@@ -112,6 +129,25 @@ function ProjectInfoTab({ projectId }: { projectId: string }) {
             </div>
           </div>
         )}
+        {project.resource_assignments && RESOURCE_LABELS.some(({ key }) => (project.resource_assignments[key] || []).length > 0) && (
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.04] border border-slate-900/10 dark:border-white/[0.06] sm:col-span-2">
+            <Users className="h-4 w-4 text-sky-400 shrink-0 mt-0.5" />
+            <div className="space-y-2 min-w-0">
+              <p className="text-xs text-slate-500">Resource Assignments</p>
+              {RESOURCE_LABELS.filter(({ key }) => (project.resource_assignments[key] || []).length > 0).map(({ key, label }) => (
+                <div key={key} className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400 mr-1">{label}:</span>
+                  {(project.resource_assignments[key] as string[]).map((uid) => {
+                    const name = users.find(u => u.id === uid)?.full_name || uid
+                    return (
+                      <span key={uid} className="px-2 py-0.5 bg-sky-500/10 text-sky-400 text-xs rounded-full border border-sky-500/20">{name}</span>
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {project.goals && (
           <div className="p-3 rounded-lg bg-slate-900/[0.04] dark:bg-white/[0.04] border border-slate-900/10 dark:border-white/[0.06] sm:col-span-2">
             <p className="text-xs text-slate-500 mb-1">Goals</p>
@@ -125,6 +161,12 @@ function ProjectInfoTab({ projectId }: { projectId: string }) {
         patchUrl={`/api/projects/${projectId}`}
         initialValues={project.custom_field_values}
         onSaved={(values) => setProject((p: any) => ({ ...p, custom_field_values: values }))}
+      />
+
+      <ResourceAssignmentsEditor
+        patchUrl={`/api/projects/${projectId}`}
+        initialValue={project.resource_assignments}
+        onSaved={(value) => setProject((p: any) => ({ ...p, resource_assignments: value }))}
       />
 
       {/* Stats */}

@@ -26,6 +26,7 @@ const emptyForm = () => ({
   status: 'pending',
   submission_date: today(),
   comment: '',
+  client_report: true,
 })
 
 export default function OffPagePage({ params }: { params: { id: string; projectId: string } }) {
@@ -136,6 +137,7 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
       status: entry.status || 'pending',
       submission_date: entry.submission_date || today(),
       comment: entry.comment || '',
+      client_report: entry.client_report !== false,
     })
     resetCombo()
     setShowForm(true)
@@ -153,6 +155,7 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
         status: form.status,
         submission_date: form.submission_date,
         comment: form.comment || null,
+        client_report: form.client_report,
       }
       if (editEntry) {
         const res = await fetch(`/api/projects/${params.projectId}/offpage/${editEntry.id}`, {
@@ -221,7 +224,7 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  {['#', 'Directory', 'URL Submitted To', 'Status', 'Date Submitted', 'Notes', 'Actions'].map(h => (
+                  {['#', 'Directory', 'URL Submitted To', 'Status', 'Report', 'Date Submitted', 'Notes', 'Actions'].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs text-slate-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -242,6 +245,13 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[entry.status] || ''}`}>
                         {entry.status?.replace('_', ' ')}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {entry.client_report !== false ? (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-sky-500/15 text-sky-400 border border-sky-500/25">Client Report</span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium text-slate-500">Internal only</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{entry.submission_date || '—'}</td>
                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400 max-w-[120px] truncate">{entry.comment || '—'}</td>
@@ -359,6 +369,17 @@ export default function OffPagePage({ params }: { params: { id: string; projectI
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notes</label>
                 <textarea className="input-glass resize-none h-20" value={form.comment} onChange={set('comment')} placeholder="Optional notes..." />
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Include in Client Report</label>
+                <button
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, client_report: !f.client_report }))}
+                  className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${form.client_report ? 'bg-sky-500' : 'bg-slate-900/10 dark:bg-white/[0.12]'}`}
+                  title="Toggle client report visibility"
+                >
+                  <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${form.client_report ? 'translate-x-4' : ''}`} />
+                </button>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={closeModal} className="flex-1 py-2.5 rounded-lg border border-slate-900/10 dark:border-white/[0.10] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.06] transition-all text-sm">Cancel</button>

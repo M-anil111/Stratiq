@@ -7,6 +7,7 @@ import AddButton from '@/components/ui/AddButton'
 import ProofHubProjectPicker from '@/components/ProofHubProjectPicker'
 import CustomFieldsSection from '@/components/CustomFieldsSection'
 import ComboBox from '@/components/ui/ComboBox'
+import MultiSelectPeople from '@/components/ui/MultiSelectPeople'
 
 const SERVICES = [
   'SEO (Local)', 'SEO (National)', 'SEO (E-commerce)', 'Content Marketing',
@@ -101,6 +102,13 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
     notes: '',
     proofhub_project_id: '' as string,
   })
+  const [resourceAssignments, setResourceAssignments] = useState({
+    seo: [] as string[],
+    ppc: [] as string[],
+    content: [] as string[],
+    video: [] as string[],
+    social_media: [] as string[],
+  })
 
   // Load the linked client + team so we can prominently show and prefill from them.
   useEffect(() => {
@@ -157,6 +165,7 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
           end_date: form.end_date || null,
           proofhub_project_id: form.proofhub_project_id || null,
           custom_field_values: customFieldValues,
+          resource_assignments: resourceAssignments,
         }),
       })
       if (res.ok) {
@@ -303,6 +312,36 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
             <div className="sm:col-span-2">
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Notes</label>
               <textarea className="input-glass min-h-[90px]" value={form.notes} onChange={setField('notes')} placeholder="Anything the team should know about this project…" />
+            </div>
+          </div>
+        </div>
+
+        {/* Resource assignments */}
+        <div className="glass-card p-6 animate-float-up animate-delay-200">
+          <div className="mb-6 pb-4 border-b border-slate-900/10 dark:border-white/[0.08]">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Resource Assignments</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">Optional — assign one or more team members per deliverable type.</p>
+          </div>
+          <div className="space-y-5">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">SEO Resource</label>
+              <MultiSelectPeople options={users} value={resourceAssignments.seo} onChange={v => setResourceAssignments(r => ({ ...r, seo: v }))} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">PPC Resource</label>
+              <MultiSelectPeople options={users} value={resourceAssignments.ppc} onChange={v => setResourceAssignments(r => ({ ...r, ppc: v }))} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Content Resource</label>
+              <MultiSelectPeople options={users} value={resourceAssignments.content} onChange={v => setResourceAssignments(r => ({ ...r, content: v }))} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Video Resource</label>
+              <MultiSelectPeople options={users} value={resourceAssignments.video} onChange={v => setResourceAssignments(r => ({ ...r, video: v }))} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Social Media Resource</label>
+              <MultiSelectPeople options={users} value={resourceAssignments.social_media} onChange={v => setResourceAssignments(r => ({ ...r, social_media: v }))} />
             </div>
           </div>
         </div>

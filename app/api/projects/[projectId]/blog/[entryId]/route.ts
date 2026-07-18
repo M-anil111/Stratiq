@@ -8,16 +8,41 @@ export async function PUT(request: NextRequest, { params }: { params: { projectI
 
   const { data: userData } = await supabase.from('users').select('organization_id').eq('id', user.id).single()
   const body = await request.json()
-  const { title, live_url, word_count, status, submission_date, author, comment } = body
+  const { title, live_url, word_count, status, submission_date, author, comment, client_report } = body
 
-  const { data, error } = await supabase
-    .from('blog_submissions')
-    .update({ title, live_url, word_count: word_count ?? null, status, submission_date, author, comment, updated_at: new Date().toISOString() })
-    .eq('id', params.entryId)
-    .eq('project_id', params.projectId)
-    .eq('organization_id', userData?.organization_id)
-    .select()
-    .single()
+  const updateRow: Record<string, any> = {
+    title,
+    live_url,
+    word_count: word_count ?? null,
+    status,
+    submission_date,
+    author,
+    comment,
+    client_report: client_report ?? true,
+    updated_at: new Date().toISOString(),
+  }
+
+  let data: any = null
+  let error: any = null
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const res = await supabase
+      .from('blog_submissions')
+      .update(updateRow)
+      .eq('id', params.entryId)
+      .eq('project_id', params.projectId)
+      .eq('organization_id', userData?.organization_id)
+      .select()
+      .single()
+    data = res.data
+    error = res.error
+    if (!error) break
+    const missing = error.message?.match(/Could not find the '([^']+)' column/)?.[1]
+    if (missing && missing in updateRow) {
+      delete updateRow[missing]
+      continue
+    }
+    break
+  }
 
   if (error) {
     if (error.code === '42P01') return NextResponse.json({ error: 'Table not ready' }, { status: 500 })
