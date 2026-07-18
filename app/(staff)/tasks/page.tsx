@@ -5,6 +5,7 @@ import {
   Check, Circle, AlertTriangle, ChevronLeft, PlugZap, Link2, Layers,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import EmptyState from '@/components/ui/EmptyState'
 import { Person, Project, Board, PHTaskLite, Stage } from './types'
 import { Avatar, AvatarStack, LabelPill, formatDue, dueBucket } from './ui'
 import TaskDetailDrawer, { TaskRef } from './TaskDetailDrawer'
@@ -528,7 +529,7 @@ function BoardView({
                   </div>
                 )
               })}
-              {items.length === 0 && <div className="text-[11px] text-slate-400 px-1 py-4 text-center">No tasks</div>}
+              {items.length === 0 && <EmptyState icon={ListChecks} title="No tasks" size="sm" />}
             </div>
           </div>
         )
@@ -554,7 +555,7 @@ function BoardView({
                 </div>
               )
             })}
-            {completed.length === 0 && <div className="text-[11px] text-slate-400 px-1 py-4 text-center">No completed tasks</div>}
+            {completed.length === 0 && <EmptyState icon={Check} title="No completed tasks" size="sm" />}
           </div>
         </div>
       )}
@@ -582,11 +583,11 @@ function ListView({
             {l.tasks.map((t) => (
               <TaskRow key={t.id} task={t} people={people} onOpen={(tk) => onOpen(tk, l.id)} onComplete={(tk) => onComplete(tk, l.id)} />
             ))}
-            {l.tasks.length === 0 && <div className="text-xs text-slate-400 px-1">No tasks</div>}
+            {l.tasks.length === 0 && <EmptyState icon={ListChecks} title="No tasks" size="sm" />}
           </div>
         </div>
       ))}
-      {board.lists.length === 0 && <p className="text-sm text-slate-500">No lists in this project.</p>}
+      {board.lists.length === 0 && <EmptyState icon={FolderKanban} title="No lists in this project" size="sm" />}
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { Download, TrendingUp, MousePointer, DollarSign, BarChart2, Percent, Target, RefreshCw, Loader2, Printer } from 'lucide-react'
 import { ComparisonBar, BreakdownPie, colorAt } from '@/components/charts'
 import { openBrandedPrint, metricTableHtml } from '../_components/printReport'
+import EmptyState from '@/components/ui/EmptyState'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const YEARS = [2026, 2025, 2024]
@@ -196,8 +197,12 @@ export default function GoogleAdsReportPage() {
           </p>
 
           {!report && (
-            <div className="glass-card p-8 text-center text-slate-500 text-sm mb-4">
-              No data for this period. Hit "Sync Now" to pull data from Google Ads.
+            <div className="glass-card mb-4">
+              <EmptyState
+                icon={RefreshCw}
+                title="No data for this period"
+                description='Hit "Sync Now" to pull data from Google Ads.'
+              />
             </div>
           )}
 
@@ -211,7 +216,7 @@ export default function GoogleAdsReportPage() {
                     <Icon className={`h-4 w-4 ${kpi.color}`} />
                   </div>
                   <div>
-                    <p className="text-xl font-bold text-slate-900 dark:text-white">{kpi.value}</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white tabular-nums">{kpi.value}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{kpi.label}</p>
                   </div>
                 </div>

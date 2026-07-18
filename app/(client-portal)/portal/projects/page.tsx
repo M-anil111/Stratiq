@@ -65,7 +65,7 @@ function StatCard({ label, value, icon: Icon, color }: {
         <Icon className="h-3.5 w-3.5" />
         <span>{label}</span>
       </div>
-      <span className="text-2xl font-bold text-slate-900 dark:text-white">{value}</span>
+      <span className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{value}</span>
     </div>
   )
 }

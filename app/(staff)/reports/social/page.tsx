@@ -81,7 +81,7 @@ function Tile({ label, value, icon: Icon, tone, delta, invert }: { label: string
         </div>
         {delta != null && <DeltaChip delta={delta} invert={invert} />}
       </div>
-      <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
+      <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{value}</p>
     </div>
   )
 }
