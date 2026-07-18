@@ -34,7 +34,7 @@ const TYPE_LABELS: Record<string, string> = {
   contact: 'Contacts',
   project: 'Projects',
   invoice: 'Invoices',
-  lead: 'Leads',
+  lead: 'Deals',
   task: 'Tasks',
 }
 
@@ -43,7 +43,7 @@ const CHIP_LABELS: Record<Category, string> = {
   contacts: 'Contacts',
   projects: 'Projects',
   invoices: 'Invoices',
-  leads: 'Leads',
+  leads: 'Deals',
   tasks: 'Tasks',
 }
 

@@ -979,3 +979,8 @@ ALTER TABLE projects ADD COLUMN IF NOT EXISTS custom_field_values JSONB DEFAULT 
 ALTER TABLE offpage_submissions ADD COLUMN IF NOT EXISTS client_report BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE blog_submissions ADD COLUMN IF NOT EXISTS client_report BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS resource_assignments JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- ============================================================================
+-- 049_project_type.sql — single "Add Project" flow for any service type
+-- ============================================================================
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS project_type TEXT NOT NULL DEFAULT 'marketing';
