@@ -91,7 +91,7 @@ export default function NotificationRecipientsPage() {
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Notification Recipients</h1>
       </div>
       <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
-        These email addresses receive report send notifications and lead alerts for your organization.
+        These email addresses receive notifications for new client &amp; proposal creation, invoice sends, and proposal approval/rejection events for your organization.
       </p>
 
       <div className="glass-card p-5 space-y-4">

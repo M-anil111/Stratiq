@@ -165,6 +165,11 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const actionsMenuRef = useRef<HTMLDivElement>(null)
   const [showMergeModal, setShowMergeModal] = useState(false)
 
+  // Client Priority (client_degree, Masters-backed)
+  const DEGREE_FALLBACK = ['regular', 'important', 'vip', 'inactive']
+  const [degreeOptions, setDegreeOptions] = useState<string[]>(DEGREE_FALLBACK)
+  const [savingDegree, setSavingDegree] = useState(false)
+
   const fetchClientMessages = useCallback(async () => {
     try {
       const res = await fetch(`/api/messages?clientId=${params.id}`)
@@ -191,6 +196,39 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       .then(d => { setClient(d); setLoading(false) })
       .catch(() => setLoading(false))
   }, [params.id])
+
+  // Pull Client Priority options from Settings → Masters; keep the hardcoded
+  // fallback if the category is empty/errors so the dropdown never breaks.
+  useEffect(() => {
+    fetch('/api/settings/masters?category=client_degree')
+      .then(r => (r.ok ? r.json() : []))
+      .then(d => {
+        if (Array.isArray(d) && d.length > 0) {
+          const values = d.map((m: any) => m.value || m.label).filter(Boolean)
+          if (values.length > 0) setDegreeOptions(values)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const updateClientDegree = async (value: string) => {
+    if (savingDegree) return
+    setSavingDegree(true)
+    const prev = client.client_degree
+    setClient((c: any) => ({ ...c, client_degree: value }))
+    try {
+      const res = await fetch(`/api/clients/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_degree: value }),
+      })
+      if (!res.ok) setClient((c: any) => ({ ...c, client_degree: prev }))
+    } catch {
+      setClient((c: any) => ({ ...c, client_degree: prev }))
+    } finally {
+      setSavingDegree(false)
+    }
+  }
 
   // Load projects on Overview tab
   useEffect(() => {
@@ -752,6 +790,18 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             {/* Business */}
             <div className="glass-card p-5 space-y-4">
               <h2 className="font-semibold text-sm uppercase tracking-wider text-sky-400">Business</h2>
+              <div>
+                <p className="text-xs text-slate-500 mb-1">Client Priority</p>
+                <select
+                  value={client.client_degree || 'regular'}
+                  disabled={savingDegree}
+                  onChange={e => updateClientDegree(e.target.value)}
+                  className="w-full bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm capitalize focus:outline-none focus:ring-2 focus:ring-sky-500/50 disabled:opacity-50">
+                  {degreeOptions.map(opt => (
+                    <option key={opt} value={opt} className="capitalize">{opt}</option>
+                  ))}
+                </select>
+              </div>
               {[
                 { label: 'Industry', value: client.industry },
                 { label: 'Employees', value: client.num_employees ? `${client.num_employees}` : null },

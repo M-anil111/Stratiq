@@ -164,6 +164,29 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       // non-fatal
     }
 
+    // Best-effort external notification email to configured recipients.
+    try {
+      const { data: notifRow } = await supabase
+        .from('organization_settings')
+        .select('value')
+        .eq('organization_id', userData.organization_id)
+        .eq('key', 'notification_emails')
+        .single()
+      const recipientList = notifRow?.value
+        ? notifRow.value.split(',').map((e: string) => e.trim()).filter(Boolean)
+        : (process.env.APPROVAL_EMAIL || 'jay@jaymehta.co').split(',').map((e: string) => e.trim())
+
+      for (const recipient of recipientList) {
+        await sendEmail({
+          to: recipient,
+          subject: `Invoice #${invoice.invoice_number} sent to ${clientName}`,
+          html: `<p>Invoice #${invoice.invoice_number} for $${(invoice.total || 0).toFixed(2)} was sent to ${clientName}.</p>`,
+        })
+      }
+    } catch {
+      // non-fatal
+    }
+
     return NextResponse.json({ success: true })
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Email send failed' }, { status: 500 })
