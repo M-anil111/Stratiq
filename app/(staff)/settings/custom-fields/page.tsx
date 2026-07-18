@@ -13,13 +13,14 @@ interface CustomField {
   required: boolean
   entity_type: EntityType
   position?: number
+  options?: string[]
 }
 
 const FIELD_TYPES: { value: FieldType; label: string; hint: string }[] = [
   { value: 'text', label: 'Text', hint: 'A single line of free text — names, IDs, short notes.' },
   { value: 'number', label: 'Number', hint: 'Numeric values only — counts, amounts, scores.' },
   { value: 'date', label: 'Date', hint: 'A calendar date, shown with a date picker.' },
-  { value: 'dropdown', label: 'Dropdown', hint: 'A choice from a preset list of options. Tip: reusable option lists are managed under Data Sets.' },
+  { value: 'dropdown', label: 'Dropdown', hint: 'A choice from a preset list of options. Tip: reusable, org-wide option lists (industries, goals, billing terms, etc.) are managed under Settings → Masters.' },
   { value: 'checkbox', label: 'Checkbox', hint: 'A simple yes / no (true / false) toggle.' },
 ]
 
@@ -45,6 +46,8 @@ export default function CustomFieldsPage() {
   const [modalName, setModalName] = useState('')
   const [modalType, setModalType] = useState<FieldType>('text')
   const [modalRequired, setModalRequired] = useState(false)
+  const [modalOptions, setModalOptions] = useState<string[]>([])
+  const [modalOptionInput, setModalOptionInput] = useState('')
   const [modalSaving, setModalSaving] = useState(false)
   const [modalError, setModalError] = useState('')
   const nameInputRef = useRef<HTMLInputElement>(null)
@@ -66,19 +69,34 @@ export default function CustomFieldsPage() {
     setModalName('')
     setModalType('text')
     setModalRequired(false)
+    setModalOptions([])
+    setModalOptionInput('')
     setModalError('')
     setShowModal(true)
   }
 
+  function addModalOption(raw: string) {
+    const v = raw.trim()
+    if (v && !modalOptions.includes(v)) setModalOptions(prev => [...prev, v])
+    setModalOptionInput('')
+  }
+
   async function saveField() {
     if (!modalName.trim()) { setModalError('Field name is required'); return }
+    if (modalType === 'dropdown' && modalOptions.length === 0) { setModalError('Add at least one option for a dropdown field'); return }
     setModalSaving(true)
     setModalError('')
     try {
       const res = await fetch('/api/settings/custom-fields', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: modalName.trim(), field_type: modalType, required: modalRequired, entity_type: entity }),
+        body: JSON.stringify({
+          name: modalName.trim(),
+          field_type: modalType,
+          required: modalRequired,
+          entity_type: entity,
+          options: modalType === 'dropdown' ? modalOptions : [],
+        }),
       })
       const data = await res.json()
       if (!res.ok) { setModalError(data.error || 'Failed to save'); setModalSaving(false); return }
@@ -190,6 +208,11 @@ export default function CustomFieldsPage() {
                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{field.name}</td>
                     <td className="px-4 py-3">
                       <span className="px-2 py-0.5 rounded-full text-xs bg-slate-900/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 capitalize">{field.field_type}</span>
+                      {field.field_type === 'dropdown' && (
+                        <span className="block text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-[220px] truncate" title={(field.options || []).join(', ')}>
+                          {(field.options || []).length > 0 ? (field.options || []).join(', ') : 'No options set'}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <button
@@ -266,6 +289,33 @@ export default function CustomFieldsPage() {
                   {FIELD_TYPES.find(t => t.value === modalType)?.hint}
                 </p>
               </div>
+
+              {modalType === 'dropdown' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Options</label>
+                  <div className="min-h-[42px] w-full rounded-xl border border-slate-900/10 dark:border-white/[0.12] bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] px-3 py-2 flex flex-wrap gap-1.5 focus-within:ring-2 focus-within:ring-sky-500/50">
+                    {modalOptions.map(o => (
+                      <span key={o} className="inline-flex items-center gap-1 rounded-full bg-sky-500/15 text-sky-600 dark:text-sky-300 px-2.5 py-0.5 text-sm">
+                        {o}
+                        <button type="button" onClick={() => setModalOptions(prev => prev.filter(x => x !== o))}>
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                    <input
+                      value={modalOptionInput}
+                      onChange={e => setModalOptionInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addModalOption(modalOptionInput) }
+                      }}
+                      onBlur={() => { if (modalOptionInput.trim()) addModalOption(modalOptionInput) }}
+                      placeholder={modalOptions.length === 0 ? 'Type an option and press Enter…' : ''}
+                      className="flex-1 min-w-[100px] bg-transparent text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-500"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">Press Enter after each option to add it.</p>
+                </div>
+              )}
 
               <div className="flex items-center justify-between py-2">
                 <div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import CredentialsTab from './CredentialsTab'
 import TrackingToolsTab from './TrackingToolsTab'
 import SocialAccountsTab from './SocialAccountsTab'
+import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import { Loader2, Calendar, Tag, Globe } from 'lucide-react'
 
 const TABS = ['Project Info', 'Submission Details', 'Reporting', 'Files', 'Credentials', 'Tracking Tools', 'Social Accounts']
@@ -118,6 +119,13 @@ function ProjectInfoTab({ projectId }: { projectId: string }) {
           </div>
         )}
       </div>
+
+      <CustomFieldsEditor
+        entityType="project"
+        patchUrl={`/api/projects/${projectId}`}
+        initialValues={project.custom_field_values}
+        onSaved={(values) => setProject((p: any) => ({ ...p, custom_field_values: values }))}
+      />
 
       {/* Stats */}
       <div>

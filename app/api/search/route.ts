@@ -1,20 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { proofhubConfigured, listProjects, listAllTasks } from '@/lib/proofhub'
 
 export type SearchResultItem = {
   id: string
   title: string
   subtitle?: string
   url: string
-  type: 'client' | 'contact' | 'project' | 'invoice' | 'lead'
+  type: 'client' | 'contact' | 'project' | 'invoice' | 'lead' | 'task'
 }
 
-const ALL_TYPES = ['clients', 'contacts', 'projects', 'invoices', 'leads'] as const
+const ALL_TYPES = ['clients', 'contacts', 'projects', 'invoices', 'leads', 'tasks'] as const
 type Category = (typeof ALL_TYPES)[number]
 
 // Escape characters that would break PostgREST .or() filter syntax
 function escapeForOr(q: string) {
   return q.replace(/[,()"'\\]/g, ' ').trim()
+}
+
+// ProofHub tasks are not in our DB — search them live against the ProofHub
+// API. Bounded so a single search keystroke never approaches the 25 req/10s
+// rate limit: one call to list projects, one call to /alltodo scoped to a
+// capped set of those projects (lib's TTL cache absorbs repeat keystrokes),
+// then filter client-side by title and cap the results returned.
+const MAX_PROJECTS_FOR_TASK_SEARCH = 10
+const MAX_TASK_RESULTS = 6
+
+async function searchProofHubTasks(
+  q: string,
+  limit: number
+): Promise<{ id: string; title: string; subtitle?: string }[]> {
+  if (!proofhubConfigured()) return []
+  try {
+    const projects = await listProjects()
+    const scanProjects = projects.slice(0, MAX_PROJECTS_FOR_TASK_SEARCH)
+    if (scanProjects.length === 0) return []
+
+    const tasks = await listAllTasks({
+      projects: scanProjects.map(p => p.id),
+      limit: 100,
+    })
+
+    const needle = q.toLowerCase()
+    const projectNameById = new Map(scanProjects.map(p => [p.id, p.name]))
+    const matches = tasks.filter(t => (t.title || '').toLowerCase().includes(needle))
+
+    return matches.slice(0, Math.min(limit, MAX_TASK_RESULTS)).map(t => ({
+      id: String(t.id),
+      title: t.title,
+      subtitle: t.project?.name || (t.project?.id != null ? projectNameById.get(t.project.id) : undefined),
+    }))
+  } catch {
+    // ProofHub down/misconfigured/rate-limited — degrade to no task results.
+    return []
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -54,7 +93,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const [clients, contacts, projects, invoices, leads] = await Promise.all([
+  const [clients, contacts, projects, invoices, leads, tasks] = await Promise.all([
     types.includes('clients')
       ? safeQuery<{ id: string; company_name: string; email: string | null; phone: string | null; project_status: string | null }>(() =>
           supabase
@@ -105,6 +144,9 @@ export async function GET(req: NextRequest) {
             .limit(limit)
         )
       : Promise.resolve([]),
+    types.includes('tasks')
+      ? searchProofHubTasks(safe, limit)
+      : Promise.resolve([]),
   ])
 
   function joinedName(rel: { company_name?: string } | { company_name?: string }[] | null): string | undefined {
@@ -149,6 +191,13 @@ export async function GET(req: NextRequest) {
       subtitle: [l.contact_name, l.email, l.stage].filter(Boolean).join(' · ') || undefined,
       url: `/leads`,
     })),
+    ...tasks.map(t => ({
+      type: 'task' as const,
+      id: t.id,
+      title: t.title,
+      subtitle: t.subtitle,
+      url: '/tasks',
+    })),
   ]
 
   // Per-category counts so the client can decide whether "See more" applies
@@ -158,6 +207,7 @@ export async function GET(req: NextRequest) {
     projects: projects.length,
     invoices: invoices.length,
     leads: leads.length,
+    tasks: tasks.length,
   }
 
   return NextResponse.json({ results, counts, limit })

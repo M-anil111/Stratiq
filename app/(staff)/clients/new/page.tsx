@@ -11,7 +11,7 @@ import { InfoTooltip } from '@/components/ui/tooltip'
 import ProofHubProjectPicker from '@/components/ProofHubProjectPicker'
 import CustomFieldsSection from '@/components/CustomFieldsSection'
 
-const INDUSTRIES = [
+const DEFAULT_INDUSTRIES = [
   'Restaurant / Food & Beverage', 'Retail / E-commerce', 'Healthcare / Medical',
   'Legal / Law Firm', 'Real Estate', 'Construction / Contractor',
   'Finance / Accounting', 'Technology / SaaS', 'Consulting / Professional Services',
@@ -38,20 +38,20 @@ const MARKETING_SERVICES = new Set([
 const DOMAIN_REGISTRARS = ['GoDaddy', 'Namecheap', 'Google Domains', 'Cloudflare', 'Network Solutions', 'Hover', 'NameSilo', 'Porkbun', 'Other']
 const HOSTING_PROVIDERS = ['SiteGround', 'WP Engine', 'Bluehost', 'HostGator', 'Kinsta', 'Cloudflare Pages', 'Vercel', 'Netlify', 'AWS', 'DigitalOcean', 'GoDaddy Hosting', 'DreamHost', 'Other']
 
-const GOALS = [
+const DEFAULT_GOALS = [
   'Increase Website Traffic', 'Generate Leads', 'Improve Local Search Rankings',
   'Improve National Search Rankings', 'Brand Awareness', 'Social Media Growth',
   'Increase Online Sales / Revenue', 'Improve Online Reputation', 'Product Launch', 'Event Promotion',
 ]
 
-const STAKEHOLDER_EXPECTATIONS = [
+const DEFAULT_STAKEHOLDER_EXPECTATIONS = [
   'Monthly Ranking Report', 'Monthly Traffic Report', 'Monthly Leads Report',
   'Bi-weekly Check-in Call', 'Weekly Status Update Email', 'Quarterly Strategy Review',
   'Monthly Social Media Report', 'Custom Dashboard Access',
 ]
 
-const BILLING_TERMS = ['Monthly', 'Quarterly', 'Annual', 'One-time']
-const CONTRACT_TERMS = ['Month-to-month', '3 Months', '6 Months', '12 Months', '24 Months']
+const DEFAULT_BILLING_TERMS = ['Monthly', 'Quarterly', 'Annual', 'One-time']
+const DEFAULT_CONTRACT_TERMS = ['Month-to-month', '3 Months', '6 Months', '12 Months', '24 Months']
 const SM_PLATFORMS = ['Facebook', 'Instagram', 'LinkedIn', 'TikTok', 'Twitter / X', 'Pinterest', 'YouTube', 'Snapchat']
 const AD_CAMPAIGN_TYPES = ['Search', 'Display', 'Shopping', 'Video / YouTube', 'Performance Max', 'App Campaigns']
 const GROUP_TYPES = ['Facebook Groups', 'LinkedIn Groups', 'Reddit', 'Nextdoor', 'Discord', 'Telegram', 'WhatsApp', 'Other']
@@ -354,7 +354,7 @@ function DeliverableInput({ field, value, onChange }: { field: DeliverableField;
   return null
 }
 
-function ServicePackageCard({ pkg, onUpdate, onRemove }: { pkg: ServicePackage; onUpdate: (p: ServicePackage) => void; onRemove: () => void }) {
+function ServicePackageCard({ pkg, onUpdate, onRemove, billingTerms = DEFAULT_BILLING_TERMS, contractTerms = DEFAULT_CONTRACT_TERMS }: { pkg: ServicePackage; onUpdate: (p: ServicePackage) => void; onRemove: () => void; billingTerms?: string[]; contractTerms?: string[] }) {
   const fields = SERVICE_DELIVERABLES[pkg.service] || []
   const setDel = (key: string, val: any) => onUpdate({ ...pkg, deliverables: { ...pkg.deliverables, [key]: val } })
   return (
@@ -391,7 +391,7 @@ function ServicePackageCard({ pkg, onUpdate, onRemove }: { pkg: ServicePackage; 
             </Field>
             <Field label="Billing Term" required>
               <select className={sel} value={pkg.billing_term} onChange={e => onUpdate({ ...pkg, billing_term: e.target.value })}>
-                {BILLING_TERMS.map(t => <option key={t} value={t}>{t}</option>)}
+                {billingTerms.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </Field>
             <Field label="Setup Fee ($)">
@@ -403,7 +403,7 @@ function ServicePackageCard({ pkg, onUpdate, onRemove }: { pkg: ServicePackage; 
             </Field>
             <Field label="Contract Term" required>
               <select className={sel} value={pkg.contract_term} onChange={e => onUpdate({ ...pkg, contract_term: e.target.value })}>
-                {CONTRACT_TERMS.map(t => <option key={t} value={t}>{t}</option>)}
+                {contractTerms.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </Field>
           </div>
@@ -507,6 +507,14 @@ export default function NewClientPage() {
   const [success, setSuccess] = useState<{ id: string; name: string } | null>(null)
   const [users, setUsers] = useState<{ id: string; full_name: string; role: string }[]>([])
   const [autoFilled, setAutoFilled] = useState<Set<string>>(new Set())
+  // Dropdown option lists: default to the hardcoded lists, then replace with
+  // org-managed Masters data (Settings → Masters) if any is configured, so
+  // admin-added master values actually show up here instead of being dead.
+  const [INDUSTRIES, setIndustries] = useState<string[]>(DEFAULT_INDUSTRIES)
+  const [GOALS, setGoals] = useState<string[]>(DEFAULT_GOALS)
+  const [STAKEHOLDER_EXPECTATIONS, setStakeholderExpectations] = useState<string[]>(DEFAULT_STAKEHOLDER_EXPECTATIONS)
+  const [BILLING_TERMS, setBillingTerms] = useState<string[]>(DEFAULT_BILLING_TERMS)
+  const [CONTRACT_TERMS, setContractTerms] = useState<string[]>(DEFAULT_CONTRACT_TERMS)
   const [proposalFile, setProposalFile] = useState<File | null>(null)
   const [uploadingProposal, setUploadingProposal] = useState(false)
   const proposalInputRef = useRef<HTMLInputElement>(null)
@@ -555,6 +563,31 @@ export default function NewClientPage() {
 
   useEffect(() => {
     fetch('/api/users').then(r => r.json()).then(d => Array.isArray(d) && setUsers(d))
+  }, [])
+
+  // Pull org-managed Masters lists (Settings → Masters) for the categories
+  // that map to these dropdowns. Any category that comes back empty/errors
+  // keeps its hardcoded default so the form never breaks.
+  useEffect(() => {
+    const categories: [string, (v: string[]) => void][] = [
+      ['industry', setIndustries],
+      ['goal', setGoals],
+      ['expectation', setStakeholderExpectations],
+      ['billing_term', setBillingTerms],
+      ['contract_term', setContractTerms],
+    ]
+    Promise.all(
+      categories.map(([category]) =>
+        fetch(`/api/settings/masters?category=${category}`).then(r => (r.ok ? r.json() : [])).catch(() => [])
+      )
+    ).then(results => {
+      results.forEach((data, i) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const [, setter] = categories[i]
+          setter(data.map((m: any) => m.label).filter(Boolean))
+        }
+      })
+    })
   }, [])
 
   const setF = (field: keyof FormData) => (val: any) => setForm(f => ({ ...f, [field]: val }))
@@ -1093,7 +1126,7 @@ export default function NewClientPage() {
           )}
 
           {packages.map((pkg, i) => (
-            <ServicePackageCard key={pkg.service} pkg={pkg} onUpdate={p => updatePkg(i, p)} onRemove={() => removePkg(i)} />
+            <ServicePackageCard key={pkg.service} pkg={pkg} onUpdate={p => updatePkg(i, p)} onRemove={() => removePkg(i)} billingTerms={BILLING_TERMS} contractTerms={CONTRACT_TERMS} />
           ))}
 
           {packages.length > 0 && (
