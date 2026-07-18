@@ -42,9 +42,9 @@ function initials(name: string | null, fallback: string): string {
 function SkeletonBubble({ align }: { align: 'left' | 'right' }) {
   return (
     <div className={`flex items-end gap-2 ${align === 'right' ? 'flex-row-reverse' : ''}`}>
-      <div className="w-8 h-8 rounded-full shrink-0 animate-pulse bg-white/[0.08]" />
+      <div className="w-8 h-8 rounded-full shrink-0 animate-pulse bg-slate-900/[0.08] dark:bg-white/[0.08]" />
       <div
-        className={`animate-pulse rounded-2xl ${align === 'right' ? 'rounded-br-sm bg-sky-500/30' : 'rounded-bl-sm bg-white/[0.08]'}`}
+        className={`animate-pulse rounded-2xl ${align === 'right' ? 'rounded-br-sm bg-sky-500/30' : 'rounded-bl-sm bg-slate-900/[0.08] dark:bg-white/[0.08]'}`}
         style={{ height: 56, width: align === 'right' ? 220 : 260 }}
       />
     </div>
@@ -182,7 +182,7 @@ export default function PortalMessagesPage() {
     <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-80px)]">
       {/* Header */}
       <div
-        className="p-4 lg:px-8 lg:pt-8 lg:pb-5 border-b border-white/[0.08] shrink-0"
+        className="p-4 lg:px-8 lg:pt-8 lg:pb-5 border-b border-slate-900/10 dark:border-white/[0.08] shrink-0"
         style={{ background: 'rgba(6,10,18,0.6)' }}
       >
         <div className="flex items-center gap-3">
@@ -190,8 +190,8 @@ export default function PortalMessagesPage() {
             <MessageSquare className="h-4 w-4 text-sky-400" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white leading-none">Messages</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Chat with your account team</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white leading-none">Messages</h1>
+            <p className="text-xs text-slate-600 dark:text-slate-500 mt-0.5">Chat with your account team</p>
           </div>
         </div>
       </div>
@@ -206,10 +206,10 @@ export default function PortalMessagesPage() {
           </>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-white/[0.04] flex items-center justify-center">
-              <MessageSquare className="h-6 w-6 text-slate-500" />
+            <div className="w-14 h-14 rounded-2xl bg-slate-900/[0.04] dark:bg-white/[0.04] flex items-center justify-center">
+              <MessageSquare className="h-6 w-6 text-slate-600 dark:text-slate-500" />
             </div>
-            <p className="text-slate-400 text-sm font-medium">No messages yet.</p>
+            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">No messages yet.</p>
             <p className="text-slate-600 text-xs">Start the conversation below.</p>
           </div>
         ) : (
@@ -225,7 +225,7 @@ export default function PortalMessagesPage() {
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
                     isClient
                       ? 'bg-sky-500/30 text-sky-300'
-                      : 'bg-white/[0.08] text-slate-400'
+                      : 'bg-slate-900/[0.08] dark:bg-white/[0.08] text-slate-600 dark:text-slate-400'
                   }`}
                 >
                   {initials(msg.sender_name, isClient ? 'ME' : 'ST')}
@@ -234,7 +234,7 @@ export default function PortalMessagesPage() {
                 {/* Bubble */}
                 <div className={`max-w-[75%] ${isClient ? 'items-end' : 'items-start'} flex flex-col`}>
                   {!isClient && (
-                    <p className="text-[11px] font-medium mb-1 text-slate-400 px-1">
+                    <p className="text-[11px] font-medium mb-1 text-slate-600 dark:text-slate-400 px-1">
                       {msg.sender_name || 'Staff'}
                     </p>
                   )}
@@ -248,7 +248,7 @@ export default function PortalMessagesPage() {
                     <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                     <p
                       className={`text-[10px] mt-1.5 ${
-                        isClient ? 'text-sky-200/70 text-right' : 'text-slate-500'
+                        isClient ? 'text-sky-200/70 text-right' : 'text-slate-600 dark:text-slate-500'
                       }`}
                     >
                       {formatTimestamp(msg.created_at)}
@@ -264,7 +264,7 @@ export default function PortalMessagesPage() {
 
       {/* Compose */}
       <div
-        className="p-4 lg:px-8 lg:pb-6 border-t border-white/[0.08] shrink-0"
+        className="p-4 lg:px-8 lg:pb-6 border-t border-slate-900/10 dark:border-white/[0.08] shrink-0"
         style={{ background: 'rgba(6,10,18,0.6)' }}
       >
         <div className="flex items-end gap-3">
@@ -282,7 +282,7 @@ export default function PortalMessagesPage() {
             {showCount && (
               <span
                 className={`absolute bottom-2 right-3 text-[10px] pointer-events-none ${
-                  charsLeft < 0 ? 'text-red-400' : 'text-slate-500'
+                  charsLeft < 0 ? 'text-red-400' : 'text-slate-600 dark:text-slate-500'
                 }`}
               >
                 {charsLeft}
@@ -299,7 +299,7 @@ export default function PortalMessagesPage() {
           </button>
         </div>
         {showCount && (
-          <p className={`text-[10px] mt-1 ${charsLeft < 0 ? 'text-red-400' : 'text-slate-500'}`}>
+          <p className={`text-[10px] mt-1 ${charsLeft < 0 ? 'text-red-400' : 'text-slate-600 dark:text-slate-500'}`}>
             {charsLeft < 0
               ? `${Math.abs(charsLeft)} characters over limit`
               : `${charsLeft} characters remaining`}

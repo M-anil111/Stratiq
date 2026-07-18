@@ -30,8 +30,8 @@ function KpiCard({ label, value, icon: Icon, color }: { label: string; value: st
       <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center mb-3`}>
         <Icon className="h-4 w-4" style={{ color: 'inherit' }} />
       </div>
-      <p className="text-lg font-bold text-white">{value}</p>
-      <p className="text-xs text-slate-400 mt-0.5">{label}</p>
+      <p className="text-lg font-bold text-slate-900 dark:text-white">{value}</p>
+      <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{label}</p>
     </div>
   )
 }
@@ -75,14 +75,14 @@ export default function PortalReportsPage() {
   return (
     <div className="p-4 lg:p-8">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h1 className="text-2xl font-bold text-white">My Reports</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Reports</h1>
         <div className="flex items-center gap-2 flex-wrap">
           <select value={month} onChange={e => setMonth(Number(e.target.value))}
-            className="bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50">
+            className="bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50">
             {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
           </select>
           <select value={year} onChange={e => setYear(Number(e.target.value))}
-            className="bg-[rgba(255,255,255,0.06)] border border-white/[0.12] text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50">
+            className="bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50">
             {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           <button onClick={() => setShowRequest(v => !v)}
@@ -94,7 +94,7 @@ export default function PortalReportsPage() {
 
       {showRequest && (
         <div className="glass-card p-5 mb-6">
-          <h2 className="font-semibold text-white mb-3">Request Report for {MONTHS[month]} {year}</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white mb-3">Request Report for {MONTHS[month]} {year}</h2>
           <textarea
             value={requestMsg}
             onChange={e => setRequestMsg(e.target.value)}
@@ -109,7 +109,7 @@ export default function PortalReportsPage() {
               {sending ? 'Sending…' : 'Send Request'}
             </button>
             <button onClick={() => setShowRequest(false)}
-              className="px-4 py-2 text-sm border border-white/[0.10] text-slate-400 hover:text-white rounded-xl transition-colors">
+              className="px-4 py-2 text-sm border border-slate-900/10 dark:border-white/[0.10] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl transition-colors">
               Cancel
             </button>
           </div>
@@ -117,13 +117,13 @@ export default function PortalReportsPage() {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-20 text-slate-400 text-sm">
+        <div className="flex items-center justify-center py-20 text-slate-600 dark:text-slate-400 text-sm">
           <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading report…
         </div>
       ) : !report ? (
-        <div className="glass-card p-12 text-center text-slate-400">
+        <div className="glass-card p-12 text-center text-slate-600 dark:text-slate-400">
           <BarChart2 className="h-12 w-12 mx-auto mb-4 opacity-30" />
-          <p className="font-medium text-slate-300">No report available for {MONTHS[month]} {year}</p>
+          <p className="font-medium text-slate-700 dark:text-slate-300">No report available for {MONTHS[month]} {year}</p>
           <p className="text-sm mt-1">Use the Request button above to ask your account manager for a report.</p>
         </div>
       ) : (
@@ -131,11 +131,11 @@ export default function PortalReportsPage() {
           {/* Google Ads */}
           {hasGoogle && (
             <div className="glass-card overflow-hidden">
-              <div className="p-5 border-b border-white/[0.06] flex items-center gap-2">
+              <div className="p-5 border-b border-slate-900/10 dark:border-white/[0.06] flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-blue-500/20 flex items-center justify-center">
                   <TrendingUp className="h-3.5 w-3.5 text-blue-400" />
                 </div>
-                <h2 className="font-semibold text-white">Google Ads</h2>
+                <h2 className="font-semibold text-slate-900 dark:text-white">Google Ads</h2>
               </div>
               <div className="p-5">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
@@ -150,21 +150,21 @@ export default function PortalReportsPage() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-white/[0.06]">
+                        <tr className="border-b border-slate-900/10 dark:border-white/[0.06]">
                           {['Campaign', 'Impressions', 'Clicks', 'CTR', 'Conversions', 'Spend'].map(h => (
-                            <th key={h} className="text-left text-xs text-slate-500 pb-2 pr-4 font-medium">{h}</th>
+                            <th key={h} className="text-left text-xs text-slate-600 dark:text-slate-500 pb-2 pr-4 font-medium">{h}</th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-white/[0.04]">
+                      <tbody className="divide-y divide-slate-900/[0.04] dark:divide-white/[0.04]">
                         {report.google.campaigns.map((c, i) => (
                           <tr key={i}>
-                            <td className="py-2 pr-4 text-slate-300 font-medium">{c.name}</td>
-                            <td className="py-2 pr-4 text-slate-400 tabular-nums">{(c.impressions || 0).toLocaleString()}</td>
-                            <td className="py-2 pr-4 text-slate-400 tabular-nums">{(c.clicks || 0).toLocaleString()}</td>
-                            <td className="py-2 pr-4 text-slate-400 tabular-nums">{c.ctr != null ? `${c.ctr}%` : '—'}</td>
-                            <td className="py-2 pr-4 text-slate-400 tabular-nums">{(c.conversions || 0).toLocaleString()}</td>
-                            <td className="py-2 pr-4 text-slate-400 tabular-nums">${(c.spend || 0).toFixed(2)}</td>
+                            <td className="py-2 pr-4 text-slate-700 dark:text-slate-300 font-medium">{c.name}</td>
+                            <td className="py-2 pr-4 text-slate-600 dark:text-slate-400 tabular-nums">{(c.impressions || 0).toLocaleString()}</td>
+                            <td className="py-2 pr-4 text-slate-600 dark:text-slate-400 tabular-nums">{(c.clicks || 0).toLocaleString()}</td>
+                            <td className="py-2 pr-4 text-slate-600 dark:text-slate-400 tabular-nums">{c.ctr != null ? `${c.ctr}%` : '—'}</td>
+                            <td className="py-2 pr-4 text-slate-600 dark:text-slate-400 tabular-nums">{(c.conversions || 0).toLocaleString()}</td>
+                            <td className="py-2 pr-4 text-slate-600 dark:text-slate-400 tabular-nums">${(c.spend || 0).toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -178,11 +178,11 @@ export default function PortalReportsPage() {
           {/* Meta Ads */}
           {hasMeta && (
             <div className="glass-card overflow-hidden">
-              <div className="p-5 border-b border-white/[0.06] flex items-center gap-2">
+              <div className="p-5 border-b border-slate-900/10 dark:border-white/[0.06] flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-purple-500/20 flex items-center justify-center">
                   <Users className="h-3.5 w-3.5 text-purple-400" />
                 </div>
-                <h2 className="font-semibold text-white">Meta Ads (Facebook &amp; Instagram)</h2>
+                <h2 className="font-semibold text-slate-900 dark:text-white">Meta Ads (Facebook &amp; Instagram)</h2>
               </div>
               <div className="p-5">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -198,15 +198,15 @@ export default function PortalReportsPage() {
           )}
 
           {!hasGoogle && !hasMeta && (
-            <div className="glass-card p-8 text-center text-slate-500 text-sm">
+            <div className="glass-card p-8 text-center text-slate-600 dark:text-slate-500 text-sm">
               Report data has not been populated yet for this period.
             </div>
           )}
 
           {report.notes && (
             <div className="glass-card p-5">
-              <h2 className="font-semibold text-white mb-2">Account Manager Notes</h2>
-              <p className="text-sm text-slate-300 whitespace-pre-wrap">{report.notes}</p>
+              <h2 className="font-semibold text-slate-900 dark:text-white mb-2">Account Manager Notes</h2>
+              <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{report.notes}</p>
             </div>
           )}
         </div>

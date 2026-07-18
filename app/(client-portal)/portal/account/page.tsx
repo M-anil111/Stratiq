@@ -12,7 +12,7 @@ interface UserProfile {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-slate-300">{label}</label>
+      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
       {children}
     </div>
   )
@@ -80,23 +80,23 @@ export default function AccountPage() {
   return (
     <div className="max-w-xl mx-auto space-y-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">My Account</h1>
-        <p className="text-slate-400 mt-1">Manage your profile and security settings</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Account</h1>
+        <p className="text-slate-600 dark:text-slate-400 mt-1">Manage your profile and security settings</p>
       </div>
 
       {/* Profile section */}
       <div className="glass-card p-6 space-y-5">
         <div className="flex items-center gap-2 mb-1">
           <User className="h-5 w-5 text-sky-400" />
-          <h2 className="font-semibold text-white">Profile Information</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white">Profile Information</h2>
         </div>
 
         {loadingProfile ? (
           <div className="space-y-4 animate-pulse">
             {[1, 2, 3].map(i => (
               <div key={i} className="space-y-1.5">
-                <div className="h-3 w-20 bg-white/10 rounded" />
-                <div className="h-10 bg-white/10 rounded-lg" />
+                <div className="h-3 w-20 bg-slate-900/10 dark:bg-white/10 rounded" />
+                <div className="h-10 bg-slate-900/10 dark:bg-white/10 rounded-lg" />
               </div>
             ))}
           </div>
@@ -146,7 +146,7 @@ export default function AccountPage() {
       <div className="glass-card p-6 space-y-5">
         <div className="flex items-center gap-2 mb-1">
           <Lock className="h-5 w-5 text-sky-400" />
-          <h2 className="font-semibold text-white">Change Password</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white">Change Password</h2>
         </div>
 
         <form onSubmit={handleChangePassword} className="space-y-4">

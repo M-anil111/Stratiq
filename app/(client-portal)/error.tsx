@@ -19,8 +19,8 @@ export default function PortalError({
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="glass-card p-8 max-w-md text-center space-y-4">
         <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto" />
-        <h2 className="text-xl font-bold text-white">Something went wrong</h2>
-        <p className="text-slate-400 text-sm">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Something went wrong</h2>
+        <p className="text-slate-600 dark:text-slate-400 text-sm">
           An error occurred while loading this page. Please try again.
         </p>
         {error.digest && (

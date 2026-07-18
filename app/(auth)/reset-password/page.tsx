@@ -54,16 +54,16 @@ export default function ResetPasswordPage() {
               <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="h-7 w-7 text-emerald-400" />
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">Password updated!</h2>
-              <p className="text-slate-400 text-sm">Taking you to the dashboard…</p>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Password updated!</h2>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">Taking you to the dashboard…</p>
             </div>
           ) : (
             <>
-              <h2 className="text-2xl font-bold text-white mb-1">Set new password</h2>
-              <p className="text-slate-400 text-sm mb-8">Choose a strong password for your account.</p>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">Set new password</h2>
+              <p className="text-slate-600 dark:text-slate-400 text-sm mb-8">Choose a strong password for your account.</p>
 
               {error && (
-                <div className="flex items-center gap-2 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400 mb-4">
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-600 dark:text-red-400 mb-4">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   {error}
                 </div>
@@ -71,18 +71,18 @@ export default function ResetPasswordPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">New password</label>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wider">New password</label>
                   <div className="relative">
                     <input type={showPw ? 'text' : 'password'} required className="input-glass pr-10"
                       placeholder="Min 8 characters" value={password} onChange={e => setPassword(e.target.value)} />
                     <button type="button" onClick={() => setShowPw(p => !p)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
                       {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Confirm password</label>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wider">Confirm password</label>
                   <input type="password" required className="input-glass" placeholder="Repeat password"
                     value={confirm} onChange={e => setConfirm(e.target.value)} />
                 </div>

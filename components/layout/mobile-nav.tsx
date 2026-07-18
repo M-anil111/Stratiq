@@ -12,6 +12,23 @@ const tabs = [
   { href: '/targets', label: 'Targets', icon: Target },
 ]
 
+const sheetLinks = [
+  { href: '/contacts', label: 'Contacts', icon: BookUser },
+  { href: '/tasks', label: 'Tasks', icon: ListChecks },
+  { href: '/invoices', label: 'Invoices', icon: FileText },
+  { href: '/settings', label: 'Settings', icon: Settings },
+]
+
+function SheetLink({ href, label, icon: Icon, onClick }: { href: string; label: string; icon: typeof BookUser; onClick: () => void }) {
+  return (
+    <Link href={href} onClick={onClick}
+      className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.05] dark:hover:bg-white/[0.06] transition-all duration-200">
+      <Icon className="h-5 w-5 text-slate-400 dark:text-slate-400" />
+      <span className="font-medium">{label}</span>
+    </Link>
+  )
+}
+
 export function MobileNav() {
   const [moreOpen, setMoreOpen] = useState(false)
   const pathname = usePathname()
@@ -88,26 +105,9 @@ export function MobileNav() {
               </button>
             </div>
             <div className="space-y-1">
-              <Link href="/contacts" onClick={() => setMoreOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.05] dark:hover:bg-white/[0.06] transition-all duration-200">
-                <BookUser className="h-5 w-5 text-slate-400 dark:text-slate-400" />
-                <span className="font-medium">Contacts</span>
-              </Link>
-              <Link href="/tasks" onClick={() => setMoreOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.05] dark:hover:bg-white/[0.06] transition-all duration-200">
-                <ListChecks className="h-5 w-5 text-slate-400 dark:text-slate-400" />
-                <span className="font-medium">Tasks</span>
-              </Link>
-              <Link href="/invoices" onClick={() => setMoreOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.05] dark:hover:bg-white/[0.06] transition-all duration-200">
-                <FileText className="h-5 w-5 text-slate-400 dark:text-slate-400" />
-                <span className="font-medium">Invoices</span>
-              </Link>
-              <Link href="/settings" onClick={() => setMoreOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-900/[0.05] dark:hover:bg-white/[0.06] transition-all duration-200">
-                <Settings className="h-5 w-5 text-slate-400 dark:text-slate-400" />
-                <span className="font-medium">Settings</span>
-              </Link>
+              {sheetLinks.map((link) => (
+                <SheetLink key={link.href} {...link} onClick={() => setMoreOpen(false)} />
+              ))}
               <div className="divider-glass my-3" />
               <button
                 onClick={() => { setMoreOpen(false); handleLogout() }}
