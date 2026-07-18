@@ -4,6 +4,7 @@ import {
   updateTask,
   moveTaskStage,
   listSubtasks,
+  updateTaskCustomFields,
   TaskWriteBody,
 } from '@/lib/proofhub'
 import { requireStratiqUser, ensureConfigured, notConfigured, phErrorResponse } from '../../_helpers'
@@ -60,6 +61,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { taskId: st
     // Move stage is its own PUT shape.
     if (body.stage != null && body.moveStage) {
       const task = await moveTaskStage(projectId, todolistId, params.taskId, Number(body.stage))
+      return NextResponse.json({ configured: true, task })
+    }
+
+    // Custom field updates (incl. the "priority" field type) — its own shape:
+    // { customFields: { "<field_id>": value } }, one field per todolist that
+    // has one configured. Values for tag/dropdown-typed fields are arrays.
+    if (body.customFields && typeof body.customFields === 'object') {
+      const values: Record<string, { value: unknown }> = {}
+      for (const [id, value] of Object.entries(body.customFields)) {
+        values[id] = { value }
+      }
+      const task = await updateTaskCustomFields(projectId, todolistId, params.taskId, values)
       return NextResponse.json({ configured: true, task })
     }
 
