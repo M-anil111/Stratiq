@@ -1,5 +1,5 @@
 'use client'
-import { Person, PHLabel } from './types'
+import { Person, PHLabel, PHCustomFieldLite } from './types'
 
 // Deterministic color for an avatar chip based on id/name.
 const AVATAR_COLORS = [
@@ -87,6 +87,36 @@ export function LabelPill({ label }: { label: PHLabel }) {
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-900/[0.05] dark:bg-white/[0.08] text-slate-600 dark:text-slate-300 border border-slate-900/10 dark:border-white/10">
       {label.name}
+    </span>
+  )
+}
+
+// ProofHub's "priority" custom field — an opt-in per-todolist field, so this
+// renders whatever label the field's current value resolves to, or nothing
+// if the task's list doesn't have one configured.
+export function PriorityPill({ customFields }: { customFields: PHCustomFieldLite[] | undefined }) {
+  const field = customFields?.find((f) => (f.type || '').toLowerCase() === 'priority')
+  if (!field) return null
+  const rawValue = Array.isArray(field.value) ? field.value[0] : field.value
+  if (rawValue == null || rawValue === '') return null
+  const option = field.options?.find((o) => String(o.id) === String(rawValue))
+  const label = option?.label ?? String(rawValue)
+  const color = option?.color && /^#?[0-9a-fA-F]{3,8}$/.test(option.color)
+    ? (option.color.startsWith('#') ? option.color : `#${option.color}`)
+    : null
+  if (color) {
+    return (
+      <span
+        className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border"
+        style={{ backgroundColor: `${color}22`, color, borderColor: `${color}55` }}
+      >
+        {label}
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+      {label}
     </span>
   )
 }

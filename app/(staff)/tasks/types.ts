@@ -1,5 +1,13 @@
 export type PHLabel = { id: number; name: string; color?: string }
 
+export type PHCustomFieldLite = {
+  id: string | number
+  title?: string
+  type?: string
+  value?: unknown
+  options?: { id: string | number; label: string; color?: string }[]
+}
+
 export type PHTaskLite = {
   id: number
   title: string
@@ -11,6 +19,7 @@ export type PHTaskLite = {
   assigned?: number[]
   labels?: PHLabel[]
   sub_tasks?: unknown[]
+  custom_fields?: PHCustomFieldLite[]
   comments?: unknown
   project?: { id: number; name: string }
   list?: { id: number; name: string }

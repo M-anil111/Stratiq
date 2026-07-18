@@ -179,6 +179,7 @@ export type PHTask = {
   assigned?: number[]
   labels?: PHLabel[]
   sub_tasks?: unknown[]
+  custom_fields?: { id: string | number; title?: string; type?: string; value?: unknown }[]
   comments?: unknown
   project?: { id: number; name: string }
   list?: { id: number; name: string }
@@ -348,6 +349,93 @@ export async function addComment(
 
 export async function listSubtasks(p: number | string, tl: number | string, t: number | string): Promise<PHTask[]> {
   return asArray<PHTask>(await ph(`projects/${p}/todolists/${tl}/tasks/${t}/subtasks`))
+}
+
+export type SubtaskWriteBody = {
+  title: string
+  description?: string
+  start_date?: string
+  due_date?: string
+  estimated_hours?: number
+  estimated_mins?: number
+  assigned?: number[]
+  labels?: number[]
+}
+
+// POST .../tasks/{t}/subtasks — documented in ProofHub API v3 (sections/tasks.md).
+export async function createSubtask(
+  p: number | string,
+  tl: number | string,
+  t: number | string,
+  body: SubtaskWriteBody
+): Promise<PHTask> {
+  const res = await ph<PHTask>(`projects/${p}/todolists/${tl}/tasks/${t}/subtasks`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+  invalidatePrefix(`GET ${ACCOUNT_URL}/api/v3/projects/${p}/todolists/${tl}/tasks/${t}`)
+  return res
+}
+
+// PUT .../tasks/{parentTaskId}/subtasks/{subtaskId} — mark complete/incomplete
+// or edit a subtask. Documented in ProofHub API v3 (sections/tasks.md).
+export async function updateSubtask(
+  p: number | string,
+  tl: number | string,
+  parentTaskId: number | string,
+  subtaskId: number | string,
+  body: { completed?: boolean; title?: string }
+): Promise<PHTask> {
+  const res = await ph<PHTask>(`projects/${p}/todolists/${tl}/tasks/${parentTaskId}/subtasks/${subtaskId}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+  invalidatePrefix(`GET ${ACCOUNT_URL}/api/v3/projects/${p}/todolists/${tl}/tasks/${parentTaskId}`)
+  return res
+}
+
+// ---- custom fields (incl. the "priority" field type, which ProofHub
+// implements as a per-todolist custom field rather than a dedicated task
+// property) --------------------------------------------------------------
+export type PHCustomField = {
+  id: string | number
+  title?: string
+  description?: string
+  type?: string // 'text' | 'number' | 'date' | 'dropdown' | 'tag' | 'currency' | 'percentage' | 'priority' | ...
+  value?: unknown
+  options?: { id: string | number; label: string; color?: string }[]
+}
+
+// Update one or more custom field values on a task. Matches the documented
+// shape: { "custom_fields": { "<field_id>": { "value": ... } } }.
+// For 'tag'/'dropdown' types the value is an array (even for a single choice).
+export async function updateTaskCustomFields(
+  p: number | string,
+  tl: number | string,
+  t: number | string,
+  values: Record<string, { value: unknown }>
+): Promise<PHTask> {
+  const res = await ph<PHTask>(`projects/${p}/todolists/${tl}/tasks/${t}`, {
+    method: 'PUT',
+    body: JSON.stringify({ custom_fields: values }),
+  })
+  invalidatePrefix(`GET ${ACCOUNT_URL}/api/v3/projects/${p}/todolists/${tl}/tasks/${t}`)
+  return res
+}
+
+// Find the task-list-level "priority" custom field on a task, if the org has
+// one configured for this list. Returns null if none exists — priority is
+// opt-in per todolist in ProofHub, not guaranteed to be present.
+// ProofHub's documented type strings are capitalized (e.g. "Currency"), so
+// match case-insensitively rather than assuming lowercase.
+export function isPriorityField(type: string | undefined): boolean {
+  return (type || '').toLowerCase() === 'priority'
+}
+
+export function getPriorityField(task: PHTask): PHCustomField | null {
+  const fields = (task as any).custom_fields as PHCustomField[] | undefined
+  if (!Array.isArray(fields)) return null
+  return fields.find((f) => isPriorityField(f.type)) || null
 }
 
 // Per-task activity log. Endpoint: .../tasks/{t}/history

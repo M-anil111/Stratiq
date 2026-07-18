@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { Check, Loader2, MessageSquare, Send, ListTree, Tag, Calendar, Users, Activity as ActivityIcon } from 'lucide-react'
+import { Check, Loader2, MessageSquare, Send, ListTree, Tag, Calendar, Users, Activity as ActivityIcon, Plus, Flag } from 'lucide-react'
 import SlideOver from '@/components/SlideOver'
 import { Person, Stage, PHTaskLite, Activity } from './types'
 import { Avatar, LabelPill } from './ui'
@@ -29,6 +29,9 @@ export default function TaskDetailDrawer({
   const [saving, setSaving] = useState(false)
   const [newComment, setNewComment] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [newSubtask, setNewSubtask] = useState('')
+  const [addingSubtask, setAddingSubtask] = useState(false)
+  const [togglingSubtaskId, setTogglingSubtaskId] = useState<number | null>(null)
 
   const load = useCallback(async () => {
     if (!taskRef) return
@@ -114,6 +117,59 @@ export default function TaskDetailDrawer({
     } finally {
       setSaving(false)
     }
+  }
+
+  async function submitSubtask() {
+    if (!taskRef || !newSubtask.trim()) return
+    setAddingSubtask(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/proofhub/tasks/${taskRef.taskId}/subtasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: taskRef.projectId, todolistId: taskRef.todolistId, title: newSubtask.trim() }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.message || json.error || 'Failed to add subtask')
+      setNewSubtask('')
+      await load()
+      onChanged()
+    } catch (e: any) {
+      setError(e.message || 'Failed to add subtask')
+    } finally {
+      setAddingSubtask(false)
+    }
+  }
+
+  async function toggleSubtask(subtaskId: number, completed: boolean) {
+    if (!taskRef) return
+    setTogglingSubtaskId(subtaskId)
+    setError(null)
+    try {
+      const res = await fetch(`/api/proofhub/tasks/${taskRef.taskId}/subtasks/${subtaskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: taskRef.projectId, todolistId: taskRef.todolistId, completed }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.message || json.error || 'Failed to update subtask')
+      await load()
+    } catch (e: any) {
+      setError(e.message || 'Failed to update subtask')
+    } finally {
+      setTogglingSubtaskId(null)
+    }
+  }
+
+  const priorityField = task?.custom_fields?.find((f) => (f.type || '').toLowerCase() === 'priority') || null
+
+  function setPriority(value: string) {
+    if (!priorityField) return
+    // Priority behaves like ProofHub's dropdown/tag fields, which take an
+    // array value even for a single choice — send accordingly when the
+    // field exposes an options list, matching the documented convention.
+    const payload = Array.isArray(priorityField.options) && priorityField.options.length > 0 ? [value] : value
+    patch({ customFields: { [priorityField.id]: payload } })
   }
 
   const assigned = task && Array.isArray(task.assigned) ? task.assigned.map(Number) : []
@@ -239,6 +295,30 @@ export default function TaskDetailDrawer({
             </div>
           </div>
 
+          {/* Priority (ProofHub's "priority" custom field, opt-in per todolist) */}
+          {priorityField && (
+            <div>
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+                <Flag className="h-3.5 w-3.5" /> Priority
+              </div>
+              {Array.isArray(priorityField.options) && priorityField.options.length > 0 ? (
+                <select
+                  value={String(Array.isArray(priorityField.value) ? priorityField.value[0] ?? '' : priorityField.value ?? '')}
+                  onChange={(e) => setPriority(e.target.value)}
+                  disabled={saving}
+                  className="input-glass text-sm w-full"
+                >
+                  <option value="">No priority</option>
+                  {priorityField.options.map((o) => (
+                    <option key={o.id} value={o.id}>{o.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <span className="text-sm text-slate-600 dark:text-slate-300">{String(priorityField.value ?? '—')}</span>
+              )}
+            </div>
+          )}
+
           {/* Labels */}
           {Array.isArray(task.labels) && task.labels.length > 0 && (
             <div>
@@ -253,22 +333,51 @@ export default function TaskDetailDrawer({
             </div>
           )}
 
-          {/* Subtasks (read) */}
-          {subtasks.length > 0 && (
-            <div>
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
-                <ListTree className="h-3.5 w-3.5" /> Subtasks
-              </div>
-              <ul className="space-y-1.5">
+          {/* Subtasks */}
+          <div>
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+              <ListTree className="h-3.5 w-3.5" /> Subtasks
+            </div>
+            {subtasks.length > 0 && (
+              <ul className="space-y-1.5 mb-2">
                 {subtasks.map((st, i) => (
                   <li key={st.id ?? i} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                    <Check className={`h-3.5 w-3.5 ${st.completed ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`} />
+                    <button
+                      type="button"
+                      onClick={() => st.id != null && toggleSubtask(Number(st.id), !st.completed)}
+                      disabled={togglingSubtaskId === st.id}
+                      className="shrink-0"
+                      aria-label={st.completed ? 'Mark incomplete' : 'Mark complete'}
+                    >
+                      {togglingSubtaskId === st.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />
+                      ) : (
+                        <Check className={`h-3.5 w-3.5 ${st.completed ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`} />
+                      )}
+                    </button>
                     <span className={st.completed ? 'line-through text-slate-400' : ''}>{st.title}</span>
                   </li>
                 ))}
               </ul>
+            )}
+            <div className="flex items-center gap-2">
+              <input
+                value={newSubtask}
+                onChange={(e) => setNewSubtask(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') submitSubtask() }}
+                placeholder="Add a subtask…"
+                className="input-glass text-sm flex-1"
+              />
+              <button
+                onClick={submitSubtask}
+                disabled={addingSubtask || !newSubtask.trim()}
+                className="btn-brand rounded-lg p-2.5 disabled:opacity-50"
+                aria-label="Add subtask"
+              >
+                {addingSubtask ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              </button>
             </div>
-          )}
+          </div>
 
           {/* Comments */}
           <div>

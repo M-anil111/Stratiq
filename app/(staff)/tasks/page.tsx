@@ -7,7 +7,7 @@ import {
 import { cn } from '@/lib/utils'
 import EmptyState from '@/components/ui/EmptyState'
 import { Person, Project, Board, PHTaskLite, Stage } from './types'
-import { Avatar, AvatarStack, LabelPill, formatDue, dueBucket } from './ui'
+import { Avatar, AvatarStack, LabelPill, PriorityPill, formatDue, dueBucket } from './ui'
 import TaskDetailDrawer, { TaskRef } from './TaskDetailDrawer'
 import NewTaskDrawer from './NewTaskDrawer'
 import SyncProjects from './SyncProjects'
@@ -448,6 +448,7 @@ function TaskRow({
         </div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           {showProject && projName && <span className="text-[11px] text-slate-500">{projName}</span>}
+          <PriorityPill customFields={task.custom_fields} />
           {Array.isArray(task.labels) && task.labels.slice(0, 3).map((l) => <LabelPill key={l.id} label={l} />)}
         </div>
       </button>
@@ -503,11 +504,12 @@ function BoardView({
                       <div className={cn('text-sm font-medium mb-1.5', t.completed ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-white')}>
                         {t.title}
                       </div>
-                      {Array.isArray(t.labels) && t.labels.length > 0 && (
+                      {(Array.isArray(t.labels) && t.labels.length > 0) || t.custom_fields?.some((f) => (f.type || '').toLowerCase() === 'priority') ? (
                         <div className="flex flex-wrap gap-1 mb-1.5">
-                          {t.labels.slice(0, 3).map((l) => <LabelPill key={l.id} label={l} />)}
+                          <PriorityPill customFields={t.custom_fields} />
+                          {Array.isArray(t.labels) && t.labels.slice(0, 3).map((l) => <LabelPill key={l.id} label={l} />)}
                         </div>
-                      )}
+                      ) : null}
                       <div className="flex items-center justify-between gap-2">
                         {due ? <span className={cn('text-[11px] font-medium', due.tone)} suppressHydrationWarning>{due.text}</span> : <span />}
                         {assigned.length > 0 && <AvatarStack ids={assigned} people={people} size={20} />}
