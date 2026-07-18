@@ -5,6 +5,7 @@ import { isHelcimConfigured, createHostedPaymentUrl } from '@/lib/helcim'
 import { requireRole, BILLING_ROLES } from '@/lib/authz'
 import { logAudit } from '@/lib/audit'
 import { notifyPortalClient } from '@/lib/portal-notify'
+import { notifyOrgManagers } from '@/lib/notify'
 
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -143,6 +144,21 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
         summary: `Invoice #${invoice.invoice_number} for $${(invoice.total || 0).toFixed(2)} is ready to view.`,
         appUrl: _req.nextUrl.origin,
         skipIfEmail: clientEmail,
+      })
+    } catch {
+      // non-fatal
+    }
+
+    // Best-effort notify internal staff/managers that the invoice was sent.
+    try {
+      await notifyOrgManagers(supabase, userData.organization_id, {
+        type: 'info',
+        severity: 'success',
+        title: 'Invoice sent',
+        body: `Invoice #${invoice.invoice_number} was sent to ${clientName}`,
+        link: `/invoices/${params.id}`,
+        entityType: 'invoice',
+        entityId: params.id,
       })
     } catch {
       // non-fatal

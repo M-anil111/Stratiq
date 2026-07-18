@@ -27,7 +27,7 @@ const STATUS_COLORS: Record<string, string> = {
   in_onboarding: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
 }
 
-const STATUS_OPTIONS = ['active', 'on_hold', 'completed', 'cancelled', 'prospect', 'in_onboarding']
+const DEFAULT_STATUS_OPTIONS = ['active', 'on_hold', 'completed', 'cancelled', 'prospect', 'in_onboarding']
 
 const selectClass = 'bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
 
@@ -54,6 +54,24 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [clientFilter, setClientFilter] = useState('')
   const [showModal, setShowModal] = useState(false)
+  // Status option list: default to the hardcoded list, then replace with
+  // org-managed Masters data (Settings → Masters, category "project_status")
+  // if any is configured, so admin-added statuses actually show up here
+  // instead of being dead. We use the master's `value` (not `label`) so the
+  // option values keep matching the exact strings STATUS_COLORS and other
+  // status === 'active' style checks expect elsewhere in the app.
+  const [STATUS_OPTIONS, setStatusOptions] = useState<string[]>(DEFAULT_STATUS_OPTIONS)
+
+  useEffect(() => {
+    fetch('/api/settings/masters?category=project_status')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setStatusOptions(data.map((m: any) => m.value).filter(Boolean))
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -204,6 +222,7 @@ export default function ProjectsPage() {
       {showModal && (
         <NewProjectModal
           clients={clients}
+          statusOptions={STATUS_OPTIONS}
           onClose={() => setShowModal(false)}
           onCreated={() => { setShowModal(false); load() }}
         />
@@ -212,7 +231,7 @@ export default function ProjectsPage() {
   )
 }
 
-function NewProjectModal({ clients, onClose, onCreated }: { clients: ClientLite[]; onClose: () => void; onCreated: () => void }) {
+function NewProjectModal({ clients, statusOptions, onClose, onCreated }: { clients: ClientLite[]; statusOptions: string[]; onClose: () => void; onCreated: () => void }) {
   const [form, setForm] = useState({ name: '', client_id: '', status: 'active', domain: '', start_date: '', end_date: '', notes: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -264,7 +283,7 @@ function NewProjectModal({ clients, onClose, onCreated }: { clients: ClientLite[
             <div>
               <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">Status</label>
               <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={`${selectClass} w-full`}>
-                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                {statusOptions.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
               </select>
             </div>
             <div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/email/index'
 import { buildReportEmailHtml, buildReportEmailSubject } from '@/lib/report-email'
+import { notifyOrgManagers } from '@/lib/notify'
 
 // Runs monthly (see vercel.json). For each org, for each active client with a
 // marketing_reports row for the month that just ended, email the report to the
@@ -157,6 +158,21 @@ export async function GET(request: NextRequest) {
             .eq('organization_id', orgId)
             .eq('year', reportYear)
             .eq('month', reportMonth)
+
+          // Best-effort notify internal staff that the report auto-sent.
+          try {
+            await notifyOrgManagers(supabase, orgId, {
+              type: 'report',
+              severity: 'success',
+              title: 'Monthly report sent',
+              body: `Monthly report for ${client.company_name} was sent automatically`,
+              link: `/clients/${clientId}/reports`,
+              entityType: 'client',
+              entityId: clientId,
+            })
+          } catch {
+            // non-fatal
+          }
         } catch (err: any) {
           errors.push(`client ${clientId}: ${err?.message || 'unknown error'}`)
         }

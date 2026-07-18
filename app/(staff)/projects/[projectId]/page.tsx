@@ -15,7 +15,7 @@ const STATUS_COLORS: Record<string, string> = {
   prospect: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   in_onboarding: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
 }
-const STATUS_OPTIONS = ['active', 'on_hold', 'completed', 'cancelled', 'prospect', 'in_onboarding']
+const DEFAULT_STATUS_OPTIONS = ['active', 'on_hold', 'completed', 'cancelled', 'prospect', 'in_onboarding']
 const selectClass = 'bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50'
 
 function fmt(n: number | null | undefined) {
@@ -64,6 +64,23 @@ export default function ProjectDetailPage() {
   const [savingStatus, setSavingStatus] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
   const [linkMsg, setLinkMsg] = useState('')
+  // Status option list: default to the hardcoded list, then replace with
+  // org-managed Masters data (Settings → Masters, category "project_status")
+  // if any is configured. We use the master's `value` (not `label`) so the
+  // option values keep matching the exact strings STATUS_COLORS and other
+  // status === 'active' style checks expect elsewhere in the app.
+  const [STATUS_OPTIONS, setStatusOptions] = useState<string[]>(DEFAULT_STATUS_OPTIONS)
+
+  useEffect(() => {
+    fetch('/api/settings/masters?category=project_status')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setStatusOptions(data.map((m: any) => m.value).filter(Boolean))
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const loadProject = useCallback(async () => {
     const res = await fetch(`/api/projects/${projectId}`)
