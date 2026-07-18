@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { encryptIfPresent } from '@/lib/encryption'
 import { createClientFolder, createProjectFolder } from '@/lib/google-drive'
+import { autoCreateMasterIfMissing } from '@/lib/masters'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -69,6 +70,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   }
 
   if (projectError) return NextResponse.json({ error: projectError.message }, { status: 500 })
+
+  // If the industry typed/selected isn't already a Masters value for this
+  // org, save it as one — so it's a real option for the next project too.
+  await autoCreateMasterIfMissing(supabase, userData.organization_id, 'industry', body.industry, user.id)
 
   // Auto-create Drive subfolder for the project (non-fatal)
   try {

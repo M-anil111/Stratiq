@@ -6,6 +6,7 @@ import { ChevronLeft, Loader2, CheckCircle, Building2, AlertCircle } from 'lucid
 import AddButton from '@/components/ui/AddButton'
 import ProofHubProjectPicker from '@/components/ProofHubProjectPicker'
 import CustomFieldsSection from '@/components/CustomFieldsSection'
+import ComboBox from '@/components/ui/ComboBox'
 
 const SERVICES = [
   'SEO (Local)', 'SEO (National)', 'SEO (E-commerce)', 'Content Marketing',
@@ -14,6 +15,8 @@ const SERVICES = [
   'Web Design & Development', 'Reputation Management', 'Link Building',
   'Graphic Design', 'Website Maintenance',
 ]
+
+const DEFAULT_STATUS_OPTIONS = ['active', 'on_hold', 'completed', 'cancelled', 'prospect', 'in_onboarding']
 
 const selectGlass = "w-full bg-slate-900/[0.04] dark:bg-[rgba(255,255,255,0.06)] border border-slate-900/10 dark:border-white/[0.12] text-slate-900 dark:text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50"
 
@@ -69,6 +72,21 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
   const [errors, setErrors] = useState<{ name?: string; domain?: string }>({})
   const [success, setSuccess] = useState<{ id: string; name: string } | null>(null)
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({})
+  // Masters-backed option lists (Settings → Masters); fall back to sane
+  // defaults if a category is empty/unconfigured for this org.
+  const [STATUS_OPTIONS, setStatusOptions] = useState<string[]>(DEFAULT_STATUS_OPTIONS)
+  const [industryOptions, setIndustryOptions] = useState<string[]>([])
+
+  useEffect(() => {
+    fetch('/api/settings/masters?category=project_status')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => { if (Array.isArray(data) && data.length > 0) setStatusOptions(data.map((m: any) => m.value).filter(Boolean)) })
+      .catch(() => {})
+    fetch('/api/settings/masters?category=industry')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => { if (Array.isArray(data)) setIndustryOptions(data.map((m: any) => m.label).filter(Boolean)) })
+      .catch(() => {})
+  }, [])
 
   const [form, setForm] = useState({
     name: '',
@@ -234,17 +252,17 @@ export default function NewProjectPage({ params }: { params: { id: string } }) {
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Status</label>
               <select className={selectGlass} value={form.status} onChange={setField('status')}>
-                <option value="active">Active</option>
-                <option value="prospect">Prospect</option>
-                <option value="in_onboarding">In Onboarding</option>
-                <option value="on_hold">On Hold</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
+                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
               </select>
             </div>
             <div className="sm:col-span-2">
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Industry</label>
-              <input className="input-glass" value={form.industry} onChange={setField('industry')} placeholder="e.g. Home Services" />
+              <ComboBox
+                value={form.industry}
+                onChange={(v) => setForm(f => ({ ...f, industry: v }))}
+                options={industryOptions}
+                placeholder="Select or type an industry…"
+              />
             </div>
             <div className="sm:col-span-2">
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Services</label>
