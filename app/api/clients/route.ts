@@ -5,6 +5,7 @@ import { createClientFolder } from '@/lib/google-drive'
 import { sendEmail } from '@/lib/email/index'
 import { logAudit } from '@/lib/audit'
 import { domainFromUrl } from '@/lib/logo'
+import { autoCreateMasterIfMissing } from '@/lib/masters'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -156,6 +157,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // If the industry typed/selected isn't already a Masters value for this
+  // org, save it as one — so it's a real option for the next client too.
+  await autoCreateMasterIfMissing(supabase, userData.organization_id, 'industry', body.industry, user.id)
 
   // Auto-create a project for each selected service package (non-fatal)
   try {

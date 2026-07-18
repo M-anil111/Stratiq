@@ -10,6 +10,7 @@ import {
 import { InfoTooltip } from '@/components/ui/tooltip'
 import ProofHubProjectPicker from '@/components/ProofHubProjectPicker'
 import CustomFieldsSection from '@/components/CustomFieldsSection'
+import ComboBox from '@/components/ui/ComboBox'
 
 const DEFAULT_INDUSTRIES = [
   'Restaurant / Food & Beverage', 'Retail / E-commerce', 'Healthcare / Medical',
@@ -918,11 +919,14 @@ export default function NewClientPage() {
                 </div>
               )}
             </Field>
-            <Field label={<>Industry <InfoTooltip content="Used to categorize the client and match reporting templates. Auto-filled from Google Business where possible." /></>} required filled={autoFilled.has('industry')}>
-              <select className={sel} value={form.industry} onChange={e => { setFE('industry')(e); setAutoFilled(s => { const n = new Set(s); n.delete('industry'); return n }) }} required>
-                <option value="">Select industry…</option>
-                {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-              </select>
+            <Field label={<>Industry <InfoTooltip content="Used to categorize the client and match reporting templates. Auto-filled from Google Business where possible. Type a new one if it's not listed — it's saved for future clients too." /></>} required filled={autoFilled.has('industry')}>
+              <ComboBox
+                value={form.industry}
+                onChange={(v) => { setF('industry')(v); setAutoFilled(s => { const n = new Set(s); n.delete('industry'); return n }) }}
+                options={INDUSTRIES}
+                placeholder="Select or type an industry…"
+                required
+              />
             </Field>
             <div className="sm:col-span-2">
               <Field label="About Company" required filled={autoFilled.has('about_company')}
