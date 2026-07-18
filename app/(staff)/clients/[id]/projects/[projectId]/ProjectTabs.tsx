@@ -153,18 +153,22 @@ function ProjectInfoTab({ projectId }: { projectId: string }) {
           </PropertyRow>
         )}
 
-        {activeResources.map(({ key, label }) => (
-          <PropertyRow key={key} label={label}>
-            <div className="flex flex-wrap justify-end gap-1.5">
-              {(project.resource_assignments[key] as string[]).map((uid) => {
-                const name = users.find(u => u.id === uid)?.full_name || uid
-                return (
-                  <span key={uid} className="px-2 py-0.5 bg-slate-900/[0.05] dark:bg-white/[0.07] text-slate-700 dark:text-slate-200 text-xs font-medium rounded-md">{name}</span>
-                )
-              })}
-            </div>
-          </PropertyRow>
-        ))}
+        {activeResources.map(({ key, label }) => {
+          const assignments = project.resource_assignments?.[key]
+          if (!Array.isArray(assignments)) return null
+          return (
+            <PropertyRow key={key} label={label}>
+              <div className="flex flex-wrap justify-end gap-1.5">
+                {assignments.map((uid: string) => {
+                  const name = users.find(u => u.id === uid)?.full_name || uid
+                  return (
+                    <span key={uid} className="px-2 py-0.5 bg-slate-900/[0.05] dark:bg-white/[0.07] text-slate-700 dark:text-slate-200 text-xs font-medium rounded-md">{name}</span>
+                  )
+                })}
+              </div>
+            </PropertyRow>
+          )
+        })}
 
         {project.goals && (
           <PropertyRow label="Goals">
@@ -183,6 +187,7 @@ function ProjectInfoTab({ projectId }: { projectId: string }) {
       <ResourceAssignmentsEditor
         patchUrl={`/api/projects/${projectId}`}
         initialValue={project.resource_assignments}
+        projectType={project.project_type}
         onSaved={(value) => setProject((p: any) => ({ ...p, resource_assignments: value }))}
       />
 
