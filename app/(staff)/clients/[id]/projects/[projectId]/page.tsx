@@ -10,14 +10,14 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
           <ChevronLeft className="h-5 w-5 text-slate-600 dark:text-slate-400" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Project Details</h1>
-          <nav className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-            <Link href="/clients" className="hover:text-sky-400">Clients</Link>
-            {' › '}
-            <Link href={`/clients/${params.id}`} className="hover:text-sky-400">Client</Link>
-            {' › '}
-            <span>Project</span>
+          <nav className="text-[13px] text-slate-500 dark:text-slate-400">
+            <Link href="/clients" className="hover:text-sky-500 dark:hover:text-sky-400 transition-colors">Clients</Link>
+            <span className="mx-1.5 text-slate-300 dark:text-slate-600">/</span>
+            <Link href={`/clients/${params.id}`} className="hover:text-sky-500 dark:hover:text-sky-400 transition-colors">Client</Link>
+            <span className="mx-1.5 text-slate-300 dark:text-slate-600">/</span>
+            <span className="text-slate-700 dark:text-slate-300">Project</span>
           </nav>
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white mt-0.5">Project Details</h1>
         </div>
         <Link href={`/clients/${params.id}/projects/${params.projectId}/edit`}
           className="flex items-center gap-2 px-3 py-2 border border-slate-900/10 dark:border-white/[0.08] rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-white/[0.06] transition-colors">

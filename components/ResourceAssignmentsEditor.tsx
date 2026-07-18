@@ -3,32 +3,47 @@ import { useState, useEffect } from 'react'
 import { Loader2, Users, Check } from 'lucide-react'
 import MultiSelectPeople, { PersonOption } from './ui/MultiSelectPeople'
 
-export type ResourceAssignments = {
-  seo: string[]
-  ppc: string[]
-  content: string[]
-  video: string[]
-  social_media: string[]
+export type ResourceAssignments = Record<string, string[]>
+
+// Which deliverable slots render for a given project type — mirrors the
+// same mapping used on the New Project form (RESOURCE_FIELDS there).
+const FIELDS_BY_TYPE: Record<string, { key: string; label: string }[]> = {
+  marketing: [
+    { key: 'seo', label: 'SEO Resource' },
+    { key: 'ppc', label: 'PPC Resource' },
+    { key: 'content', label: 'Content Resource' },
+    { key: 'video', label: 'Video Resource' },
+    { key: 'social_media', label: 'Social Media Resource' },
+  ],
+  website: [
+    { key: 'developer', label: 'Developer' },
+    { key: 'designer', label: 'Designer' },
+    { key: 'project_manager', label: 'Project Manager' },
+  ],
+  mobile_app: [
+    { key: 'developer', label: 'Developer' },
+    { key: 'designer', label: 'Designer' },
+    { key: 'qa', label: 'QA Resource' },
+  ],
+  hosting: [
+    { key: 'support', label: 'Support Resource' },
+  ],
+  other: [
+    { key: 'assigned_to', label: 'Assigned To' },
+  ],
 }
 
-const EMPTY: ResourceAssignments = { seo: [], ppc: [], content: [], video: [], social_media: [] }
-
-const DELIVERABLES: { key: keyof ResourceAssignments; label: string }[] = [
-  { key: 'seo', label: 'SEO Resource' },
-  { key: 'ppc', label: 'PPC Resource' },
-  { key: 'content', label: 'Content Resource' },
-  { key: 'video', label: 'Video Resource' },
-  { key: 'social_media', label: 'Social Media Resource' },
-]
-
+// Preserve every key already on the record — even ones this project's type
+// doesn't render a field for — so saving never silently strips assignments
+// that were made under a different project_type or another surface.
 function normalize(value: any): ResourceAssignments {
-  return {
-    seo: Array.isArray(value?.seo) ? value.seo : [],
-    ppc: Array.isArray(value?.ppc) ? value.ppc : [],
-    content: Array.isArray(value?.content) ? value.content : [],
-    video: Array.isArray(value?.video) ? value.video : [],
-    social_media: Array.isArray(value?.social_media) ? value.social_media : [],
+  const next: ResourceAssignments = {}
+  if (value && typeof value === 'object') {
+    for (const key of Object.keys(value)) {
+      next[key] = Array.isArray(value[key]) ? value[key] : []
+    }
   }
+  return next
 }
 
 // Displays + persists granular per-deliverable resource assignments directly
@@ -38,12 +53,15 @@ function normalize(value: any): ResourceAssignments {
 export default function ResourceAssignmentsEditor({
   patchUrl,
   initialValue,
+  projectType,
   onSaved,
 }: {
   patchUrl: string
   initialValue: any
+  projectType?: string
   onSaved?: (value: ResourceAssignments) => void
 }) {
+  const deliverables = FIELDS_BY_TYPE[projectType || 'marketing'] || FIELDS_BY_TYPE.marketing
   const [users, setUsers] = useState<PersonOption[]>([])
   const [value, setValue] = useState<ResourceAssignments>(normalize(initialValue))
   const [saving, setSaving] = useState(false)
@@ -65,7 +83,7 @@ export default function ResourceAssignmentsEditor({
     return () => { cancelled = true }
   }, [])
 
-  const handleChange = (key: keyof ResourceAssignments) => (ids: string[]) => {
+  const handleChange = (key: string) => (ids: string[]) => {
     setValue(v => ({ ...v, [key]: ids }))
     setDirty(true)
     setSaved(false)
@@ -102,10 +120,10 @@ export default function ResourceAssignmentsEditor({
         <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Resource Assignments</h3>
       </div>
       <div className="space-y-4">
-        {DELIVERABLES.map(({ key, label }) => (
+        {deliverables.map(({ key, label }) => (
           <div key={key}>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">{label}</label>
-            <MultiSelectPeople options={users} value={value[key]} onChange={handleChange(key)} />
+            <MultiSelectPeople options={users} value={value[key] || []} onChange={handleChange(key)} />
           </div>
         ))}
       </div>
