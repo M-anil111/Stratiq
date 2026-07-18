@@ -1,10 +1,21 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
-import { Plus, X, Target, AlertTriangle, UserPlus, ExternalLink, Download, CheckSquare, Square } from 'lucide-react'
+import { Plus, X, Target, AlertTriangle, UserPlus, ExternalLink, Download, CheckSquare, Square, GripVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { downloadCsv } from '@/lib/csv'
 import SlideOver from '@/components/SlideOver'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
 
 type Lead = {
   id: string
@@ -84,6 +95,9 @@ function LeadCard({
   converting,
   selected,
   onToggleSelect,
+  dragHandleProps,
+  dragHandleListeners,
+  isDragging,
 }: {
   lead: Lead
   onEdit: (lead: Lead) => void
@@ -92,11 +106,14 @@ function LeadCard({
   converting: boolean
   selected: boolean
   onToggleSelect: (id: string) => void
+  dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>
+  dragHandleListeners?: Record<string, unknown>
+  isDragging?: boolean
 }) {
   const value = formatValue(lead.estimated_value)
   const canConvert = (lead.stage === 'proposal_sent' || lead.stage === 'won') && !lead.converted_client_id
   return (
-    <div className={cn('glass-card rounded-xl p-3 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.04] transition-colors duration-200 flex gap-2', selected && 'ring-1 ring-sky-500/50 bg-sky-500/[0.05]')}>
+    <div className={cn('glass-card rounded-xl p-3 hover:bg-slate-900/[0.04] dark:hover:bg-white/[0.04] transition-colors duration-200 flex gap-2', selected && 'ring-1 ring-sky-500/50 bg-sky-500/[0.05]', isDragging && 'opacity-50')}>
       <button
         onClick={(e) => { e.stopPropagation(); onToggleSelect(lead.id) }}
         aria-label={selected ? 'Deselect lead' : 'Select lead'}
@@ -104,6 +121,16 @@ function LeadCard({
       >
         {selected ? <CheckSquare className="h-4 w-4 text-sky-400" /> : <Square className="h-4 w-4" />}
       </button>
+      {dragHandleProps && (
+        <button
+          {...dragHandleProps}
+          {...(dragHandleListeners || {})}
+          aria-label="Drag to move stage"
+          className="shrink-0 pt-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-grab active:cursor-grabbing touch-none"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+      )}
       <div className="min-w-0 flex-1">
       <button onClick={() => onEdit(lead)} className="w-full text-left">
         <div className="text-sm font-medium text-slate-900 dark:text-white truncate">{lead.company_name}</div>
@@ -157,6 +184,55 @@ function LeadCard({
         )}
       </div>
       </div>
+    </div>
+  )
+}
+
+function DraggableLeadCard(props: {
+  lead: Lead
+  onEdit: (lead: Lead) => void
+  onStageChange: (lead: Lead, stage: string) => void
+  onConvert: (lead: Lead) => void
+  converting: boolean
+  selected: boolean
+  onToggleSelect: (id: string) => void
+}) {
+  const { lead } = props
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: lead.id,
+    data: { stage: lead.stage },
+  })
+  return (
+    <div ref={setNodeRef}>
+      <LeadCard
+        {...props}
+        isDragging={isDragging}
+        dragHandleProps={attributes as unknown as React.HTMLAttributes<HTMLButtonElement>}
+        dragHandleListeners={listeners}
+      />
+    </div>
+  )
+}
+
+function DroppableColumn({
+  stageKey,
+  children,
+  className,
+}: {
+  stageKey: string
+  children: React.ReactNode
+  className?: string
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: stageKey })
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        className,
+        isOver && 'ring-2 ring-sky-500/60 bg-sky-500/[0.06] dark:bg-sky-500/[0.08]'
+      )}
+    >
+      {children}
     </div>
   )
 }
@@ -279,6 +355,11 @@ export default function LeadsPage() {
   const [bulkStage, setBulkStage] = useState('')
   const [bulkBusy, setBulkBusy] = useState(false)
   const [bulkMsg, setBulkMsg] = useState('')
+  const [activeId, setActiveId] = useState<string | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  )
 
   const fetchLeads = useCallback(async (withSpinner = true) => {
     if (withSpinner) setLoading(true)
@@ -393,6 +474,24 @@ export default function LeadsPage() {
     }
   }
 
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id))
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveId(null)
+    const { active, over } = event
+    if (!over) return
+    const targetStage = String(over.id)
+    const lead = leads.find(l => l.id === active.id)
+    if (!lead) return
+    if (!STAGES.some(s => s.key === targetStage)) return
+    if (targetStage === lead.stage) return
+    changeStage(lead, targetStage)
+  }
+
+  const activeLead = activeId ? leads.find(l => l.id === activeId) || null : null
+
   async function convertLead(lead: Lead) {
     if (convertingId) return
     setConvertingId(lead.id)
@@ -480,46 +579,66 @@ export default function LeadsPage() {
           </button>
         </div>
       ) : (
-        <div className="overflow-x-auto pb-2">
-          <div className="flex sm:grid sm:grid-cols-5 gap-3 sm:min-w-[900px]">
-            {columns.map(col => (
-              <div key={col.key} className="flex flex-col gap-2 min-w-[80%] sm:min-w-0 shrink-0 sm:shrink">
-                <div className="px-1 flex items-baseline justify-between gap-2">
-                  <h2 className={cn('text-xs font-semibold uppercase tracking-wider truncate', col.accent)}>
-                    {col.label}
-                    <span className="ml-1.5 text-slate-500 font-normal">{loading ? '—' : col.items.length}</span>
-                  </h2>
-                  {!loading && col.total > 0 && (
-                    <span className="text-[11px] text-slate-500 shrink-0">{formatValue(col.total)}</span>
-                  )}
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <div className="overflow-x-auto pb-2">
+            <div className="flex sm:grid sm:grid-cols-5 gap-3 sm:min-w-[900px]">
+              {columns.map(col => (
+                <div key={col.key} className="flex flex-col gap-2 min-w-[80%] sm:min-w-0 shrink-0 sm:shrink">
+                  <div className="px-1 flex items-baseline justify-between gap-2">
+                    <h2 className={cn('text-xs font-semibold uppercase tracking-wider truncate', col.accent)}>
+                      {col.label}
+                      <span className="ml-1.5 text-slate-500 font-normal">{loading ? '—' : col.items.length}</span>
+                    </h2>
+                    {!loading && col.total > 0 && (
+                      <span className="text-[11px] text-slate-500 shrink-0">{formatValue(col.total)}</span>
+                    )}
+                  </div>
+                  <DroppableColumn
+                    stageKey={col.key}
+                    className="flex flex-col gap-2 rounded-2xl bg-slate-900/[0.03] dark:bg-white/[0.02] border border-slate-900/10 dark:border-white/[0.05] p-2 min-h-[120px] transition-colors duration-150"
+                  >
+                    {loading ? (
+                      <>
+                        <SkeletonCard />
+                        <SkeletonCard />
+                      </>
+                    ) : col.items.length === 0 ? (
+                      <div className="text-[11px] text-slate-600 text-center py-6">No leads</div>
+                    ) : (
+                      col.items.map(lead => (
+                        <DraggableLeadCard
+                          key={lead.id}
+                          lead={lead}
+                          onEdit={openEditModal}
+                          onStageChange={changeStage}
+                          onConvert={convertLead}
+                          converting={convertingId === lead.id}
+                          selected={selectedIds.has(lead.id)}
+                          onToggleSelect={toggleSelect}
+                        />
+                      ))
+                    )}
+                  </DroppableColumn>
                 </div>
-                <div className="flex flex-col gap-2 rounded-2xl bg-slate-900/[0.03] dark:bg-white/[0.02] border border-slate-900/10 dark:border-white/[0.05] p-2 min-h-[120px]">
-                  {loading ? (
-                    <>
-                      <SkeletonCard />
-                      <SkeletonCard />
-                    </>
-                  ) : col.items.length === 0 ? (
-                    <div className="text-[11px] text-slate-600 text-center py-6">No leads</div>
-                  ) : (
-                    col.items.map(lead => (
-                      <LeadCard
-                        key={lead.id}
-                        lead={lead}
-                        onEdit={openEditModal}
-                        onStageChange={changeStage}
-                        onConvert={convertLead}
-                        converting={convertingId === lead.id}
-                        selected={selectedIds.has(lead.id)}
-                        onToggleSelect={toggleSelect}
-                      />
-                    ))
-                  )}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+          <DragOverlay>
+            {activeLead ? (
+              <div className="w-64">
+                <LeadCard
+                  lead={activeLead}
+                  onEdit={() => {}}
+                  onStageChange={() => {}}
+                  onConvert={() => {}}
+                  converting={false}
+                  selected={false}
+                  onToggleSelect={() => {}}
+                />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
       {/* New / Edit Lead slide-over */}

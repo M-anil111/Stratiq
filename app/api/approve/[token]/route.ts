@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notifyOrgManagers } from '@/lib/notify'
+import { sendEmail } from '@/lib/email/index'
 
 // Public endpoint: approve or reject a proposal via a one-time token from the email
 export async function GET(request: NextRequest, { params }: { params: { token: string } }) {
@@ -50,6 +51,29 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
         entityType: 'client',
         entityId: client.id,
       })
+    } catch {
+      // non-fatal
+    }
+
+    // Best-effort external notification email to configured recipients.
+    try {
+      const { data: notifRow } = await supabase
+        .from('organization_settings')
+        .select('value')
+        .eq('organization_id', client.organization_id)
+        .eq('key', 'notification_emails')
+        .single()
+      const recipientList = notifRow?.value
+        ? notifRow.value.split(',').map((e: string) => e.trim()).filter(Boolean)
+        : (process.env.APPROVAL_EMAIL || 'jay@jaymehta.co').split(',').map((e: string) => e.trim())
+
+      for (const recipient of recipientList) {
+        await sendEmail({
+          to: recipient,
+          subject: `Proposal for ${client.company_name} was ${action === 'approve' ? 'approved' : 'rejected'}`,
+          html: `<p>Proposal for ${client.company_name} was ${action === 'approve' ? 'approved' : 'rejected'}.</p>`,
+        })
+      }
     } catch {
       // non-fatal
     }
