@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import {
   Building2, Plug, Bell, Sliders, Shield, Globe,
-  ShieldCheck, ListChecks, Mail, Users, CreditCard, History,
+  ShieldCheck, ListChecks, Mail, Users, CreditCard, History, Database,
 } from 'lucide-react'
 
 const GROUPS = [
@@ -27,6 +27,7 @@ const GROUPS = [
       { href: '/settings/custom-fields', icon: Sliders, label: 'Custom Fields', description: 'Add custom fields to clients and projects' },
       { href: '/settings/masters', icon: ListChecks, label: 'Data Sets', description: 'Manage dropdown values: industries, goals, billing terms, and more' },
       { href: '/settings/directory-sites', icon: Globe, label: 'Directory Sites', description: 'Manage websites used in off-page submission dropdowns' },
+      { href: '/settings/database', icon: Database, label: 'Database Updates', description: 'Apply pending schema updates with one click — no SQL editor needed' },
     ],
   },
   {

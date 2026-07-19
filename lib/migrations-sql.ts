@@ -1,7 +1,10 @@
 // AUTO-EMBEDDED from supabase/APPLY_ALL_PENDING.sql — do NOT read the .sql file at runtime.
-// Bundled as a string so it ships with the Vercel deployment.
+// Bundled as a string so it ships with the Vercel deployment. Keep this in
+// sync with supabase/APPLY_ALL_PENDING.sql every time a new migration is
+// added — this is what Settings -> Database -> "Apply database updates"
+// actually runs, so if this file is stale that button silently under-applies.
 
-export const MIGRATIONS_VERSION = '034'
+export const MIGRATIONS_VERSION = '049'
 
 export const PENDING_MIGRATIONS_SQL = `-- ============================================================
 -- Stratiq: combined pending migrations (010 through 031)
@@ -551,4 +554,442 @@ ALTER TABLE clients ADD COLUMN IF NOT EXISTS looker_report_url text;
 -- Tolerant/idempotent so it is safe to re-run.
 
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS logo_url text;
+
+
+
+-- >>>>>>>>>>>>>>>>>>>> supabase/migrations/036_qb_customer_link.sql <<<<<<<<<<<<<<<<<<<<
+-- 036_qb_customer_link.sql
+-- Store the QuickBooks Customer id on each Stratiq client so client↔QB-customer
+-- matching is reliable (by stored id) instead of name-only matching.
+-- Tolerant/idempotent so it is safe to re-run.
+
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS qb_customer_id text;
+CREATE INDEX IF NOT EXISTS idx_clients_qb_customer_id ON clients(qb_customer_id);
+
+
+-- >>>>>>>>>>>>>>>>>>>> supabase/migrations/035_seo_rank_tracking.sql <<<<<<<<<<<<<<<<<<<<
+-- SEO keyword rank tracking (SE Ranking style): track keywords per project and
+-- their ranking positions over time, entered/updated manually (no SERP API).
+-- Tolerant/idempotent so it is safe to re-run.
+
+CREATE TABLE IF NOT EXISTS keywords (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  keyword TEXT NOT NULL,
+  search_engine TEXT DEFAULT 'google',
+  location TEXT,
+  target_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_keywords_project ON keywords(project_id);
+CREATE INDEX IF NOT EXISTS idx_keywords_org ON keywords(organization_id);
+
+ALTER TABLE keywords ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_keywords" ON keywords;
+CREATE POLICY "org_keywords" ON keywords
+  FOR ALL TO authenticated USING (
+    organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
+  );
+
+CREATE TABLE IF NOT EXISTS keyword_rankings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  keyword_id UUID NOT NULL REFERENCES keywords(id) ON DELETE CASCADE,
+  position INTEGER,
+  checked_on DATE NOT NULL DEFAULT current_date,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_keyword_rankings_keyword ON keyword_rankings(keyword_id);
+CREATE INDEX IF NOT EXISTS idx_keyword_rankings_org ON keyword_rankings(organization_id);
+
+ALTER TABLE keyword_rankings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_keyword_rankings" ON keyword_rankings;
+CREATE POLICY "org_keyword_rankings" ON keyword_rankings
+  FOR ALL TO authenticated USING (
+    organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
+  );
+
+-- ============================================================
+-- 037_notification_prefs.sql
+-- HubSpot-style notification preferences: per-user JSON map.
+-- ============================================================
+ALTER TABLE user_notification_prefs
+  ADD COLUMN IF NOT EXISTS prefs JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+ALTER TABLE user_notification_prefs
+  ADD COLUMN IF NOT EXISTS organization_id UUID;
+
+-- ============================================================
+-- 038_user_permissions.sql
+-- HubSpot-style granular per-user permissions: per-user JSON
+-- overrides. NULL = use role defaults (see lib/permissions.ts).
+-- ============================================================
+ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions jsonb;
+
+-- ============================================================
+-- 039_social_accounts.sql
+-- HubSpot-style social publishing connection manager. Tokens are
+-- stored ENCRYPTED by the app (AES-256-GCM). RLS org-scoped.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS social_accounts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID NOT NULL,
+  platform TEXT NOT NULL CHECK (platform IN ('facebook','instagram','linkedin','tiktok','x','youtube')),
+  account_name TEXT,
+  account_handle TEXT,
+  external_id TEXT,
+  access_token TEXT,
+  refresh_token TEXT,
+  token_expires_at TIMESTAMPTZ,
+  status TEXT DEFAULT 'connected',
+  connected_by UUID,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_social_accounts_org ON social_accounts(organization_id);
+CREATE INDEX IF NOT EXISTS idx_social_accounts_platform ON social_accounts(platform);
+
+ALTER TABLE social_accounts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_social_accounts" ON social_accounts;
+CREATE POLICY "org_social_accounts" ON social_accounts
+  FOR ALL TO authenticated USING (
+    organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
+  );
+
+
+-- ============================================================
+-- 040_social_suite.sql
+-- Full social scheduling suite (Hootsuite/Buffer/Later-style).
+--
+-- Adds the scheduling lifecycle + engagement columns that the composer,
+-- calendar, publisher and reports depend on; posting slots (queue);
+-- a lightweight published-post reference table (space-conscious — the
+-- heavy scheduling row + media are deleted after a successful publish);
+-- an in-app notification system; and social_accounts reconnect fields.
+--
+-- Idempotent: safe to run repeatedly.
+-- ============================================================
+
+-- ---------- social_media_postings: lifecycle + engagement ----------
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS scheduled_date TIMESTAMPTZ;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS post_content TEXT;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS media_url TEXT;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS media_drive_file_ids TEXT[] DEFAULT '{}';
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS first_comment TEXT;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS link TEXT;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS content_type TEXT;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS social_account_id UUID;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS external_post_id TEXT;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS permalink TEXT;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS failed_reason TEXT;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS retry_count INT DEFAULT 0;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS approved_by UUID;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS boost JSONB;
+-- Engagement metrics (so analytics aren't always zero).
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS likes INT DEFAULT 0;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS comments_count INT DEFAULT 0;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS shares INT DEFAULT 0;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS impressions INT DEFAULT 0;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS reach INT DEFAULT 0;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS clicks INT DEFAULT 0;
+ALTER TABLE social_media_postings ADD COLUMN IF NOT EXISTS metrics_updated_at TIMESTAMPTZ;
+
+-- Relax the base status / type CHECK constraints to cover the full lifecycle.
+ALTER TABLE social_media_postings DROP CONSTRAINT IF EXISTS social_media_postings_status_check;
+ALTER TABLE social_media_postings ADD CONSTRAINT social_media_postings_status_check
+  CHECK (status IN (
+    'draft','pending_approval','approved','scheduled','publishing',
+    'published','failed','live','under_review','deleted'
+  ));
+
+ALTER TABLE social_media_postings DROP CONSTRAINT IF EXISTS social_media_postings_type_check;
+ALTER TABLE social_media_postings ADD CONSTRAINT social_media_postings_type_check
+  CHECK (type IN ('image','video','carousel','gif','story','reel','text','link'));
+
+CREATE INDEX IF NOT EXISTS idx_smp_status ON social_media_postings(status);
+CREATE INDEX IF NOT EXISTS idx_smp_scheduled ON social_media_postings(scheduled_date);
+CREATE INDEX IF NOT EXISTS idx_smp_org ON social_media_postings(organization_id);
+
+-- ---------- posting_slots: recurring queue times ----------
+CREATE TABLE IF NOT EXISTS posting_slots (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID NOT NULL,
+  social_account_id UUID,
+  platform TEXT,
+  day_of_week INT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+  time_of_day TEXT NOT NULL,           -- 'HH:MM' 24h local
+  timezone TEXT DEFAULT 'UTC',
+  created_by UUID,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_posting_slots_org ON posting_slots(organization_id);
+ALTER TABLE posting_slots ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_posting_slots" ON posting_slots;
+CREATE POLICY "org_posting_slots" ON posting_slots
+  FOR ALL TO authenticated USING (
+    organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
+  );
+
+-- ---------- social_published_posts: space-conscious archive ----------
+-- After a post publishes successfully the heavy scheduling row and its media
+-- are removed; this lightweight reference is what remains, and live details
+-- are re-fetched from the platform API on demand.
+CREATE TABLE IF NOT EXISTS social_published_posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID NOT NULL,
+  project_id UUID,
+  social_account_id UUID,
+  platform TEXT NOT NULL,
+  external_post_id TEXT,
+  permalink TEXT,
+  content_snippet TEXT,               -- short preview only (space)
+  published_at TIMESTAMPTZ DEFAULT now(),
+  -- last-known metrics snapshot (refreshed from the API when viewed)
+  likes INT DEFAULT 0,
+  comments_count INT DEFAULT 0,
+  shares INT DEFAULT 0,
+  impressions INT DEFAULT 0,
+  reach INT DEFAULT 0,
+  clicks INT DEFAULT 0,
+  metrics_updated_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_spp_org ON social_published_posts(organization_id);
+CREATE INDEX IF NOT EXISTS idx_spp_published ON social_published_posts(published_at);
+ALTER TABLE social_published_posts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_social_published_posts" ON social_published_posts;
+CREATE POLICY "org_social_published_posts" ON social_published_posts
+  FOR ALL TO authenticated USING (
+    organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
+  );
+
+-- ---------- notifications: in-app notification system ----------
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID,
+  user_id UUID NOT NULL,
+  type TEXT NOT NULL DEFAULT 'info',   -- publish_failed, publish_success, token_expiry, reconnect, report, info
+  severity TEXT NOT NULL DEFAULT 'info', -- info, success, warning, error
+  title TEXT NOT NULL,
+  body TEXT,
+  link TEXT,
+  entity_type TEXT,
+  entity_id UUID,
+  is_read BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_org ON notifications(organization_id);
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own_notifications" ON notifications;
+CREATE POLICY "own_notifications" ON notifications
+  FOR ALL TO authenticated USING (user_id = auth.uid());
+
+-- ---------- social_accounts: reconnect + per-client + more networks ----------
+ALTER TABLE social_accounts ADD COLUMN IF NOT EXISTS needs_reconnect BOOLEAN DEFAULT false;
+ALTER TABLE social_accounts ADD COLUMN IF NOT EXISTS last_error TEXT;
+ALTER TABLE social_accounts ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMPTZ;
+ALTER TABLE social_accounts ADD COLUMN IF NOT EXISTS scopes TEXT;
+ALTER TABLE social_accounts ADD COLUMN IF NOT EXISTS client_id UUID;
+ALTER TABLE social_accounts ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+
+ALTER TABLE social_accounts DROP CONSTRAINT IF EXISTS social_accounts_platform_check;
+ALTER TABLE social_accounts ADD CONSTRAINT social_accounts_platform_check
+  CHECK (platform IN ('facebook','instagram','linkedin','tiktok','x','youtube','threads','bluesky','pinterest'));
+
+-- ---------- user dashboard layout (customizable dashboard) ----------
+ALTER TABLE users ADD COLUMN IF NOT EXISTS dashboard_layout JSONB;
+-- theme preference: 'light' | 'dark' | 'system'
+ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_preference TEXT;
+
+
+-- ============================================================
+-- 041_media_library.sql
+-- Reusable media/asset library. Assets live in Google Drive (the org's chosen
+-- storage); these rows are lightweight metadata + the Drive reference, so the
+-- DB stays small. This is the persistent library — distinct from the transient
+-- per-post media that the publisher reaps after a successful publish.
+-- Idempotent.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS media_assets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID NOT NULL,
+  drive_file_id TEXT,
+  name TEXT,
+  url TEXT,
+  mime_type TEXT,
+  kind TEXT,                       -- 'image' | 'video'
+  bytes BIGINT,
+  width INT,
+  height INT,
+  folder TEXT,
+  created_by UUID,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_media_assets_org ON media_assets(organization_id);
+ALTER TABLE media_assets ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_media_assets" ON media_assets;
+CREATE POLICY "org_media_assets" ON media_assets
+  FOR ALL TO authenticated USING (
+    organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
+  );
+
+-- ===== 043_notification_prefs.sql =====
+-- Per-user notification preferences stored as a JSONB blob on the users row.
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS notification_preferences JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+
+-- >>>>>>>>>>>>>>>>>>>> supabase/migrations/042_report_definitions.sql <<<<<<<<<<<<<<<<<<<<
+-- Custom report builder + scheduled auto-send persistence. Idempotent, org-scoped, RLS.
+CREATE TABLE IF NOT EXISTS report_definitions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  blocks JSONB NOT NULL DEFAULT '[]'::jsonb,
+  date_range JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_by UUID,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_report_definitions_org ON report_definitions(organization_id);
+ALTER TABLE report_definitions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_report_definitions" ON report_definitions;
+CREATE POLICY "org_report_definitions" ON report_definitions
+  FOR ALL TO authenticated USING (
+    organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
+  );
+
+CREATE TABLE IF NOT EXISTS report_schedules (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID NOT NULL,
+  client_id UUID,
+  client_name TEXT,
+  report_type TEXT,
+  report_definition_id UUID,
+  frequency TEXT NOT NULL DEFAULT 'monthly',
+  day TEXT,
+  recipients JSONB NOT NULL DEFAULT '[]'::jsonb,
+  status TEXT NOT NULL DEFAULT 'active',
+  last_sent_at TIMESTAMPTZ,
+  created_by UUID,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_report_schedules_org ON report_schedules(organization_id);
+ALTER TABLE report_schedules ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_report_schedules" ON report_schedules;
+CREATE POLICY "org_report_schedules" ON report_schedules
+  FOR ALL TO authenticated USING (
+    organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
+  );
+
+-- 045_qb_customer_link.sql — QuickBooks customer link column for import-all
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS qb_customer_id text;
+CREATE INDEX IF NOT EXISTS idx_clients_qb_customer_id ON clients(qb_customer_id);
+
+-- ============================================================================
+-- 044_proofhub_mapping.sql — link Stratiq clients/projects to a ProofHub project
+-- ============================================================================
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS proofhub_project_id TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS proofhub_project_id TEXT;
+
+-- ============================================================================
+-- 046_enable_rls_public_tables.sql — SECURITY FIX (rls_disabled_in_public)
+-- Enable RLS + org-scoped policies on public tables that shipped without it.
+-- ============================================================================
+ALTER TABLE organization_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_organization_settings" ON organization_settings;
+CREATE POLICY "org_organization_settings" ON organization_settings FOR ALL TO authenticated
+  USING (organization_id = (SELECT organization_id FROM users WHERE id = auth.uid()))
+  WITH CHECK (organization_id = (SELECT organization_id FROM users WHERE id = auth.uid()));
+
+ALTER TABLE masters ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_masters" ON masters;
+CREATE POLICY "org_masters" ON masters FOR ALL TO authenticated
+  USING (organization_id = (SELECT organization_id FROM users WHERE id = auth.uid()))
+  WITH CHECK (organization_id = (SELECT organization_id FROM users WHERE id = auth.uid()));
+
+ALTER TABLE client_integrations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_client_integrations" ON client_integrations;
+CREATE POLICY "org_client_integrations" ON client_integrations FOR ALL TO authenticated
+  USING (organization_id = (SELECT organization_id FROM users WHERE id = auth.uid()))
+  WITH CHECK (organization_id = (SELECT organization_id FROM users WHERE id = auth.uid()));
+
+ALTER TABLE google_drive_files ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_google_drive_files" ON google_drive_files;
+CREATE POLICY "org_google_drive_files" ON google_drive_files FOR ALL TO authenticated
+  USING (organization_id = (SELECT organization_id FROM users WHERE id = auth.uid()))
+  WITH CHECK (organization_id = (SELECT organization_id FROM users WHERE id = auth.uid()));
+
+ALTER TABLE upsell_analytics ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_upsell_analytics" ON upsell_analytics;
+CREATE POLICY "org_upsell_analytics" ON upsell_analytics FOR ALL TO authenticated
+  USING (organization_id = (SELECT organization_id FROM users WHERE id = auth.uid()))
+  WITH CHECK (organization_id = (SELECT organization_id FROM users WHERE id = auth.uid()));
+
+ALTER TABLE client_portal_access ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_client_portal_access" ON client_portal_access;
+CREATE POLICY "org_client_portal_access" ON client_portal_access FOR ALL TO authenticated
+  USING (client_id IN (
+    SELECT id FROM clients WHERE organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
+  ))
+  WITH CHECK (client_id IN (
+    SELECT id FROM clients WHERE organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
+  ));
+
+ALTER TABLE upsell_dismissals ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_upsell_dismissals" ON upsell_dismissals;
+CREATE POLICY "org_upsell_dismissals" ON upsell_dismissals FOR ALL TO authenticated
+  USING (client_id IN (
+    SELECT id FROM clients WHERE organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
+  ))
+  WITH CHECK (client_id IN (
+    SELECT id FROM clients WHERE organization_id = (SELECT organization_id FROM users WHERE id = auth.uid())
+  ));
+
+-- ============================================================================
+-- 047_custom_field_definitions.sql — Custom Fields feature: table + storage
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS custom_field_definitions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  field_type TEXT NOT NULL DEFAULT 'text' CHECK (field_type IN ('text', 'number', 'date', 'dropdown', 'checkbox')),
+  required BOOLEAN DEFAULT false,
+  entity_type TEXT NOT NULL DEFAULT 'client' CHECK (entity_type IN ('client', 'project')),
+  options JSONB DEFAULT '[]'::jsonb,
+  position INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_custom_field_definitions_org ON custom_field_definitions(organization_id, entity_type);
+
+ALTER TABLE custom_field_definitions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "org_custom_field_definitions" ON custom_field_definitions;
+CREATE POLICY "org_custom_field_definitions" ON custom_field_definitions FOR ALL TO authenticated
+  USING (organization_id = (SELECT organization_id FROM users WHERE id = auth.uid()))
+  WITH CHECK (organization_id = (SELECT organization_id FROM users WHERE id = auth.uid()));
+
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS custom_field_values JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS custom_field_values JSONB DEFAULT '{}'::jsonb;
+
+-- ============================================================================
+-- 048_client_report_flag_and_resources.sql — client-report toggle + project resources
+-- ============================================================================
+ALTER TABLE offpage_submissions ADD COLUMN IF NOT EXISTS client_report BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE blog_submissions ADD COLUMN IF NOT EXISTS client_report BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS resource_assignments JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- ============================================================================
+-- 049_project_type.sql — single "Add Project" flow for any service type
+-- ============================================================================
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS project_type TEXT NOT NULL DEFAULT 'marketing';
 `
