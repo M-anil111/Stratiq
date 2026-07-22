@@ -41,7 +41,7 @@ export default function DatabaseSettingsPage() {
           </div>
           <div>
             <h1 className="text-lg font-semibold text-slate-900 dark:text-white">Database Updates</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">Apply pending schema updates (migrations 010–051)</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Apply pending schema updates (migrations 010–052)</p>
           </div>
         </div>
 
